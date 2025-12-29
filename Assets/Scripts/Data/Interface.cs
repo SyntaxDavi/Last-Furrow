@@ -1,3 +1,4 @@
+using UnityEngine;
 public interface ISaveManager
 {
     void SaveGame();
@@ -19,9 +20,22 @@ public interface IInteractable
     void OnHoverEnter();
     void OnHoverExit();
 }
+public interface IDropTarget
+{
+    bool CanReceive(IDraggable draggable);
+    void OnReceive(IDraggable draggable);
+}
 
 public interface ICardReceiver
 {
     bool CanReceiveCard(CardData card);
     void OnReceiveCard(CardData card);
+}
+public interface IDraggable
+{
+    void OnDragStart();
+
+    void OnDragUpdate(Vector2 worldPosition);
+
+    void OnDragEnd();
 }

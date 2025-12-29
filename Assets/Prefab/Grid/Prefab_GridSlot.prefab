@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 9080896996990885390}
   - component: {fileID: 5941461700370919616}
   - component: {fileID: 2412386929584116462}
-  m_Layer: 6
+  m_Layer: 8
   m_Name: Prefab_GridSlot
   m_TagString: Untagged
   m_Icon: {fileID: 0}

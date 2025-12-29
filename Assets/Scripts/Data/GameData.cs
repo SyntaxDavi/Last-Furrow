@@ -39,7 +39,6 @@ public class RunData
         // Regra de Design: Deck Inicial
         run.DeckIDs.Add("plant_carrot");
         run.DeckIDs.Add("plant_corn");
-        run.DeckIDs.Add("plant_carrot");
         run.DeckIDs.Add("tool_water"); // Exemplo futuro
 
         return run;

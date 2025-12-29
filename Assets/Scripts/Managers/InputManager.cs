@@ -5,11 +5,14 @@ public class InputManager : MonoBehaviour
 {
     [Header("Configuração")]
     [SerializeField] private CursorSettings _cursorSettings;
-
     private CursorLogic _cursorLogic;
     private Camera _mainCamera;
 
     public Vector2 MouseWorldPosition { get; private set; }
+    public Vector2 MouseScreenPosition { get; private set; }
+    public bool IsPrimaryButtonDown { get; private set; } // Clicou neste frame?
+    public bool IsPrimaryButtonUp { get; private set; }   // Soltou neste frame?
+    public bool IsPrimaryButtonHeld { get; private set; } // Está segurando?
 
     // Eventos locais de Input (ainda úteis para coisas de baixo nível como arrastar carta)
     public event System.Action OnPrimaryClick;
@@ -20,41 +23,38 @@ public class InputManager : MonoBehaviour
         UpdateCameraReference();
     }
 
-    public void UpdateCameraReference()
-    {
-        _mainCamera = Camera.main;
-    }
+    public void UpdateCameraReference() => _mainCamera = Camera.main;
+
 
     private void Update()
     {
-        DetectAnyInput();
-
         if (_mainCamera == null) return;
 
-        Vector2 mousePos = Vector2.zero;
-        bool clickDown = false;
+        // 1. Leitura do Hardware (Centralizada aqui)
+        Vector2 rawMousePos = Vector2.zero;
 
 #if ENABLE_INPUT_SYSTEM
         if (Mouse.current != null)
         {
-            mousePos = Mouse.current.position.ReadValue();
-            clickDown = Mouse.current.leftButton.wasPressedThisFrame;
+            MouseScreenPosition = Mouse.current.position.ReadValue();
+            IsPrimaryButtonDown = Mouse.current.leftButton.wasPressedThisFrame;
+            IsPrimaryButtonUp = Mouse.current.leftButton.wasReleasedThisFrame;
+            IsPrimaryButtonHeld = Mouse.current.leftButton.isPressed;
         }
 #else
-        mousePos = Input.mousePosition;
-        clickDown = Input.GetMouseButtonDown(0);
+        MouseScreenPosition = Input.mousePosition;
+        IsPrimaryButtonDown = Input.GetMouseButtonDown(0);
+        IsPrimaryButtonUp = Input.GetMouseButtonUp(0);
+        IsPrimaryButtonHeld = Input.GetMouseButton(0);
 #endif
 
-        // Atualiza posição
-        MouseWorldPosition = _cursorLogic.GetWorldPosition(_mainCamera, mousePos);
+        // 2. Processamento Lógico
+        MouseWorldPosition = _cursorLogic.GetWorldPosition(_mainCamera, rawMousePos);
 
-        // Dispara clique
-        if (clickDown)
-        {
-            OnPrimaryClick?.Invoke();
-            // Opcional: Se quiser que todo clique conte como AnyInput
-            AppCore.Instance.Events.TriggerAnyInput();
-        }
+        // 3. Disparo de Eventos (Opcional, mas mantido para compatibilidade)
+        if (IsPrimaryButtonDown) OnPrimaryClick?.Invoke();
+
+        DetectAnyInput();
     }
 
     private void DetectAnyInput()

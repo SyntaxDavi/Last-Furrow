@@ -10,31 +10,30 @@ public class CheatManager : MonoBehaviour
     private RunManager _runManager;
     private SaveManager _saveManager;
 
-    private void Start()
-    {
-        if (_runManager == null || _saveManager == null)
-        {
-            // Tenta pegar de novo caso o Start tenha falhado por ordem de execução
-            _runManager = GetComponent<RunManager>();
-            _saveManager = GetComponent<SaveManager>();
-
-            // Se ainda for nulo, sai para evitar o erro de GUI Layout
-            if (_runManager == null || _saveManager == null) return;
-        }
-    }
-
-    private void Update()
-    {
-        // Atalhos...
-        if (Input.GetKeyDown(KeyCode.N)) StartRun(); 
-        if (Input.GetKeyDown(KeyCode.T)) SkipDay();
-        // K + L para Kill Run
-        if (Input.GetKey(KeyCode.K) && Input.GetKeyDown(KeyCode.L)) KillRun();
-    }
-
     private void OnGUI()
     {
         if (!_showDebugUI) return;
+
+        // --- CORREÇÃO DE SEGURANÇA (Lazy Load) ---
+        // Garante que as referências existam antes de desenhar
+        if (_runManager == null || _saveManager == null)
+        {
+            if (AppCore.Instance != null)
+            {
+                _runManager = AppCore.Instance.RunManager;
+                _saveManager = AppCore.Instance.SaveManager;
+            }
+            else
+            {
+                // Fallback local caso AppCore não esteja pronto
+                _runManager = GetComponent<RunManager>();
+                _saveManager = GetComponent<SaveManager>();
+            }
+
+            // Se ainda assim não achou, sai para não dar erro
+            if (_runManager == null || _saveManager == null) return;
+        }
+        // ------------------------------------------
 
         GUILayout.BeginArea(new Rect(10, 10, 200, 450));
         GUILayout.Box("CHEAT MENU");
@@ -48,19 +47,17 @@ public class CheatManager : MonoBehaviour
 
         if (GUILayout.Button("Avançar Dia (+1)")) SkipDay();
 
-        // --- CORREÇÃO AQUI ---
         if (GUILayout.Button("Forçar Game Over")) KillRun();
-        // ---------------------
 
         GUI.color = Color.red;
         if (GUILayout.Button("Deletar Save & Reiniciar")) ResetSaveData();
         GUI.color = Color.white;
 
-        if (_runManager != null && _runManager.IsRunActive)
+        if (_runManager.IsRunActive)
         {
             var run = _saveManager.Data.CurrentRun;
-            GUILayout.Label($"Week: {run.CurrentWeek}");
-            GUILayout.Label($"Day: {run.CurrentDay}");
+            GUILayout.Label($"Week: {run?.CurrentWeek}");
+            GUILayout.Label($"Day: {run?.CurrentDay}");
             GUILayout.Label($"State: {AppCore.Instance.GameStateManager.CurrentState}");
         }
         else
