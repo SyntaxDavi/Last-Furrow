@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27876f6617ba00841b40d265d94bbd00, type: 3}
+  m_Name: GameDB
+  m_EditorClassIdentifier: 
+  AllCrops:
+  - {fileID: 11400000, guid: 68c2621930556cd4e97955d9488b95d6, type: 2}
+  AllCards:
+  - {fileID: 11400000, guid: e12b06d8823623d4da1a53942b5439c0, type: 2}
+  - {fileID: 11400000, guid: ace3ec00d61515846bc63b8374592163, type: 2}
+  - {fileID: 11400000, guid: 8a36095e4b634f849a3e441bc375c194, type: 2}

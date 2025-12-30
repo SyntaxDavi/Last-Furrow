@@ -1,28 +1,21 @@
 using UnityEngine;
 
-public enum CardType
-{
-    Plant,      // Planta algo
-    Modify,     // Acelera, Fertiliza
-    Harvest,    // Colhe manualmente
-    Clear       // Remove/Limpa slot
-}
-
 [CreateAssetMenu(fileName = "New Card", menuName = "Last Furrow/Card Data")]
 public class CardData : ScriptableObject
 {
-    [Header("Info")]
-    public string ID;
-    public string CardName;
-    [TextArea] public string Tooltip;
+    [Header("Identificação")]
+    public CardID ID; 
+    public string Name;
     public Sprite Icon;
 
     [Header("Comportamento")]
     public CardType Type;
-    public int Cost; // Se tiver custo de mana/ouro
+
+    [Header("Custo")]
+    public int Cost;
 
     [Header("Efeito (Se for Plantio)")]
-    public CropData CropToPlant; // Se Type == Plant, usa isso.
+    public CropData CropToPlant; 
 
     [Header("Efeito (Se for Modificador)")]
     public int GrowthAcceleration; // Ex: +1 dia

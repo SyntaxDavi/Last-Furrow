@@ -25,24 +25,24 @@ public class GameLibrary : MonoBehaviour
         _cropDict = new Dictionary<string, CropData>();
         _cardDict = new Dictionary<string, CardData>();
 
-        // Carrega pastas "Resources/Crops" e "Resources/Cards"
         var crops = Resources.LoadAll<CropData>("Crops");
         var cards = Resources.LoadAll<CardData>("Cards");
 
         foreach (var c in crops)
         {
-            if (_cropDict.ContainsKey(c.ID))
+            if (_cropDict.ContainsKey(c.ID.Value))
                 Debug.LogWarning($"ID de Crop duplicado: {c.ID}");
             else
-                _cropDict.Add(c.ID, c);
+                _cropDict.Add(c.ID.Value, c);
         }
 
         foreach (var c in cards)
         {
-            if (_cardDict.ContainsKey(c.ID))
+            // CORREÇÃO: Use c.ID.Value
+            if (_cardDict.ContainsKey(c.ID.Value))
                 Debug.LogWarning($"ID de Card duplicado: {c.ID}");
             else
-                _cardDict.Add(c.ID, c);
+                _cardDict.Add(c.ID.Value, c);
         }
 
         Debug.Log($"[GameLibrary] Carregado: {crops.Length} Plantas | {cards.Length} Cartas");
@@ -52,7 +52,7 @@ public class GameLibrary : MonoBehaviour
     {
         if (string.IsNullOrEmpty(id)) return null;
         _cropDict.TryGetValue(id, out var data);
-        return data; // Retorna null se não achar, trate isso na ponta!
+        return data;
     }
 
     public CardData GetCard(string id)

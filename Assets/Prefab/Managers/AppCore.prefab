@@ -19,7 +19,6 @@ GameObject:
   - component: {fileID: 7645439710493714262}
   - component: {fileID: 403808487855815489}
   - component: {fileID: 2460188282646121636}
-  - component: {fileID: 1742265435415974946}
   m_Layer: 0
   m_Name: AppCore
   m_TagString: Untagged
@@ -60,9 +59,7 @@ MonoBehaviour:
   TimeManager: {fileID: 7047140990777372177}
   InputManager: {fileID: 5558657295551827975}
   AudioManager: {fileID: 2458983469160152068}
-  CameraSystem: {fileID: 0}
   DailyResolutionSystem: {fileID: 2460188282646121636}
-  GridInteractionSystem: {fileID: 1742265435415974946}
   _firstSceneName: Game
 --- !u!114 &6774691640661748804
 MonoBehaviour:
@@ -181,15 +178,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _baseDelayPerSlot: 0.3
   _fastDelayPerSlot: 0.05
---- !u!114 &1742265435415974946
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5398887748843182172}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 80f0f6e1edcfef44cac52895df5309c4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 

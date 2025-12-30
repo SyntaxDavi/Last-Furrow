@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4326d99a298970448385a0826c5b265, type: 3}
   m_Name: Card_water
   m_EditorClassIdentifier: 
-  ID: card_water
-  CardName: Water
-  Tooltip: Utilizada para regar um slot
+  ID:
+    _value: card_water
+  Name: Water
   Icon: {fileID: 0}
   Type: 1
   Cost: 5

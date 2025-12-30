@@ -49,7 +49,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable
         Data = data;
         if (data == null) return;
 
-        if (_nameText) _nameText.text = data.CardName;
+        if (_nameText) _nameText.text = data.Name;
         if (_costText) _costText.text = data.Cost.ToString();
         if (_artRenderer) _artRenderer.sprite = data.Icon;
     }
@@ -99,7 +99,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable
     public void OnClick()
     {
         // Apenas visual/som. A lógica real deve vir de quem detectou o clique.
-        Debug.Log($"Visual Click: {Data?.CardName}");
+        Debug.Log($"Visual Click: {Data?.Name}");
     }
 
     // --- IDraggable Implementation ---

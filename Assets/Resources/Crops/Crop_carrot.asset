@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13a09edc9120b8a49b499d82b669cc4f, type: 3}
   m_Name: Crop_carrot
   m_EditorClassIdentifier: 
-  ID: plant_carrot
-  Name: Carrot
+  ID:
+    _value: crop_carrot
+  Name: Crop carrot
   Description: Um vegetal laranja!
   DaysToMature: 1
   BaseSellValue: 10

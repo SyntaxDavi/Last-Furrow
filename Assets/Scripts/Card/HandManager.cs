@@ -81,7 +81,7 @@ public class HandManager : MonoBehaviour
         // Procura na lista de _cardsInHand
         for (int i = 0; i < _cardsInHand.Count; i++)
         {
-            if (_cardsInHand[i].Data.ID == cardID)
+            if (_cardsInHand[i].Data.ID.Value == cardID)
             {
                 var cardToRemove = _cardsInHand[i];
                 RemoveCard(cardToRemove); // Seu método existente que destrói o objeto
@@ -182,7 +182,7 @@ public class HandManager : MonoBehaviour
     private void CreateDebugCard(int index)
     {
         CardData dummyData = ScriptableObject.CreateInstance<CardData>();
-        dummyData.CardName = "Debug " + index;
+        dummyData.Name = "Debug " + index;
         dummyData.Cost = index;
 
         var newCard = Instantiate(_cardPrefab, transform);

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 // --- Interfaces de Core Systems ---
@@ -93,4 +94,13 @@ public interface ICardInteractionStrategy
 {
     bool CanInteract(CropState slotState, CardData card);
     InteractionResult Execute(CropState slotState, CardData card);
+}
+
+public interface IGameLibrary
+{
+    bool TryGetCrop(CropID id, out CropData data);
+    bool TryGetCard(CardID id, out CardData data);
+
+    IEnumerable<CropData> GetAllCrops();
+    IEnumerable<CardData> GetAllCards();
 }

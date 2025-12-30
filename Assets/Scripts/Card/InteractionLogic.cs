@@ -19,7 +19,7 @@ public class PlantInteraction : ICardInteractionStrategy
             return InteractionResult.Fail("O slot já está ocupado.");
 
         // Aplica os dados
-        slotState.CropID = card.CropToPlant.ID;
+        slotState.CropID = card.CropToPlant.ID.Value;
         slotState.CurrentGrowth = 0;
         slotState.IsWatered = false;
         slotState.IsWithered = false;
@@ -37,7 +37,7 @@ public class ModifyInteraction : ICardInteractionStrategy
         if (string.IsNullOrEmpty(slotState.CropID)) return false;
 
         // Regra 2: Específico para Água
-        if (card.ID == "card_water")
+        if (card.ID.Value == "card_water")
         {
             return !slotState.IsWatered; // Só pode regar se estiver seco
         }
@@ -52,7 +52,7 @@ public class ModifyInteraction : ICardInteractionStrategy
         if (string.IsNullOrEmpty(slotState.CropID))
             return InteractionResult.Fail("Não há planta aqui.");
 
-        if (card.ID == "card_water")
+        if (card.ID.Value == "card_water")
         {
             if (slotState.IsWatered)
                 return InteractionResult.Fail("Já está regado.");

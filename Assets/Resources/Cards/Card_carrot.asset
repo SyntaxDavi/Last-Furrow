@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4326d99a298970448385a0826c5b265, type: 3}
   m_Name: Card_carrot
   m_EditorClassIdentifier: 
-  ID: card_carrot
-  CardName: Plant
-  Tooltip: Essa carta planta em um slot da GRID
+  ID:
+    _value: card_carrot
+  Name: Carrot
   Icon: {fileID: 0}
   Type: 0
   Cost: 10

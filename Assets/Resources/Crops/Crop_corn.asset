@@ -12,11 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13a09edc9120b8a49b499d82b669cc4f, type: 3}
   m_Name: Crop_corn
   m_EditorClassIdentifier: 
-  ID: 
-  Name: 
-  Description: 
-  DaysToMature: 0
-  BaseSellValue: 0
+  ID:
+    _value: crop_corn
+  Name: Crop Corn
+  Description: Milho nos dias quentes vira pipoca
+  DaysToMature: 2
+  BaseSellValue: 25
   HarvestableOnlyOnDeadLine: 0
   SeedSprite: {fileID: 0}
   GrowthStages: []

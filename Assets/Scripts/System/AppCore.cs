@@ -9,6 +9,10 @@ using UnityEngine.SceneManagement;
 public class AppCore : MonoBehaviour
 {
     public static AppCore Instance { get; private set; }
+    public IGameLibrary GameLibrary { get; private set; }
+
+    [Header("Data")]
+    [SerializeField] private GameDatabaseSO _gameDatabase;
 
     [Header("Sistemas Globais")]
     public SaveManager SaveManager;
@@ -25,7 +29,7 @@ public class AppCore : MonoBehaviour
     public GameEvents Events { get; private set; }
 
     [Header("Configuração")]
-    [SerializeField] private string _firstSceneName = "Game"; // Começa no Menu, não no Game
+    [SerializeField] private string _firstSceneName = "Game"; 
 
     private void Awake()
     {
@@ -51,9 +55,19 @@ public class AppCore : MonoBehaviour
         AudioManager.Initialize();
         SaveManager.Initialize();
 
+        if (_gameDatabase != null)
+        {
+            GameLibrary = new GameLibraryService(_gameDatabase);
+            Debug.Log("[AppCore] GameLibrary Inicializada.");
+        }
+        else
+        {
+            Debug.LogError("[AppCore] FATAL: GameDatabaseSO não atribuído!");
+        }
+
         // 2. Injeta dependências entre sistemas globais
         RunManager.Initialize(SaveManager);
-        DailyResolutionSystem.Initialize(); // Assume que ele usa Events ou RunManager internamente
+        DailyResolutionSystem.Initialize(); 
         GameStateManager.Initialize();
 
         // 3. Bindings globais

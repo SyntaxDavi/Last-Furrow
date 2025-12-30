@@ -21,3 +21,11 @@ public enum RunEndReason
     WitheredOverload,   
     Abandoned           
 }
+
+public enum CardType
+{
+    Plant,      
+    Modify,     
+    Harvest,    
+    Clear       
+}

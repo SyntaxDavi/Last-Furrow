@@ -9,6 +9,7 @@ public class GameplayBootstrapper : MonoBehaviour
     [Header("Controllers da Cena")]
     [SerializeField] private GridManager _gridManager;
     [SerializeField] private PlayerInteraction _playerInteraction;
+    [SerializeField] private GridFeedbackController _feedbackController;
     // Futuro: [SerializeField] private HandManager _handManager;
 
     // Mantemos referência aos serviços criados para limpeza
@@ -58,9 +59,10 @@ public class GameplayBootstrapper : MonoBehaviour
         {
             _gridManager.Configure(_gridService);
         }
-        else
+
+        if (_feedbackController != null && _gridManager != null)
         {
-            Debug.LogError("[Bootstrapper] GridManager não atribuído no Inspector!");
+            _feedbackController.Configure(_gridManager);
         }
 
         // --- C. BINDING DE EVENTOS GLOBAIS ---

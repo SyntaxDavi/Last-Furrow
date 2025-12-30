@@ -47,7 +47,7 @@ public class GridService : IGridService
 
         if (result.Success)
         {
-            _runData.DeckIDs.Remove(card.ID); // Regra de negócio: Consumir carta
+            _runData.DeckIDs.Remove(card.ID.Value); // Regra de negócio: Consumir carta
             OnSlotStateChanged?.Invoke(index); // Notifica Controller
             OnDataDirty?.Invoke();             // Notifica necessidade de Save
         }

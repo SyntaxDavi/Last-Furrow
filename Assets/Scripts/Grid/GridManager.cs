@@ -59,6 +59,14 @@ public class GridManager : MonoBehaviour
     }
 
     // --- GERAÇÃO DO GRID E BINDING (A "Cola") ---
+    public Vector3 GetSlotPosition(int index)
+    {
+        if (index >= 0 && index < _spawnedSlots.Count)
+        {
+            return _spawnedSlots[index].transform.position;
+        }
+        return Vector3.zero;
+    }
 
     private void GenerateGrid()
     {
@@ -111,7 +119,7 @@ public class GridManager : MonoBehaviour
             // Aqui cuidamos do feedback "extra-grid" (UI, Som, Partículas)
 
             // Ex: Notificar sistema de Mão para consumir a carta visualmente
-            AppCore.Instance.Events.TriggerCardConsumed(card.ID);
+            AppCore.Instance.Events.TriggerCardConsumed(card.ID.Value);
 
             // Ex: Tocar som
             // AudioManager.Play("PlantSound");
@@ -146,7 +154,7 @@ public class GridManager : MonoBehaviour
         Sprite spriteToRender = null;
         bool isWatered = false;
 
-        if (state != null)
+        if (state != null && !string.IsNullOrEmpty(state.CropID))
         {
             isWatered = state.IsWatered;
 
@@ -158,7 +166,7 @@ public class GridManager : MonoBehaviour
                     CropData data = GameLibrary.Instance.GetCrop(state.CropID);
                     if (data != null)
                     {
-                        spriteToRender = data.GetSpriteForStage(state.CurrentGrowth);
+                        spriteToRender = data.GetSpriteForStage(state.CurrentGrowth, state.IsWithered);
                     }
                 }
             }

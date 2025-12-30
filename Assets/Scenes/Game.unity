@@ -260,6 +260,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _gridManager: {fileID: 434515746}
   _playerInteraction: {fileID: 1282445937}
+  _feedbackController: {fileID: 1991846487}
 --- !u!1 &1282445935
 GameObject:
   m_ObjectHideFlags: 0
@@ -361,6 +362,54 @@ MonoBehaviour:
   _handCenter: {fileID: 2128607302}
   _cardSpacing: 1.7
   _arcHeight: 0.3
+--- !u!1 &1991846486
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1991846488}
+  - component: {fileID: 1991846487}
+  m_Layer: 0
+  m_Name: FeedbackSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1991846487
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1991846486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c78d970098474a842992bae1191a21ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _plantSound: PlantSuccess
+  _waterSound: WaterSplash
+  _plantEffectPrefab: {fileID: 0}
+  _waterEffectPrefab: {fileID: 0}
+--- !u!4 &1991846488
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1991846486}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.78374, y: -0.20552, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2128607301
 GameObject:
   m_ObjectHideFlags: 0
@@ -416,3 +465,4 @@ SceneRoots:
   - {fileID: 1282445936}
   - {fileID: 1345890250}
   - {fileID: 955808733}
+  - {fileID: 1991846488}
