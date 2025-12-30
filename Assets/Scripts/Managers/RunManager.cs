@@ -38,11 +38,11 @@ public class RunManager : MonoBehaviour, IRunManager
         if (!CanAdvanceDay()) return;
 
         var run = _saveManager.Data.CurrentRun;
+        // 2. Muda o dia
         run.CurrentDay++;
 
         ProcessDayPhase(run);
 
-        // Ponto 4: SaveGame continua aqui por segurança, mas agora o método está limpo.
         _saveManager.SaveGame();
     }
 

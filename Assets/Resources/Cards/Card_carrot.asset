@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c4326d99a298970448385a0826c5b265, type: 3}
-  m_Name: Plant
+  m_Name: Card_carrot
   m_EditorClassIdentifier: 
-  ID: plant
+  ID: card_carrot
   CardName: Plant
   Tooltip: Essa carta planta em um slot da GRID
   Icon: {fileID: 0}

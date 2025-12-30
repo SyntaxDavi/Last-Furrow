@@ -1,88 +1,129 @@
 using UnityEngine;
-using UnityEngine.InputSystem; 
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 public class InputManager : MonoBehaviour
 {
     [Header("Configuração")]
     [SerializeField] private CursorSettings _cursorSettings;
+
     private CursorLogic _cursorLogic;
-    private Camera _mainCamera;
+    private Camera _currentCamera;
 
-    public Vector2 MouseWorldPosition { get; private set; }
+    private bool _useNewInputSystem;
+    private bool _isInitialized = false;
+
+    // --- LEITURA PÚBLICA ---
     public Vector2 MouseScreenPosition { get; private set; }
-    public bool IsPrimaryButtonDown { get; private set; } // Clicou neste frame?
-    public bool IsPrimaryButtonUp { get; private set; }   // Soltou neste frame?
-    public bool IsPrimaryButtonHeld { get; private set; } // Está segurando?
+    public Vector2 MouseWorldPosition { get; private set; }
 
-    // Eventos locais de Input (ainda úteis para coisas de baixo nível como arrastar carta)
+    public bool IsPrimaryButtonDown { get; private set; }
+    public bool IsPrimaryButtonUp { get; private set; }
+    public bool IsPrimaryButtonHeld { get; private set; }
+
+    // Eventos puramente locais (sem dependência global)
+    // Útil para UI ou Feedback Visual local
     public event System.Action OnPrimaryClick;
+    public event System.Action OnAnyInputDetected;
 
     public void Initialize()
     {
+        if (_cursorSettings == null) _cursorSettings = new CursorSettings();
         _cursorLogic = new CursorLogic(_cursorSettings);
-        UpdateCameraReference();
+
+        DetermineInputStrategy();
+
+        if (_currentCamera == null) _currentCamera = Camera.main;
+
+        _isInitialized = true;
     }
 
-    public void UpdateCameraReference() => _mainCamera = Camera.main;
+    public void SetCamera(Camera newCamera)
+    {
+        _currentCamera = newCamera;
+    }
 
+    private void DetermineInputStrategy()
+    {
+#if ENABLE_INPUT_SYSTEM
+        // Detecta UMA VEZ na inicialização.
+        // Nota: Se houver hot-plug de mouse depois, pode precisar reiniciar ou ouvir eventos de device.
+        _useNewInputSystem = Mouse.current != null;
+#else
+        _useNewInputSystem = false;
+#endif
+        Debug.Log($"[InputManager] Estratégia definida: {(_useNewInputSystem ? "New System" : "Legacy")}");
+    }
 
     private void Update()
     {
-        if (_mainCamera == null) return;
+        if (!_isInitialized) return;
 
-        // 1. Leitura do Hardware (Centralizada aqui)
-        Vector2 rawMousePos = Vector2.zero;
+        if (_useNewInputSystem) ReadNewInput();
+        else ReadLegacyInput();
 
+        CalculateWorldPosition();
+
+        // Dispara eventos locais se necessário
+        if (IsPrimaryButtonDown) OnPrimaryClick?.Invoke();
+
+        DetectAnyInput();
+    }
+
+    private void ReadNewInput()
+    {
 #if ENABLE_INPUT_SYSTEM
-        if (Mouse.current != null)
-        {
-            MouseScreenPosition = Mouse.current.position.ReadValue();
-            IsPrimaryButtonDown = Mouse.current.leftButton.wasPressedThisFrame;
-            IsPrimaryButtonUp = Mouse.current.leftButton.wasReleasedThisFrame;
-            IsPrimaryButtonHeld = Mouse.current.leftButton.isPressed;
-        }
-#else
+        var mouse = Mouse.current;
+        if (mouse == null) return;
+
+        MouseScreenPosition = mouse.position.ReadValue();
+        IsPrimaryButtonDown = mouse.leftButton.wasPressedThisFrame;
+        IsPrimaryButtonUp = mouse.leftButton.wasReleasedThisFrame;
+        IsPrimaryButtonHeld = mouse.leftButton.isPressed;
+#endif
+    }
+
+    private void ReadLegacyInput()
+    {
+#if ENABLE_LEGACY_INPUT_MANAGER
         MouseScreenPosition = Input.mousePosition;
         IsPrimaryButtonDown = Input.GetMouseButtonDown(0);
         IsPrimaryButtonUp = Input.GetMouseButtonUp(0);
         IsPrimaryButtonHeld = Input.GetMouseButton(0);
 #endif
+    }
 
-        // 2. Processamento Lógico
-        MouseWorldPosition = _cursorLogic.GetWorldPosition(_mainCamera, rawMousePos);
-
-        // 3. Disparo de Eventos (Opcional, mas mantido para compatibilidade)
-        if (IsPrimaryButtonDown) OnPrimaryClick?.Invoke();
-
-        DetectAnyInput();
+    private void CalculateWorldPosition()
+    {
+        if (_currentCamera != null)
+        {
+            MouseWorldPosition = _cursorLogic.GetWorldPosition(_currentCamera, MouseScreenPosition);
+        }
     }
 
     private void DetectAnyInput()
     {
         bool anyInput = false;
 
+        if (_useNewInputSystem)
+        {
 #if ENABLE_INPUT_SYSTEM
-        if (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame) anyInput = true;
-        if (Mouse.current != null && (Mouse.current.leftButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame)) anyInput = true;
-#else
-        if (Input.anyKeyDown) anyInput = true;
+            if (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame) anyInput = true;
+            if (Mouse.current != null && (Mouse.current.leftButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame)) anyInput = true;
 #endif
+        }
+        else
+        {
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (Input.anyKeyDown) anyInput = true;
+#endif
+        }
 
+        // AQUI MUDOU: Não chama AppCore. Apenas avisa quem estiver ouvindo.
         if (anyInput)
         {
-            AppCore.Instance.Events.TriggerAnyInput();
-        }
-    }
-    public bool IsFastForwardHeld
-    {
-        get
-        {
-            // Aqui você centraliza a lógica física
-#if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null && Mouse.current.leftButton.isPressed;
-#else
-            return Input.GetMouseButton(0);
-#endif
+            OnAnyInputDetected?.Invoke();
         }
     }
 }

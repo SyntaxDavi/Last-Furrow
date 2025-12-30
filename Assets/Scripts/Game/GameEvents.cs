@@ -21,7 +21,9 @@ public class GameEvents
     public event Action<bool> OnToggleHandVisibility;
 
     public event Action<IInteractable> OnInteraction;
-
+    public event Action<int, CardData> OnCardDroppedOnSlot;
+    public event Action<string> OnCardConsumed;
+    public event Action<int> OnGridSlotUpdated;
     public event Action OnAnyInput;
 
     // --- TRIGGERS ---
@@ -37,7 +39,14 @@ public class GameEvents
     public void TriggerWeekendStarted() => OnWeekendStarted?.Invoke();
     public void TriggerRunStarted() => OnRunStarted?.Invoke();
     public void TriggerResolutionSequenceStarted() => OnResolutionSequenceStarted?.Invoke();
+    public void TriggerCardDroppedOnSlot(int slotIndex, CardData data)
+       => OnCardDroppedOnSlot?.Invoke(slotIndex, data);
 
+    public void TriggerCardConsumed(string cardID)
+        => OnCardConsumed?.Invoke(cardID);
+
+    public void TriggerGridSlotUpdated(int slotIndex)
+        => OnGridSlotUpdated?.Invoke(slotIndex);
     public void TriggerAnalyzeCropSlot(int index) => OnAnalyzeCropSlot?.Invoke(index);
 
     public void TriggerResolutionSequenceEnded() => OnResolutionSequenceEnded?.Invoke();

@@ -264,7 +264,7 @@ MonoBehaviour:
   _dropLayer:
     serializedVersion: 2
     m_Bits: 256
-  _dragThresholdPx: 15
+  _dragThresholdPx: 5
 --- !u!1 &1345890249
 GameObject:
   m_ObjectHideFlags: 0
@@ -312,8 +312,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _cardPrefab: {fileID: 6941554981388740021, guid: 47e21a452166bc344bf0e6af08ad0e32, type: 3}
   _handCenter: {fileID: 2128607302}
-  _cardSpacing: 2
-  _arcHeight: 0.5
+  _cardSpacing: 1.7
+  _arcHeight: 0.3
 --- !u!1 &2128607301
 GameObject:
   m_ObjectHideFlags: 0
@@ -359,7 +359,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AnchorX: 0.5
-  AnchorY: 0.1
+  AnchorY: 0.245
   Offset: {x: 0, y: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

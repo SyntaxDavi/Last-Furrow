@@ -17,36 +17,43 @@ public class CursorLogic
         _settings = settings;
     }
 
-    // Retorna a posição do mouse no Mundo 2D (Para Gameplay)
-    public Vector2 GetWorldPosition(Camera cam, Vector3 mouseScreenPos)
+    // Sobrecarga Padrão (assume chão em Z=0)
+    public Vector2 GetWorldPosition(Camera cam, Vector2 screenPos)
     {
-        if (cam == null) return Vector2.zero;
-        return cam.ScreenToWorldPoint(mouseScreenPos);
+        return GetWorldPosition(cam, screenPos, 0f);
     }
 
-    // Retorna o Offset para a Câmera (Para Visual/Juice)
-    // Baseado no seu script de exemplo
-    public Vector3 CalculateCameraSway(Vector3 mouseScreenPos)
+    // Sobrecarga Completa (permite definir a altura do plano de interação)
+    public Vector2 GetWorldPosition(Camera cam, Vector2 screenPos, float targetZWorldPos)
     {
-        // 1. Normaliza (0 a 1)
-        float xNorm = mouseScreenPos.x / Screen.width;
-        float yNorm = mouseScreenPos.y / Screen.height;
+        if (cam == null) return Vector2.zero;
 
-        // 2. Centraliza (-0.5 a 0.5)
+        // A distância Z que o ScreenToWorldPoint precisa é:
+        // Distância da Câmera até o Plano Alvo.
+        // Se Câmera está em -10 e Alvo em 0 -> Distância = 10
+        // Se Câmera está em -10 e Alvo em -2 -> Distância = 8
+        float distanceFromCamera = Mathf.Abs(cam.transform.position.z - targetZWorldPos);
+
+        Vector3 screenPosWithDepth = new Vector3(screenPos.x, screenPos.y, distanceFromCamera);
+
+        return cam.ScreenToWorldPoint(screenPosWithDepth);
+    }
+
+    public Vector3 CalculateCameraSway(Vector2 screenPos)
+    {
+        float xNorm = screenPos.x / Screen.width;
+        float yNorm = screenPos.y / Screen.height;
+
         float x = xNorm - 0.5f;
         float y = yNorm - 0.5f;
 
-        // 3. Distância do centro
         float distFromCenter = Mathf.Sqrt(x * x + y * y);
 
-        // 4. Deadzone
-        if (distFromCenter < _settings.deadZone)
-            return Vector3.zero;
+        if (distFromCenter < _settings.deadZone) return Vector3.zero;
 
-        // 5. Cálculo da força
         Vector2 direction = new Vector2(x, y).normalized;
-        float adjustedStrength = (distFromCenter - _settings.deadZone) * 2f;
+        float strength = (distFromCenter - _settings.deadZone) * 2f;
 
-        return (Vector3)direction * adjustedStrength * _settings.swayStrength;
+        return (Vector3)direction * strength * _settings.swayStrength;
     }
 }

@@ -85,7 +85,7 @@ public class DailyResolutionSystem : MonoBehaviour
 
             // Correção do Ponto 3: Lógica não lê Input direto
             // Pergunta ao InputManager se deve acelerar
-            bool speedUp = _inputManager != null && _inputManager.IsFastForwardHeld;
+            bool speedUp = _inputManager != null && _inputManager.IsPrimaryButtonHeld;
 
             float delay = speedUp ? _fastDelayPerSlot : _baseDelayPerSlot;
             yield return new WaitForSeconds(delay);
@@ -94,7 +94,7 @@ public class DailyResolutionSystem : MonoBehaviour
         Debug.Log("Transição Visual Concluída.");
 
         // Pequena pausa final
-        yield return new WaitForSeconds(_isInitialized && _inputManager.IsFastForwardHeld ? _fastDelayPerSlot : _baseDelayPerSlot);
+        yield return new WaitForSeconds(_isInitialized && _inputManager.IsPrimaryButtonHeld ? _fastDelayPerSlot : _baseDelayPerSlot);
 
         _events.TriggerResolutionSequenceEnded();
 

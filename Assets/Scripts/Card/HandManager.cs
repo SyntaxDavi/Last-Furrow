@@ -16,6 +16,7 @@ public class HandManager : MonoBehaviour
         if (AppCore.Instance != null)
         {
             AppCore.Instance.Events.OnRunStarted += OnRunStarted;
+            AppCore.Instance.Events.OnCardConsumed += RemoveVisualCard;
             if (AppCore.Instance.RunManager.IsRunActive)
             {
                 InitializeHandFromRun();
@@ -35,6 +36,7 @@ public class HandManager : MonoBehaviour
         if (AppCore.Instance != null)
         {
             AppCore.Instance.Events.OnRunStarted -= OnRunStarted;
+            AppCore.Instance.Events.OnCardConsumed -= RemoveVisualCard;
         }
     }
 
@@ -74,7 +76,19 @@ public class HandManager : MonoBehaviour
 
         CalculateHandPositions();
     }
-
+    private void RemoveVisualCard(string cardID)
+    {
+        // Procura na lista de _cardsInHand
+        for (int i = 0; i < _cardsInHand.Count; i++)
+        {
+            if (_cardsInHand[i].Data.ID == cardID)
+            {
+                var cardToRemove = _cardsInHand[i];
+                RemoveCard(cardToRemove); // Seu método existente que destrói o objeto
+                return; // Remove só uma!
+            }
+        }
+    }
     public void RemoveCard(CardView card)
     {
         if (_cardsInHand.Contains(card))

@@ -25,6 +25,7 @@ public class GridManager : MonoBehaviour
     {
         if (AppCore.Instance != null)
         {
+            AppCore.Instance.Events.OnGridSlotUpdated += RefreshSingleSlot;
             AppCore.Instance.Events.OnAnalyzeCropSlot += HighlightSlot;
         }
     }
@@ -32,10 +33,29 @@ public class GridManager : MonoBehaviour
     {
         if (AppCore.Instance != null)
         {
+            AppCore.Instance.Events.OnGridSlotUpdated -= RefreshSingleSlot;
             AppCore.Instance.Events.OnDayChanged -= RefreshAllSlots;
             AppCore.Instance.Events.OnRunStarted -= HandleRunStarted;
             AppCore.Instance.Events.OnAnalyzeCropSlot -= HighlightSlot;
         }
+    }
+    private void RefreshSingleSlot(int index)
+    {
+        if (index < 0 || index >= _spawnedSlots.Count) return;
+
+        // Pega o dado novo
+        var state = AppCore.Instance.SaveManager.Data.CurrentRun.GridSlots[index];
+        var view = _spawnedSlots[index];
+
+        // Lógica de busca de sprite (igual ao RefreshAllSlots, mas só pra um)
+        Sprite spriteToRender = null;
+        if (state != null && !string.IsNullOrEmpty(state.CropID))
+        {
+            CropData data = GameLibrary.Instance.GetCrop(state.CropID);
+            if (data != null) spriteToRender = data.GetSpriteForStage(state.CurrentGrowth);
+        }
+
+        view.SetPlantVisual(spriteToRender);
     }
 
     private void HighlightSlot(int index)

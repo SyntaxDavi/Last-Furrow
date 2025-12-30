@@ -1,23 +1,23 @@
 using UnityEngine;
 
-[RequireComponent(typeof(SpriteRenderer), typeof(BoxCollider2D))]
-public class GridSlotView : MonoBehaviour, IInteractable
+public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 {
-    [Header("Referencias Visuais")]
+    [Header("Visuais")]
     [SerializeField] private SpriteRenderer _baseRenderer;
     [SerializeField] private SpriteRenderer _plantRenderer;
 
-    [Header("Feedback")]
-    [SerializeField] private Color _hoverColor = new Color(0.8f, 1f, 0.8f);
-    private Color _defaultColor;
-
     public int SlotIndex { get; private set; }
+
+    public void Initialize(int index)
+    {
+        SlotIndex = index;
+        ResetVisuals();
+    }
 
     private void Awake()
     {
         // 1. Auto-correção de referências
         if (_baseRenderer == null) _baseRenderer = GetComponent<SpriteRenderer>();
-        _defaultColor = _baseRenderer.color;
 
         // 2. Criação segura do objeto da planta
         if (_plantRenderer == null || _plantRenderer == _baseRenderer)
@@ -29,6 +29,32 @@ public class GridSlotView : MonoBehaviour, IInteractable
         _plantRenderer.sortingLayerID = _baseRenderer.sortingLayerID;
         _plantRenderer.sortingOrder = _baseRenderer.sortingOrder + 1;
         _plantRenderer.enabled = false; // Começa desligado!
+    }
+    public bool CanReceive(IDraggable draggable)
+    {
+        // Só aceita se for uma carta com dados válidos
+        if (draggable is CardView card && card.Data != null)
+        {
+            // Acessa o dado real. Como é memória (não disco), é rápido checar todo frame.
+            var slotState = AppCore.Instance.SaveManager.Data.CurrentRun.GridSlots[SlotIndex];
+            bool isOccupied = !string.IsNullOrEmpty(slotState.CropID);
+
+            if (card.Data.Type == CardType.Plant)
+                return !isOccupied; // Planta exige vazio
+
+            if (card.Data.Type == CardType.Modify || card.Data.Type == CardType.Harvest)
+                return isOccupied; // Ação exige planta existente
+        }
+        return false;
+    }
+    public void OnReceive(IDraggable draggable)
+    {
+        if (draggable is CardView cardView)
+        {
+            // A View não sabe o que vai acontecer. Ela só avisa:
+            // "Jogaram os DADOS dessa carta no meu índice."
+            AppCore.Instance.Events.TriggerCardDroppedOnSlot(SlotIndex, cardView.Data);
+        }
     }
 
     private void CreatePlantSpriteObject()
@@ -47,56 +73,27 @@ public class GridSlotView : MonoBehaviour, IInteractable
 
         plantObj.transform.localPosition = new Vector3(0, 0.2f, 0);
     }
-
-    public void Initialize(int index)
-    {
-        SlotIndex = index;
-        ResetVisuals();
-    }
-
-    //  MUDANÇA ARQUITETURAL: Agora recebe o Sprite, não o State.
-    // O GridManager que se vire para achar o sprite na Library.
-    // Isso remove a dependência de GameLibrary daqui.
+    // --- VISUALIZAÇÃO ---
+    // Chamado pelo GridManager quando houver atualização
     public void SetPlantVisual(Sprite sprite)
     {
         if (sprite == null)
         {
-            ResetPlantVisual();
+            _plantRenderer.sprite = null;
+            _plantRenderer.enabled = false;
             return;
         }
-
         _plantRenderer.sprite = sprite;
-        _plantRenderer.color = Color.white;
-        _plantRenderer.enabled = true; 
+        _plantRenderer.enabled = true;
     }
-
-    // Limpa TUDO (Cor da base e Sprite da planta)
-    public void ResetVisuals()
+    private void ResetVisuals()
     {
-        ResetPlantVisual();
-
-        if (_baseRenderer != null) _baseRenderer.color = _defaultColor;
-    }
-
-    private void ResetPlantVisual()
-    {
-        if (_plantRenderer != null)
-        {
-            _plantRenderer.sprite = null;
-            _plantRenderer.enabled = false; 
-        }
+        SetPlantVisual(null);
     }
 
     // --- IInteractable ---
-    public void OnHoverEnter()
-    {
-        if (_baseRenderer != null) _baseRenderer.color = _hoverColor;
-    }
-
-    public void OnHoverExit()
-    {
-        if (_baseRenderer != null) _baseRenderer.color = _defaultColor;
-    }
+    public void OnHoverEnter() => _baseRenderer.color = new Color(0.8f, 1f, 0.8f);
+    public void OnHoverExit() => _baseRenderer.color = _baseRenderer.color;
 
     public void OnClick()
     {
