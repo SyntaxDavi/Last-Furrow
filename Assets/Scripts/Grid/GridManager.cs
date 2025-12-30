@@ -8,10 +8,10 @@ public class GridManager : MonoBehaviour
     [SerializeField] private Transform _gridContainer;
     [SerializeField] private Vector2 _spacing = new Vector2(1.5f, 1.1f);
 
-    // O CÉREBRO (Lógica Pura)
+    // DEPENDÊNCIAS INJETADAS
     private IGridService _gridService;
+    private IGameLibrary _library; 
 
-    // A CACHE VISUAL (Para atualizações rápidas)
     private List<GridSlotView> _spawnedSlots = new List<GridSlotView>();
 
     // --- INICIALIZAÇÃO (Injeção de Dependência) ---
@@ -20,42 +20,31 @@ public class GridManager : MonoBehaviour
     /// Chamado pelo AppCore (Composition Root).
     /// Configura o Grid com um serviço de lógica específico.
     /// </summary>
-    public void Configure(IGridService service)
+    public void Configure(IGridService service, IGameLibrary library)
     {
+        // Limpeza de eventos antigos
         if (_gridService != null)
-        {
-            // Se já existia, desinscreve para evitar vazamento de memória
             _gridService.OnSlotStateChanged -= RefreshSingleSlot;
-        }
 
         _gridService = service;
+        _library = library; 
 
-        // Escuta mudanças nos dados para atualizar a tela
+        // Bindings
         _gridService.OnSlotStateChanged += RefreshSingleSlot;
 
-        // Gera o grid visual
         GenerateGrid();
-
-        // Atualiza estado inicial
         RefreshAllSlots();
     }
-
-    private void Start()
-    {
-        // SAFETY CHECK: Se ninguém configurou (ex: cena de teste sem AppCore), tenta rodar sozinho?
-        // Na arquitetura profissional, preferimos falhar ou avisar se a dependência não for injetada.
+     private void Start()
+     {
         if (_gridService == null)
-        {
-            Debug.LogWarning("[GridManager] Inicializado sem Serviço! Aguardando chamada de Configure().");
-        }
-    }
+            Debug.LogWarning("[GridManager] Aguardando configuração via Bootstrapper...");
+     }
 
     private void OnDestroy()
     {
         if (_gridService != null)
-        {
             _gridService.OnSlotStateChanged -= RefreshSingleSlot;
-        }
     }
 
     // --- GERAÇÃO DO GRID E BINDING (A "Cola") ---
@@ -136,17 +125,13 @@ public class GridManager : MonoBehaviour
 
     public void RefreshAllSlots()
     {
-        for (int i = 0; i < _spawnedSlots.Count; i++)
-        {
-            RefreshSingleSlot(i);
-        }
+        for (int i = 0; i < _spawnedSlots.Count; i++) RefreshSingleSlot(i);
     }
 
     private void RefreshSingleSlot(int index)
     {
         if (index < 0 || index >= _spawnedSlots.Count) return;
 
-        // 1. Busca dados puros (somente leitura)
         var state = _gridService.GetSlotReadOnly(index);
         var view = _spawnedSlots[index];
 
@@ -161,18 +146,15 @@ public class GridManager : MonoBehaviour
             if (!string.IsNullOrEmpty(state.CropID))
             {
                 // Acesso ao GameLibrary (Singleton de Assets é aceitável em Controllers)
-                if (GameLibrary.Instance != null)
+                if (_library != null)
                 {
-                    CropData data = GameLibrary.Instance.GetCrop(state.CropID);
-                    if (data != null)
+                    if (_library.TryGetCrop((CropID)state.CropID, out var data))
                     {
                         spriteToRender = data.GetSpriteForStage(state.CurrentGrowth, state.IsWithered);
                     }
                 }
             }
         }
-
-        // 3. Atualiza View Passiva
         view.SetVisualState(spriteToRender, isWatered);
     }
 }

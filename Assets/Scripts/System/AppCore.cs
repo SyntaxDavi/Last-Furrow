@@ -101,12 +101,5 @@ public class AppCore : MonoBehaviour
         {
             InputManager.SetCamera(activeCamera);
         }
-
-        // Se houver sistema de Câmera Global (como um CameraController Singleton), inicialize-o aqui
-        if (CameraSystem.Instance != null)
-        {
-            CameraSystem.Instance.Initialize();
-            CameraSystem.Instance.AdjustCamera();
-        }
     }
 }

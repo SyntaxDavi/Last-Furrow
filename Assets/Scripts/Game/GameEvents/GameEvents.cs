@@ -17,6 +17,7 @@ public class GameEvents
     public readonly GridEvents Grid = new GridEvents();
     public readonly PlayerEvents Player = new PlayerEvents();
     public readonly UIEvents UI = new UIEvents();
+    public readonly CameraEvents Camera = new CameraEvents();
 
     // Construtor (opcional, mas bom para clareza)
     public GameEvents() { }

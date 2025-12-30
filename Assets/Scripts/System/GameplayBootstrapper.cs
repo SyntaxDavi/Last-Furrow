@@ -1,35 +1,40 @@
 using UnityEngine;
 
-/// <summary>
-/// COMPOSITION ROOT DA CENA DE GAMEPLAY.
-/// Responsabilidade: Pegar dados do AppCore, criar serviços de lógica e injetar nos Controllers visuais
-/// </summary>
 public class GameplayBootstrapper : MonoBehaviour
 {
     [Header("Controllers da Cena")]
+    [SerializeField] private GameCameraController _gameCamera;
     [SerializeField] private GridManager _gridManager;
     [SerializeField] private PlayerInteraction _playerInteraction;
     [SerializeField] private GridFeedbackController _feedbackController;
-    // Futuro: [SerializeField] private HandManager _handManager;
+    [SerializeField] private HandManager _handManager;
 
-    // Mantemos referência aos serviços criados para limpeza
+    [Header("Level Data")]
+    [SerializeField] private float _levelGridWidth = 5f;
+    [SerializeField] private float _levelGridHeight = 7f;
+
+    // Mantemos referência para limpeza, se necessário
     private IGridService _gridService;
 
     private void Awake()
     {
-        // 1. Segurança: Garante que o AppCore existe
-        if (AppCore.Instance == null)
+        // 1. Segurança e Fallback
+        if (AppCore.Instance == null) return;
+
+        // 2. Configura Câmera
+        if (_gameCamera != null)
         {
-            Debug.LogError("AppCore não encontrado! Inicie o jogo pela cena de Boot/Splash.");
-            return;
+            _gameCamera.Configure(_levelGridWidth, _levelGridHeight);
+
+            // Injeta a câmera da cena no InputManager Global
+            AppCore.Instance.InputManager.SetCamera(_gameCamera.GetComponent<Camera>());
         }
 
-        // 2. Verifica se existe uma Run ativa (Dados)
+        // 3. Obtém ou Cria Dados da Run
         var runData = AppCore.Instance.SaveManager.Data.CurrentRun;
         if (runData == null)
         {
-            // Se cairmos na cena de jogo sem dados (debug), cria um teste
-            Debug.LogWarning("[Bootstrapper] Sem RunData ativo. Criando Run de Teste/Debug.");
+            Debug.LogWarning("[Bootstrapper] Sem RunData ativo. Criando Run de Teste.");
             AppCore.Instance.RunManager.StartNewRun();
             runData = AppCore.Instance.SaveManager.Data.CurrentRun;
         }
@@ -41,56 +46,40 @@ public class GameplayBootstrapper : MonoBehaviour
     {
         Debug.Log("[Bootstrapper] Inicializando sistemas de gameplay...");
 
-        // --- A. CONFIGURAÇÃO DE INPUT ---
-        // Injeta o InputManager global no PlayerInteraction local
+        var library = AppCore.Instance.GameLibrary;
         _playerInteraction.Initialize(AppCore.Instance.InputManager);
-
-        // --- B. CONFIGURAÇÃO DO GRID (A nova arquitetura) ---
-
-        // 1. Cria a Lógica (Model/Service)
-        _gridService = new GridService(runData);
-
-        // 2. Conecta callbacks de sistema (Persistência)
-        // Quando o GridService disser "Mudei algo", avisamos o SaveManager
+        _gridService = new GridService(runData, library);
         _gridService.OnDataDirty += () => AppCore.Instance.SaveManager.SaveGame();
 
-        // 3. Injeta o Serviço no Controller Visual (Dependency Injection)
         if (_gridManager != null)
         {
-            _gridManager.Configure(_gridService);
+            _gridManager.Configure(_gridService, library);
         }
 
         if (_feedbackController != null && _gridManager != null)
         {
-            _feedbackController.Configure(_gridManager);
+            _feedbackController.Configure(_gridManager);    
         }
 
-        // --- C. BINDING DE EVENTOS GLOBAIS ---
+        if (_handManager != null)
+        {
+            _handManager.Configure(runData, library);
+        }
 
-        // Conecta eventos do AppCore (RunManager) aos Controllers da cena
         AppCore.Instance.Events.Time.OnDayChanged += HandleDayChanged;
-
-        // Configura estado inicial do jogo
         AppCore.Instance.GameStateManager.SetState(GameState.Playing);
     }
 
     private void OnDestroy()
     {
-        // Limpeza é crucial para evitar memory leaks de eventos
         if (AppCore.Instance != null)
         {
             AppCore.Instance.Events.Time.OnDayChanged -= HandleDayChanged;
         }
     }
 
-    // --- EVENT HANDLERS (A Cola entre Global e Local) ---
-
     private void HandleDayChanged(int day)
     {
-        // Orquestra atualizações da cena quando o dia muda
         if (_gridManager != null) _gridManager.RefreshAllSlots();
-
-        // Ex: _handManager.RefreshHand();
-        // Ex: _uiManager.UpdateDayText(day);
     }
 }

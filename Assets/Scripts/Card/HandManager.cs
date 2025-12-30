@@ -3,108 +3,141 @@ using System.Collections.Generic;
 
 public class HandManager : MonoBehaviour
 {
-    [Header("Configuração")]
+    [Header("Configuração Visual")]
     [SerializeField] private CardView _cardPrefab;
     [SerializeField] private Transform _handCenter;
     [SerializeField] private float _cardSpacing = 2.0f;
     [SerializeField] private float _arcHeight = 0.5f;
 
+    // DEPENDÊNCIAS (Injetadas pelo Bootstrapper)
+    private IGameLibrary _library;
+    private RunData _runData;
+
     private List<CardView> _cardsInHand = new List<CardView>();
 
-    private void Start()
-    {
-        if (AppCore.Instance != null)
-        {
-            AppCore.Instance.Events.Time.OnRunStarted += OnRunStarted;
-            AppCore.Instance.Events.Player.OnCardConsumed += RemoveVisualCard;
-            if (AppCore.Instance.RunManager.IsRunActive)
-            {
-                InitializeHandFromRun();
-            }
-        }
+    // --- INICIALIZAÇÃO ---
 
-#if UNITY_EDITOR
-        if (!AppCore.Instance.RunManager.IsRunActive)
-        {
-            for (int i = 0; i < 5; i++) CreateDebugCard(i);
-        }
-#endif
-    }
-
-    private void OnDestroy()
+    /// <summary>
+    /// Configura o HandManager com os dados necessários.
+    /// Substitui o Start() e remove a dependência de Singletons para dados.
+    /// </summary>
+    public void Configure(RunData runData, IGameLibrary library)
     {
-        if (AppCore.Instance != null)
+        _runData = runData;
+        _library = library;
+
+        // Se já tivermos dados, inicializa a mão imediatamente
+        if (_runData != null)
         {
-            AppCore.Instance.Events.Time.OnRunStarted -= OnRunStarted;
-            AppCore.Instance.Events.Player.OnCardConsumed -= RemoveVisualCard;
+            InitializeHandFromRun();
         }
     }
 
-    // --- EVENT HANDLERS ---
+    private void OnEnable()
+    {
+        // Eventos Globais (Observer Pattern)
+        if (AppCore.Instance != null)
+        {
+            AppCore.Instance.Events.Time.OnRunStarted += HandleRunStarted;
+            // Agora usamos o evento tipado (CardID)
+            AppCore.Instance.Events.Player.OnCardConsumed += HandleCardConsumed;
+        }
+    }
 
-    private void OnRunStarted() => InitializeHandFromRun();
+    private void OnDisable()
+    {
+        if (AppCore.Instance != null)
+        {
+            AppCore.Instance.Events.Time.OnRunStarted -= HandleRunStarted;
+            AppCore.Instance.Events.Player.OnCardConsumed -= HandleCardConsumed;
+        }
+    }
+
+    // --- LÓGICA DE DADOS ---
+
+    private void HandleRunStarted() => InitializeHandFromRun();
 
     private void InitializeHandFromRun()
     {
         ClearHand();
-        var runData = AppCore.Instance.SaveManager.Data.CurrentRun;
-        if (runData == null) return;
 
-        foreach (string cardID in runData.DeckIDs)
+        if (_runData == null || _runData.DeckIDs == null) return;
+
+        // Itera sobre os IDs salvos (strings)
+        foreach (string idString in _runData.DeckIDs)
         {
-            AddCardToHand(cardID);
+            // Converte string -> CardID (Struct Seguro)
+            CardID id = (CardID)idString;
+            AddCardToHand(id);
         }
     }
 
-    // --- MANIPULAÇÃO DA MÃO ---
-
-    public void AddCardToHand(string cardID)
+    private void HandleCardConsumed(CardID cardID)
     {
-        if (GameLibrary.Instance == null) return;
-        CardData data = GameLibrary.Instance.GetCard(cardID);
-        if (data == null) return;
+        // Encontra a visualização correspondente ao ID consumido
+        // Remove apenas A PRIMEIRA ocorrência (caso tenha cartas duplicadas)
+        var cardView = _cardsInHand.Find(c => c.Data.ID == cardID);
 
+        if (cardView != null)
+        {
+            RemoveCard(cardView);
+        }
+    }
+
+    // --- MANIPULAÇÃO VISUAL ---
+
+    public void AddCardToHand(CardID cardID)
+    {
+        // Validação de segurança
+        if (_library == null)
+        {
+            Debug.LogError("[HandManager] Library não configurada! Chame Configure().");
+            return;
+        }
+
+        // Busca segura no banco de dados (O(1))
+        if (_library.TryGetCard(cardID, out CardData data))
+        {
+            CreateCardVisual(data);
+        }
+        else
+        {
+            Debug.LogWarning($"[HandManager] Carta ID '{cardID}' não encontrada na Library.");
+        }
+    }
+
+    private void CreateCardVisual(CardData data)
+    {
         var newCard = Instantiate(_cardPrefab, transform);
         newCard.Initialize(data);
 
-        // Posição inicial (spawn fora da tela)
+        // Spawn fora da tela (efeito visual)
         newCard.transform.position = _handCenter.position - Vector3.up * 5f;
 
-        RegisterCardEvents(newCard); 
-
+        RegisterCardEvents(newCard);
         _cardsInHand.Add(newCard);
 
         CalculateHandPositions();
     }
-    private void RemoveVisualCard(CardID cardID)
-    {
-        // Procura na lista de _cardsInHand
-        for (int i = 0; i < _cardsInHand.Count; i++)
-        {
-            var cardToRemove = _cardsInHand.Find(c => c.Data.ID == cardID);
-            if (cardToRemove != null)
-            {
-                _cardsInHand.Remove(cardToRemove);
-                Destroy(cardToRemove.gameObject);
-                RemoveCard(cardToRemove); 
-                return; // Remove só uma!
-            }
-        }
-    }
+
     public void RemoveCard(CardView card)
     {
         if (_cardsInHand.Contains(card))
         {
-            UnregisterCardEvents(card); 
+            UnregisterCardEvents(card);
             _cardsInHand.Remove(card);
+
+            // Destroi o objeto Unity
             Destroy(card.gameObject);
 
+            // Reorganiza a mão
             CalculateHandPositions();
         }
     }
 
     private void ClearHand()
     {
+        // Limpeza segura
         foreach (var card in _cardsInHand)
         {
             if (card != null)
@@ -116,7 +149,7 @@ public class HandManager : MonoBehaviour
         _cardsInHand.Clear();
     }
 
-    // --- EVENTOS DAS CARTAS ---
+    // --- EVENTOS INTERNOS DA CARTA (DRAG & DROP) ---
 
     private void RegisterCardEvents(CardView card)
     {
@@ -132,19 +165,16 @@ public class HandManager : MonoBehaviour
 
     private void HandleCardDragStart(CardView card)
     {
-        // Aqui você poderia fazer as outras cartas se afastarem (Hearthstone style).
-        // Por enquanto, não fazemos nada, o layout mantém o buraco aberto.
+        // Futuro: Animação de "abrir espaço" na mão
     }
 
     private void HandleCardDragEnd(CardView card)
     {
-        // Quando solta a carta, recalculamos.
-        // Isso garante que ela saiba qual é seu TargetPosition original 
-        // e restaure o Sorting correto.
+        // Recalcula para garantir que a carta volte para a posição correta se não foi consumida
         CalculateHandPositions();
     }
 
-    // --- LAYOUT ---
+    // --- POSICIONAMENTO (MATH) ---
 
     private void CalculateHandPositions()
     {
@@ -159,42 +189,25 @@ public class HandManager : MonoBehaviour
             CardView card = _cardsInHand[i];
             if (card == null) continue;
 
-            // Se estiver arrastando, ignoramos a atualização de posição,
-            // mas mantemos o cálculo de índice/dados se necessário.
-            // Nota: O HandleCardDragEnd vai chamar isso aqui de novo quando soltar,
-            // garantindo que a carta volte pro lugar.
+            // Se estiver arrastando, não forçamos a posição, 
+            // mas mantemos o índice atualizado
             if (card.IsDragging) continue;
 
+            // Matemática do Arco
             float xOffset = startX + (i * _cardSpacing);
+
+            // Normaliza X entre -1 e 1 para calcular a altura do arco
             float normalizedX = (count > 1) ? (float)i / (count - 1) : 0.5f;
-            normalizedX = (normalizedX - 0.5f) * 2;
+            normalizedX = (normalizedX - 0.5f) * 2; // Range -1 a 1
+
             float yOffset = -Mathf.Abs(normalizedX) * _arcHeight;
 
             Vector3 slotPos = _handCenter.position + new Vector3(xOffset, yOffset, 0);
 
+            // Atualiza View
             card.TargetPosition = slotPos;
-
-            // Define Sorting normal
             card.SetSortingOrder(i * 10);
             card.HandIndex = i;
         }
     }
-
-#if UNITY_EDITOR
-    private void CreateDebugCard(int index)
-    {
-        CardData dummyData = ScriptableObject.CreateInstance<CardData>();
-        dummyData.Name = "Debug " + index;
-        dummyData.Cost = index;
-
-        var newCard = Instantiate(_cardPrefab, transform);
-        newCard.Initialize(dummyData);
-        newCard.transform.position = _handCenter.position;
-
-        RegisterCardEvents(newCard); // Não esquecer de registrar no debug também!
-
-        _cardsInHand.Add(newCard);
-        CalculateHandPositions();
-    }
-#endif
 }

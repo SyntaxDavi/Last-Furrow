@@ -3,14 +3,17 @@ using System;
 public class GridService : IGridService
 {
     private readonly RunData _runData;
+    private readonly IGameLibrary _library; 
 
-    // Eventos desacoplados do AppCore
     public event Action<int> OnSlotStateChanged;
-    public event Action OnDataDirty; 
+    public event Action OnDataDirty;
 
-    public GridService(RunData runData)
+    // O Construtor agora pede os DOIS argumentos
+    public GridService(RunData runData, IGameLibrary library)
     {
         _runData = runData ?? throw new ArgumentNullException(nameof(runData));
+        _library = library ?? throw new ArgumentNullException(nameof(library));
+
         ValidateGridSize();
     }
 
@@ -26,7 +29,7 @@ public class GridService : IGridService
     public CropState GetSlotReadOnly(int index)
     {
         if (IsIndexInvalid(index)) return null;
-        return _runData.GridSlots[index]; // Retorna referência para leitura
+        return _runData.GridSlots[index];
     }
 
     public bool CanReceiveCard(int index, CardData card)
@@ -41,15 +44,16 @@ public class GridService : IGridService
         if (IsIndexInvalid(index)) return InteractionResult.Fail("Índice inválido");
 
         var strategy = InteractionFactory.GetStrategy(card.Type);
-        if (strategy == null) return InteractionResult.Fail("Sem estratégia para esta carta");
+        if (strategy == null) return InteractionResult.Fail("Sem estratégia");
 
         var result = strategy.Execute(_runData.GridSlots[index], card);
 
         if (result.Success)
         {
-            _runData.DeckIDs.Remove(card.ID.Value); // Regra de negócio: Consumir carta
-            OnSlotStateChanged?.Invoke(index); // Notifica Controller
-            OnDataDirty?.Invoke();             // Notifica necessidade de Save
+            _runData.DeckIDs.Remove(card.ID.Value);
+
+            OnSlotStateChanged?.Invoke(index);
+            OnDataDirty?.Invoke();
         }
 
         return result;

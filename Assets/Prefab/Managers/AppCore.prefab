@@ -15,7 +15,6 @@ GameObject:
   - component: {fileID: 5558657295551827975}
   - component: {fileID: 7047140990777372177}
   - component: {fileID: 2458983469160152068}
-  - component: {fileID: 6475183689113916878}
   - component: {fileID: 7645439710493714262}
   - component: {fileID: 403808487855815489}
   - component: {fileID: 2460188282646121636}
@@ -53,6 +52,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58e1372368485554e967ff65603675c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _gameDatabase: {fileID: 11400000, guid: b446a172f8996d947a109c603930a1b8, type: 2}
   SaveManager: {fileID: 6774691640661748804}
   RunManager: {fileID: 2026137997213601888}
   GameStateManager: {fileID: 403808487855815489}
@@ -127,18 +127,6 @@ MonoBehaviour:
   _musicSource: {fileID: 0}
   _sfxSource: {fileID: 0}
   MasterVolume: 1
---- !u!114 &6475183689113916878
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5398887748843182172}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8e91359ca1efe564f9e57e94428960a8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &7645439710493714262
 MonoBehaviour:
   m_ObjectHideFlags: 0
