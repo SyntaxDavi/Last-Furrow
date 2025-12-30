@@ -17,7 +17,7 @@ MonoBehaviour:
   Tooltip: Essa carta planta em um slot da GRID
   Icon: {fileID: 0}
   Type: 0
-  Cost: 50
+  Cost: 10
   CropToPlant: {fileID: 11400000, guid: 68c2621930556cd4e97955d9488b95d6, type: 2}
   GrowthAcceleration: 0
   ValueMultiplier: 0

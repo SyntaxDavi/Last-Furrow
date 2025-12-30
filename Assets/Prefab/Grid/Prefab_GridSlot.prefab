@@ -149,3 +149,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _baseRenderer: {fileID: 9080896996990885390}
   _plantRenderer: {fileID: 9080896996990885390}
+  _highlightRenderer: {fileID: 0}
+  _dryColor: {r: 1, g: 0.6933962, b: 0.6933962, a: 1}
+  _wetColor: {r: 0.6, g: 0.6, b: 1, a: 1}
+  _highlightColor: {r: 0.6021454, g: 1, b: 0.5707547, a: 0.4}

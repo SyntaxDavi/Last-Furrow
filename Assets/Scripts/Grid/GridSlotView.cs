@@ -1,102 +1,147 @@
 using UnityEngine;
+using System; // Necessário para Func e Action
 
+[RequireComponent(typeof(SpriteRenderer), typeof(BoxCollider2D))]
 public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 {
-    [Header("Visuais")]
-    [SerializeField] private SpriteRenderer _baseRenderer;
-    [SerializeField] private SpriteRenderer _plantRenderer;
+    [Header("Componentes Visuais")]
+    [SerializeField] private SpriteRenderer _baseRenderer;      // Chão (Muda de cor com água)
+    [SerializeField] private SpriteRenderer _plantRenderer;     // A planta (Muda sprite)
+    [SerializeField] private SpriteRenderer _highlightRenderer; // Overlay de Mouse (Liga/Desliga)
+
+    [Header("Cores do Solo")]
+    [SerializeField] private Color _dryColor = Color.white;
+    [SerializeField] private Color _wetColor = new Color(0.6f, 0.6f, 1f); // Azulado
+
+    [Header("Cores de Highlight")]
+    [SerializeField] private Color _highlightColor = new Color(1f, 1f, 1f, 0.4f); // Branco transparente
 
     public int SlotIndex { get; private set; }
+
+    // --- EVENTOS (A Ponte para o Controller) ---
+    // O Controller assina isso para responder "Posso soltar aqui?"
+    public event Func<int, CardData, bool> OnCheckDropInteraction;
+
+    // O Controller assina isso para executar "Soltei aqui!"
+    public event Action<int, CardData> OnDropInteraction;
+
+    private void Awake()
+    {
+        ConfigureRenderers();
+    }
 
     public void Initialize(int index)
     {
         SlotIndex = index;
-        ResetVisuals();
+
+        // Garante estado visual limpo ao nascer
+        _plantRenderer.enabled = false;
+        _highlightRenderer.enabled = false;
+        _baseRenderer.color = _dryColor;
     }
 
-    private void Awake()
-    {
-        // 1. Auto-correção de referências
-        if (_baseRenderer == null) _baseRenderer = GetComponent<SpriteRenderer>();
+    // --- MÉTODO VISUAL (CHAMADO PELO CONTROLLER) ---
 
-        // 2. Criação segura do objeto da planta
-        if (_plantRenderer == null || _plantRenderer == _baseRenderer)
+    public void SetVisualState(Sprite plantSprite, bool isWatered)
+    {
+        // 1. Atualiza Planta
+        if (plantSprite != null)
         {
-            CreatePlantSpriteObject();
+            _plantRenderer.sprite = plantSprite;
+            _plantRenderer.enabled = true;
+        }
+        else
+        {
+            _plantRenderer.enabled = false;
+            _plantRenderer.sprite = null;
         }
 
-        // 3. Configuração de Layer e Desativação Inicial (Otimização)
-        _plantRenderer.sortingLayerID = _baseRenderer.sortingLayerID;
-        _plantRenderer.sortingOrder = _baseRenderer.sortingOrder + 1;
-        _plantRenderer.enabled = false; // Começa desligado!
+        // 2. Atualiza Solo (Seco vs Molhado)
+        // Note que isso não interfere no Highlight, pois são renderers diferentes
+        _baseRenderer.color = isWatered ? _wetColor : _dryColor;
     }
+
+    // --- INTERFACE IINTERACTABLE (HOVER) ---
+
+    public void OnHoverEnter()
+    {
+        // Apenas liga o overlay de brilho. Não mexe na cor do chão.
+        if (_highlightRenderer != null)
+            _highlightRenderer.enabled = true;
+    }
+
+    public void OnHoverExit()
+    {
+        if (_highlightRenderer != null)
+            _highlightRenderer.enabled = false;
+    }
+
+    public void OnClick()
+    {
+        // Futuro: Abrir menu de detalhes do slot
+    }
+
+    // --- INTERFACE IDROPTARGET (DRAG & DROP) ---
+
     public bool CanReceive(IDraggable draggable)
     {
-        // Só aceita se for uma carta com dados válidos
-        if (draggable is CardView card && card.Data != null)
+        // Verifica se é uma carta
+        if (draggable is CardView cardView && cardView.Data != null)
         {
-            // Acessa o dado real. Como é memória (não disco), é rápido checar todo frame.
-            var slotState = AppCore.Instance.SaveManager.Data.CurrentRun.GridSlots[SlotIndex];
-            bool isOccupied = !string.IsNullOrEmpty(slotState.CropID);
-
-            if (card.Data.Type == CardType.Plant)
-                return !isOccupied; // Planta exige vazio
-
-            if (card.Data.Type == CardType.Modify || card.Data.Type == CardType.Harvest)
-                return isOccupied; // Ação exige planta existente
+            // PERGUNTA para quem estiver ouvindo (Controller -> Service)
+            // Se ninguém estiver ouvindo, retorna false por segurança.
+            return OnCheckDropInteraction?.Invoke(SlotIndex, cardView.Data) ?? false;
         }
         return false;
     }
+
     public void OnReceive(IDraggable draggable)
     {
         if (draggable is CardView cardView)
         {
-            // A View não sabe o que vai acontecer. Ela só avisa:
-            // "Jogaram os DADOS dessa carta no meu índice."
-            AppCore.Instance.Events.TriggerCardDroppedOnSlot(SlotIndex, cardView.Data);
+            // AVISA que recebeu o drop
+            OnDropInteraction?.Invoke(SlotIndex, cardView.Data);
+
+            // Remove o destaque visual imediatamente
+            OnHoverExit();
         }
     }
 
-    private void CreatePlantSpriteObject()
+    // --- CONFIGURAÇÃO AUTOMÁTICA (SETUP) ---
+    // Mantive sua lógica de criar objetos caso eles não existam no inspector
+    private void ConfigureRenderers()
     {
-        GameObject plantObj = new GameObject("PlantSprite");
-        plantObj.transform.SetParent(this.transform);
-        plantObj.transform.localPosition = Vector3.zero;
+        if (_baseRenderer == null) _baseRenderer = GetComponent<SpriteRenderer>();
 
-        float parentScaleY = transform.localScale.y;
-        float counterScale = 1f / parentScaleY;
-
-        // Aplica escala normal no X, e compensada no Y
-        plantObj.transform.localScale = new Vector3(1, counterScale, 1);
-
-        _plantRenderer = plantObj.AddComponent<SpriteRenderer>();
-
-        plantObj.transform.localPosition = new Vector3(0, 0.2f, 0);
-    }
-    // --- VISUALIZAÇÃO ---
-    // Chamado pelo GridManager quando houver atualização
-    public void SetPlantVisual(Sprite sprite)
-    {
-        if (sprite == null)
+        // Configura Planta
+        if (_plantRenderer == null || _plantRenderer == _baseRenderer)
         {
-            _plantRenderer.sprite = null;
-            _plantRenderer.enabled = false;
-            return;
+            _plantRenderer = CreateChildSprite("PlantSprite", 1);
         }
-        _plantRenderer.sprite = sprite;
-        _plantRenderer.enabled = true;
-    }
-    private void ResetVisuals()
-    {
-        SetPlantVisual(null);
+
+        // Configura Highlight (Novo)
+        if (_highlightRenderer == null || _highlightRenderer == _baseRenderer)
+        {
+            _highlightRenderer = CreateChildSprite("HighlightOverlay", 2);
+            _highlightRenderer.color = _highlightColor;
+
+            // O Highlight deve cobrir o slot, então usa o sprite do base se possível
+            _highlightRenderer.sprite = _baseRenderer.sprite;
+        }
     }
 
-    // --- IInteractable ---
-    public void OnHoverEnter() => _baseRenderer.color = new Color(0.8f, 1f, 0.8f);
-    public void OnHoverExit() => _baseRenderer.color = _baseRenderer.color;
-
-    public void OnClick()
+    private SpriteRenderer CreateChildSprite(string name, int orderOffset)
     {
-        Debug.Log($"Slot {SlotIndex} clicado.");
+        GameObject obj = new GameObject(name);
+        obj.transform.SetParent(this.transform);
+        obj.transform.localPosition = Vector3.zero;
+        obj.transform.localScale = Vector3.one;
+
+        var sr = obj.AddComponent<SpriteRenderer>();
+        sr.sortingLayerID = _baseRenderer.sortingLayerID;
+        sr.sortingOrder = _baseRenderer.sortingOrder + orderOffset;
+        sr.enabled = false;
+
+        return sr;
     }
 }

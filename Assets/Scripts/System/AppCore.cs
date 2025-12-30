@@ -1,11 +1,16 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+/// <summary>
+/// SINGLETON GLOBAL.
+/// Responsabilidade: Manter sistemas que sobrevivem à troca de cenas (Save, Audio, Input).
+/// Não deve conter lógica de gameplay específica de uma cena.
+/// </summary>
 public class AppCore : MonoBehaviour
 {
     public static AppCore Instance { get; private set; }
 
-    [Header("Core Systems")]
+    [Header("Sistemas Globais")]
     public SaveManager SaveManager;
     public RunManager RunManager;
     public GameStateManager GameStateManager;
@@ -13,15 +18,14 @@ public class AppCore : MonoBehaviour
     public InputManager InputManager;
     public AudioManager AudioManager;
 
+    // DailyResolutionSystem geralmente manipula dados da Run, então pode ficar aqui,
+    // mas não deve ter referências diretas a UI da cena.
     public DailyResolutionSystem DailyResolutionSystem;
-    public GridInteractionSystem GridInteractionSystem;
-    private System.Action _onAnyInputHandler;
 
-    // Barramento de Eventos
     public GameEvents Events { get; private set; }
 
-    [Header("Debug")]
-    [SerializeField] private string _firstSceneName = "Game";
+    [Header("Configuração")]
+    [SerializeField] private string _firstSceneName = "Game"; // Começa no Menu, não no Game
 
     private void Awake()
     {
@@ -33,65 +37,63 @@ public class AppCore : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        Events = new GameEvents();
 
-        InitializeServices();
+        Events = new GameEvents();
+        InitializeGlobalServices();
+    }
+
+    private void InitializeGlobalServices()
+    {
+        // 1. Inicializa componentes internos (ordem importa se houver dependências)
+        if (GameStateManager == null) GameStateManager = GetComponent<GameStateManager>() ?? gameObject.AddComponent<GameStateManager>();
+
+        InputManager.Initialize();
+        AudioManager.Initialize();
+        SaveManager.Initialize();
+
+        // 2. Injeta dependências entre sistemas globais
+        RunManager.Initialize(SaveManager);
+        DailyResolutionSystem.Initialize(); // Assume que ele usa Events ou RunManager internamente
+        GameStateManager.Initialize();
+
+        // 3. Bindings globais
+        InputManager.OnAnyInputDetected += () => Events.TriggerAnyInput();
+
+        // 4. Carrega a primeira cena
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        SceneManager.LoadScene(_firstSceneName);
+    }
+
+    private void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        if (InputManager != null) InputManager.OnAnyInputDetected -= Events.TriggerAnyInput;
     }
 
     public void ReturnToMainMenu()
     {
-        Events.ResetAllListeners();
+        Events.ResetAllListeners(); // Limpa eventos de gameplay anteriores
         GameStateManager.SetState(GameState.MainMenu);
         SceneManager.LoadScene("MainMenu");
     }
 
-    private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
-    private void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
-
-    private void InitializeServices()
-    {
-        // Garante componentes essenciais
-        if (GameStateManager == null) GameStateManager = GetComponent<GameStateManager>();
-        if (GameStateManager == null) GameStateManager = gameObject.AddComponent<GameStateManager>();
-
-        // Inicializa Sistemas Filhos (que estão no objeto AppCore)
-        DailyResolutionSystem.Initialize();
-        SaveManager.Initialize();
-        GameStateManager.Initialize();
-        RunManager.Initialize(SaveManager);
-        AudioManager.Initialize();
-        InputManager.Initialize();
-        _onAnyInputHandler = () => Events.TriggerAnyInput();
-        InputManager.OnAnyInputDetected += _onAnyInputHandler;
-
-        if (CameraSystem.Instance != null)
-        {
-            CameraSystem.Instance.Initialize();
-        }
-
-        // Carrega a primeira cena APÓS tudo estar pronto
-        SceneManager.LoadScene(_firstSceneName);
-    }
-    private void OnDestroy()
-    {
-        if (InputManager != null && _onAnyInputHandler != null)
-            InputManager.OnAnyInputDetected -= _onAnyInputHandler;
-    }
+    // A única responsabilidade de cena do AppCore é injetar a câmera no InputManager
+    // pois o InputManager é global mas a câmera muda.
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (scene.name == "Boot") return;
 
-        // Pega a câmera ativa (pode ser a Singleton ou a da cena)
+        // Atualiza a referência da câmera para o Input System
         Camera activeCamera = Camera.main;
+        if (activeCamera != null)
+        {
+            InputManager.SetCamera(activeCamera);
+        }
 
-        // 1. Injeta a Câmera no InputManager (Maneira correta)
-        InputManager.SetCamera(activeCamera);
-
-        // 2. Ajusta o Zoom
+        // Se houver sistema de Câmera Global (como um CameraController Singleton), inicialize-o aqui
         if (CameraSystem.Instance != null)
         {
-            // Se o CameraSystem for Singleton, ele já sabe quem é a câmera interna dele,
-            // mas é bom garantir que ele atualize a lógica.
+            CameraSystem.Instance.Initialize();
             CameraSystem.Instance.AdjustCamera();
         }
     }

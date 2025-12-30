@@ -17,7 +17,7 @@ MonoBehaviour:
   Tooltip: Utilizada para regar um slot
   Icon: {fileID: 0}
   Type: 1
-  Cost: 25
+  Cost: 5
   CropToPlant: {fileID: 0}
   GrowthAcceleration: 0
   ValueMultiplier: 0
