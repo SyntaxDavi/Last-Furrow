@@ -15,8 +15,8 @@ public class HandManager : MonoBehaviour
     {
         if (AppCore.Instance != null)
         {
-            AppCore.Instance.Events.OnRunStarted += OnRunStarted;
-            AppCore.Instance.Events.OnCardConsumed += RemoveVisualCard;
+            AppCore.Instance.Events.Time.OnRunStarted += OnRunStarted;
+            AppCore.Instance.Events.Player.OnCardConsumed += RemoveVisualCard;
             if (AppCore.Instance.RunManager.IsRunActive)
             {
                 InitializeHandFromRun();
@@ -35,8 +35,8 @@ public class HandManager : MonoBehaviour
     {
         if (AppCore.Instance != null)
         {
-            AppCore.Instance.Events.OnRunStarted -= OnRunStarted;
-            AppCore.Instance.Events.OnCardConsumed -= RemoveVisualCard;
+            AppCore.Instance.Events.Time.OnRunStarted -= OnRunStarted;
+            AppCore.Instance.Events.Player.OnCardConsumed -= RemoveVisualCard;
         }
     }
 
@@ -76,15 +76,17 @@ public class HandManager : MonoBehaviour
 
         CalculateHandPositions();
     }
-    private void RemoveVisualCard(string cardID)
+    private void RemoveVisualCard(CardID cardID)
     {
         // Procura na lista de _cardsInHand
         for (int i = 0; i < _cardsInHand.Count; i++)
         {
-            if (_cardsInHand[i].Data.ID.Value == cardID)
+            var cardToRemove = _cardsInHand.Find(c => c.Data.ID == cardID);
+            if (cardToRemove != null)
             {
-                var cardToRemove = _cardsInHand[i];
-                RemoveCard(cardToRemove); // Seu método existente que destrói o objeto
+                _cardsInHand.Remove(cardToRemove);
+                Destroy(cardToRemove.gameObject);
+                RemoveCard(cardToRemove); 
                 return; // Remove só uma!
             }
         }

@@ -68,7 +68,7 @@ public class GameplayBootstrapper : MonoBehaviour
         // --- C. BINDING DE EVENTOS GLOBAIS ---
 
         // Conecta eventos do AppCore (RunManager) aos Controllers da cena
-        AppCore.Instance.Events.OnDayChanged += HandleDayChanged;
+        AppCore.Instance.Events.Time.OnDayChanged += HandleDayChanged;
 
         // Configura estado inicial do jogo
         AppCore.Instance.GameStateManager.SetState(GameState.Playing);
@@ -79,7 +79,7 @@ public class GameplayBootstrapper : MonoBehaviour
         // Limpeza é crucial para evitar memory leaks de eventos
         if (AppCore.Instance != null)
         {
-            AppCore.Instance.Events.OnDayChanged -= HandleDayChanged;
+            AppCore.Instance.Events.Time.OnDayChanged -= HandleDayChanged;
         }
     }
 

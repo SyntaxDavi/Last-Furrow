@@ -24,7 +24,7 @@ public class GridFeedbackController : MonoBehaviour
         if (AppCore.Instance != null)
         {
             // Escuta eventos globais de notificação
-            AppCore.Instance.Events.OnGridSlotUpdated += HandleSlotUpdated;
+            AppCore.Instance.Events.Grid.OnSlotUpdated += HandleSlotUpdated;
             // AppCore.Instance.Events.OnCardConsumed += HandleCardConsumed; // Se quiser sons de UI
         }
     }
@@ -33,7 +33,7 @@ public class GridFeedbackController : MonoBehaviour
     {
         if (AppCore.Instance != null)
         {
-            AppCore.Instance.Events.OnGridSlotUpdated -= HandleSlotUpdated;
+            AppCore.Instance.Events.Grid.OnSlotUpdated -= HandleSlotUpdated;
         }
     }
 

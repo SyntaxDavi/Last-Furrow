@@ -10,6 +10,7 @@ public class AppCore : MonoBehaviour
 {
     public static AppCore Instance { get; private set; }
     public IGameLibrary GameLibrary { get; private set; }
+    public GameEvents Events { get; private set; }
 
     [Header("Data")]
     [SerializeField] private GameDatabaseSO _gameDatabase;
@@ -25,8 +26,6 @@ public class AppCore : MonoBehaviour
     // DailyResolutionSystem geralmente manipula dados da Run, então pode ficar aqui,
     // mas não deve ter referências diretas a UI da cena.
     public DailyResolutionSystem DailyResolutionSystem;
-
-    public GameEvents Events { get; private set; }
 
     [Header("Configuração")]
     [SerializeField] private string _firstSceneName = "Game"; 
@@ -71,7 +70,7 @@ public class AppCore : MonoBehaviour
         GameStateManager.Initialize();
 
         // 3. Bindings globais
-        InputManager.OnAnyInputDetected += () => Events.TriggerAnyInput();
+        InputManager.OnAnyInputDetected += () => Events.Player.TriggerAnyInput();
 
         // 4. Carrega a primeira cena
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -81,12 +80,11 @@ public class AppCore : MonoBehaviour
     private void OnDestroy()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
-        if (InputManager != null) InputManager.OnAnyInputDetected -= Events.TriggerAnyInput;
+        if (InputManager != null) InputManager.OnAnyInputDetected -= Events.Player.TriggerAnyInput;
     }
 
     public void ReturnToMainMenu()
     {
-        Events.ResetAllListeners(); // Limpa eventos de gameplay anteriores
         GameStateManager.SetState(GameState.MainMenu);
         SceneManager.LoadScene("MainMenu");
     }

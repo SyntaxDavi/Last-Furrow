@@ -24,12 +24,12 @@ public class RunManager : MonoBehaviour, IRunManager
         _saveManager.Data.CurrentRun = newRun;
         _saveManager.SaveGame();
 
-        AppCore.Instance.Events.TriggerRunStarted();
+        AppCore.Instance.Events.Time.TriggerRunStarted();
 
         // Setup inicial da cena
         AppCore.Instance.GameStateManager.SetState(GameState.Playing);
-        AppCore.Instance.Events.TriggerDayChanged(newRun.CurrentDay);
-        AppCore.Instance.Events.TriggerToggleHand(true);
+        AppCore.Instance.Events.Time.TriggerDayChanged(newRun.CurrentDay);
+        AppCore.Instance.Events.UI.TriggerToggleHand(true);
     }
 
     // Ponto 3: O método AdvanceDay agora é um "Coordenador", não um "Operário"
@@ -85,7 +85,7 @@ public class RunManager : MonoBehaviour, IRunManager
 
     private void HandleProductionDay(RunData run)
     {
-        AppCore.Instance.Events.TriggerDayChanged(run.CurrentDay);
+        AppCore.Instance.Events.Time.TriggerDayChanged(run.CurrentDay);
 
         // Verifica evento crítico de gameplay
         if (run.CurrentDay == DAYS_IN_PRODUCTION)
@@ -100,8 +100,8 @@ public class RunManager : MonoBehaviour, IRunManager
         Debug.Log("Iniciando Fase de Fim de Semana (Shop)");
 
         AppCore.Instance.GameStateManager.SetState(GameState.Shopping);
-        AppCore.Instance.Events.TriggerWeekendStarted();
-        AppCore.Instance.Events.TriggerToggleHand(false); // Esconde cartas de plantio
+        AppCore.Instance.Events.Time.TriggerWeekendStarted();
+        AppCore.Instance.Events.UI.TriggerToggleHand(false); // Esconde cartas de plantio
     }
 
     private void StartNextWeek(RunData run)
@@ -113,9 +113,9 @@ public class RunManager : MonoBehaviour, IRunManager
 
         AppCore.Instance.GameStateManager.SetState(GameState.Playing);
 
-        AppCore.Instance.Events.TriggerWeekChanged(run.CurrentWeek);
-        AppCore.Instance.Events.TriggerDayChanged(1);
-        AppCore.Instance.Events.TriggerToggleHand(true);
+        AppCore.Instance.Events.Time.TriggerWeekChanged(run.CurrentWeek);
+        AppCore.Instance.Events.Time.TriggerDayChanged(1);
+        AppCore.Instance.Events.UI.TriggerToggleHand(true);
     }
 
     public void EndRun(RunEndReason reason)
@@ -125,6 +125,6 @@ public class RunManager : MonoBehaviour, IRunManager
         _saveManager.SaveGame();
 
         AppCore.Instance.GameStateManager.SetState(GameState.GameOver);
-        AppCore.Instance.Events.TriggerRunEnded(reason);
+        AppCore.Instance.Events.Time.TriggerRunEnded(reason);
     }
 }

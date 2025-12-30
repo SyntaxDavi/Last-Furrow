@@ -119,7 +119,7 @@ public class GridManager : MonoBehaviour
             // Aqui cuidamos do feedback "extra-grid" (UI, Som, Partículas)
 
             // Ex: Notificar sistema de Mão para consumir a carta visualmente
-            AppCore.Instance.Events.TriggerCardConsumed(card.ID.Value);
+            AppCore.Instance.Events.Player.TriggerCardConsumed(card.ID);
 
             // Ex: Tocar som
             // AudioManager.Play("PlantSound");

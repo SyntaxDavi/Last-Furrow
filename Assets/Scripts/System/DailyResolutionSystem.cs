@@ -69,7 +69,7 @@ public class DailyResolutionSystem : MonoBehaviour
         _isProcessing = true;
 
         // Uso do cache (sem AppCore.Instance...)
-        _events.TriggerResolutionSequenceStarted();
+        _events.Time.TriggerResolutionStarted();
 
         var runData = _saveManager.Data.CurrentRun;
         int slotCount = runData.GridSlots.Length;
@@ -81,7 +81,7 @@ public class DailyResolutionSystem : MonoBehaviour
             if (i >= runData.GridSlots.Length) break;
 
             // Dispara evento visual usando cache
-            _events.TriggerAnalyzeCropSlot(i);
+            _events.Grid.TriggerAnalyzeSlot(i);
 
             // Correção do Ponto 3: Lógica não lê Input direto
             // Pergunta ao InputManager se deve acelerar
@@ -96,7 +96,7 @@ public class DailyResolutionSystem : MonoBehaviour
         // Pequena pausa final
         yield return new WaitForSeconds(_isInitialized && _inputManager.IsPrimaryButtonHeld ? _fastDelayPerSlot : _baseDelayPerSlot);
 
-        _events.TriggerResolutionSequenceEnded();
+        _events.Time.TriggerResolutionEnded();
 
         // Avança o dia
         _runManager.AdvanceDay();

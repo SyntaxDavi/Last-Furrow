@@ -18,7 +18,7 @@ public class GameStateManager : MonoBehaviour
         CurrentState = newState;
 
         // Dispara evento global
-        AppCore.Instance.Events.TriggerGameStateChanged(newState);
+        AppCore.Instance.Events.GameState.TriggerStateChanged(newState);
 
         // Lógica de controle de tempo automática (Opcional, mas útil)
         HandleTimeScale(newState);
