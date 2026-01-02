@@ -74,13 +74,28 @@ public class HandManager : MonoBehaviour
 
     private void HandleCardConsumed(CardID cardID)
     {
-        // Encontra a visualização correspondente ao ID consumido
-        // Remove apenas A PRIMEIRA ocorrência (caso tenha cartas duplicadas)
+        // 1. Busca Visual
         var cardView = _cardsInHand.Find(c => c.Data.ID == cardID);
 
         if (cardView != null)
         {
+            // Remove Visual
             RemoveCard(cardView);
+
+            // 2. Remove dos Dados Persistentes (Fonte da Verdade)
+            // Agora essa responsabilidade é do HandManager, que é o "dono" da mão.
+            if (_runData != null && _runData.DeckIDs != null)
+            {
+                // Remove apenas a primeira ocorrência (para decks com duplicatas)
+                _runData.DeckIDs.Remove(cardID.Value);
+
+                // Avisa SaveManager que mudou dados da mão
+                AppCore.Instance.SaveManager.SaveGame();
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[HandManager] Tentou consumir carta que não estava na mão visualmente.");
         }
     }
 

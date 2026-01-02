@@ -44,19 +44,14 @@ public class GridService : IGridService
 
         if (result.IsSuccess)
         {
-            // CONSUMO CONDICIONAL (Baseado na decisão da estratégia)
-            if (result.ShouldConsumeCard)
-            {
-                // Aqui ainda assumimos DeckIDs, mas futuramente pode virar HandManager
-                if (_runData.DeckIDs.Contains(card.ID.Value))
-                    _runData.DeckIDs.Remove(card.ID.Value);
-            }
+            OnSlotStateChanged?.Invoke(index);
+            OnSlotUpdated?.Invoke(index, result.EventType);
 
-            // DISPARO CENTRALIZADO
-            OnSlotStateChanged?.Invoke(index); // UI Básica (Sprite)
-            OnSlotUpdated?.Invoke(index, result.EventType); // UI Rica (Som/Partícula)
-
+            // Marca dados do GRID como sujos
             OnDataDirty?.Invoke();
+
+            // Nota: Quem chamou (HandManager/PlayerInteraction) vai receber o 'result'
+            // e ler 'result.ShouldConsumeCard' para decidir se consome.
         }
 
         return result;

@@ -80,11 +80,20 @@ public class GridManager : MonoBehaviour
 
         if (result.IsSuccess)
         {
-            AppCore.Instance.Events.Player.TriggerCardConsumed(card.ID);
+            if (result.ShouldConsumeCard)
+            {
+                AppCore.Instance.Events.Player.TriggerCardConsumed(card.ID);
+            }
+            else
+            {
+                // Feedback: Carta usada mas não consumida (Ex: Ferramenta)
+                Debug.Log("[GridManager] Carta usada, mas mantida na mão (Ferramenta).");
+            }
         }
         else
         {
             Debug.Log($"[GridManager] Ação falhou: {result.Message}");
+            // Ex: Shake da carta, som de erro
         }
     }
 
