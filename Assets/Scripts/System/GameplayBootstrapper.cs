@@ -13,24 +13,18 @@ public class GameplayBootstrapper : MonoBehaviour
     [SerializeField] private float _levelGridWidth = 5f;
     [SerializeField] private float _levelGridHeight = 7f;
 
-    // Mantemos referência para limpeza, se necessário
     private IGridService _gridService;
 
     private void Awake()
     {
-        // 1. Segurança e Fallback
         if (AppCore.Instance == null) return;
 
-        // 2. Configura Câmera
         if (_gameCamera != null)
         {
             _gameCamera.Configure(_levelGridWidth, _levelGridHeight);
-
-            // Injeta a câmera da cena no InputManager Global
             AppCore.Instance.InputManager.SetCamera(_gameCamera.GetComponent<Camera>());
         }
 
-        // 3. Obtém ou Cria Dados da Run
         var runData = AppCore.Instance.SaveManager.Data.CurrentRun;
         if (runData == null)
         {
@@ -48,9 +42,18 @@ public class GameplayBootstrapper : MonoBehaviour
 
         var library = AppCore.Instance.GameLibrary;
         _playerInteraction.Initialize(AppCore.Instance.InputManager);
+
+        // --- CRIAÇÃO CENTRALIZADA ---
+        // 1. Cria a instância
         _gridService = new GridService(runData, library);
+
+        // 2. Registra no Global (para DailyResolution, CheatManager, etc)
+        AppCore.Instance.RegisterGridService(_gridService);
+
+        // 3. Configura eventos locais
         _gridService.OnDataDirty += () => AppCore.Instance.SaveManager.SaveGame();
 
+        // 4. Injeta nos consumidores da cena
         if (_gridManager != null)
         {
             _gridManager.Configure(_gridService, library);
@@ -58,7 +61,7 @@ public class GameplayBootstrapper : MonoBehaviour
 
         if (_feedbackController != null && _gridManager != null)
         {
-            _feedbackController.Configure(_gridManager);    
+            _feedbackController.Configure(_gridManager);
         }
 
         if (_handManager != null)
@@ -75,6 +78,7 @@ public class GameplayBootstrapper : MonoBehaviour
         if (AppCore.Instance != null)
         {
             AppCore.Instance.Events.Time.OnDayChanged -= HandleDayChanged;
+            AppCore.Instance.UnregisterGridService();
         }
     }
 

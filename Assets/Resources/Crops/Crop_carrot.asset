@@ -17,8 +17,8 @@ MonoBehaviour:
   Name: Crop carrot
   Description: Um vegetal laranja!
   DaysToMature: 1
+  FreshnessWindow: 2
   BaseSellValue: 10
-  HarvestableOnlyOnDeadLine: 0
   SeedSprite: {fileID: 0}
   GrowthStages: []
   MatureSprite: {fileID: 0}

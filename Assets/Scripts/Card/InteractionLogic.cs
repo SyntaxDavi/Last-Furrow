@@ -9,22 +9,22 @@ public class PlantInteraction : ICardInteractionStrategy
 {
     public bool CanInteract(CropState slotState, CardData card)
     {
-        // Regra: Só pode plantar se o slot estiver vazio (sem CropID)
-        return string.IsNullOrEmpty(slotState.CropID);
+        // Agora usamos IsEmpty do struct CropState
+        return slotState.IsEmpty;
     }
 
-    public InteractionResult Execute(CropState slotState, CardData card)
+    public InteractionResult Execute(CropState slotState, CardData card, IGameLibrary library)
     {
         if (!CanInteract(slotState, card))
             return InteractionResult.Fail("O slot já está ocupado.");
 
-        // Aplica os dados
-        slotState.CropID = card.CropToPlant.ID.Value;
+        slotState.CropID = card.CropToPlant.ID;
+
         slotState.CurrentGrowth = 0;
         slotState.IsWatered = false;
         slotState.IsWithered = false;
 
-        return InteractionResult.Ok();
+        return InteractionResult.Ok(); 
     }
 }
 
@@ -33,35 +33,26 @@ public class ModifyInteraction : ICardInteractionStrategy
 {
     public bool CanInteract(CropState slotState, CardData card)
     {
-        // Regra 1: Precisa ter uma planta para modificar
-        if (string.IsNullOrEmpty(slotState.CropID)) return false;
-
-        // Regra 2: Específico para Água
-        if (card.ID.Value == "card_water")
-        {
-            return !slotState.IsWatered; // Só pode regar se estiver seco
-        }
-
-        // Futuro: Adubos, pesticidas, etc.
-        return false;
+        // Se slot vazio, não tem o que modificar
+        return !slotState.IsEmpty;
     }
 
-    public InteractionResult Execute(CropState slotState, CardData card)
+    public InteractionResult Execute(CropState slotState, CardData card, IGameLibrary library)
     {
-        // Validação dupla para garantir integridade e retornar mensagem de erro correta
-        if (string.IsNullOrEmpty(slotState.CropID))
+        if (slotState.IsEmpty)
             return InteractionResult.Fail("Não há planta aqui.");
 
-        if (card.ID.Value == "card_water")
+        // Se for água, usamos a estratégia específica (Strategy dentro de Strategy ou Factory resolve antes)
+        // Mas para manter compatibilidade com seu código antigo de factory:
+        if (card.ID.Value == "card_water") // Aqui string ainda é ok se CardID não tiver consts
         {
-            if (slotState.IsWatered)
-                return InteractionResult.Fail("Já está regado.");
-
-            slotState.IsWatered = true;
-            return InteractionResult.Ok();
+            // O ideal é a Factory já retornar a WaterInteractionStrategy, 
+            // mas se cair aqui, redirecionamos:
+            var waterStrategy = new WaterInteractionStrategy();
+            return waterStrategy.Execute(slotState, card, library);
         }
 
-        return InteractionResult.Fail("Item desconhecido.");
+        return InteractionResult.Fail("Item modificador desconhecido.");
     }
 }
 
@@ -71,19 +62,19 @@ public class ModifyInteraction : ICardInteractionStrategy
 
 public static class InteractionFactory
 {
-    // Cache estático: cria as classes uma única vez na vida do jogo.
-    // Isso economiza memória e processador (Zero Garbage Collection durante gameplay).
     private static readonly Dictionary<CardType, ICardInteractionStrategy> _strategies
         = new Dictionary<CardType, ICardInteractionStrategy>();
 
-    // Construtor estático roda automaticamente na primeira vez que a classe é usada
     static InteractionFactory()
     {
         _strategies[CardType.Plant] = new PlantInteraction();
-        _strategies[CardType.Modify] = new ModifyInteraction();
 
-        // Quando criar colheita:
-        // _strategies[CardType.Harvest] = new HarvestInteraction();
+        // CUIDADO: Se você tiver cartas de "Modify" que NÃO são água, 
+        // precisará de uma lógica melhor aqui (ex: um Dictionary de CardID -> Strategy).
+        // Por enquanto, vamos assumir que Modify = Água ou usar a ModifyInteraction genérica.
+
+        // _strategies[CardType.Modify] = new WaterInteractionStrategy(); // Opção A: Força água
+        _strategies[CardType.Modify] = new ModifyInteraction();       // Opção B: Genérico
     }
 
     public static ICardInteractionStrategy GetStrategy(CardType type)
@@ -92,8 +83,6 @@ public static class InteractionFactory
         {
             return strategy;
         }
-
-        // Se não achar estratégia (ex: carta de ataque), retorna null
         return null;
     }
 }

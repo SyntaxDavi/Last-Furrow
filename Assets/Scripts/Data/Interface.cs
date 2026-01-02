@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// --- Interfaces de Core Systems ---
 public interface ISaveManager
 {
     void SaveGame();
@@ -18,7 +17,6 @@ public interface IRunManager
     bool IsRunActive { get; }
 }
 
-// --- Interfaces de Interação (Input System) ---
 public interface IInteractable
 {
     void OnClick();
@@ -35,72 +33,58 @@ public interface IDraggable
 
 public interface IDropTarget
 {
-    /// <summary>
-    /// Verifica se o alvo aceita este objeto especifico arrastável.
-    /// </summary>
     bool CanReceive(IDraggable draggable);
-
-    /// <summary>
-    /// Recebe o objeto e executa a lógica de drop.
-    /// </summary>
     void OnReceive(IDraggable draggable);
 }
 
-// Interface auxiliar legada ou para UI genérica (Manter por segurança)
 public interface ICardReceiver
 {
     bool CanReceiveCard(CardData card);
     void OnReceiveCard(CardData card);
 }
 
-// --- NOVAS ESTRUTURAS (Arquitetura Grid/Card) ---
-
-/// <summary>
-/// Define o contrato para o serviço de lógica do Grid.
-/// Isso permite que o Controller não saiba que existe um SaveManager ou RunData por trás.
-/// </summary>
+// --- INTERFACE CORRIGIDA DO GRID SERVICE ---
 public interface IGridService
 {
-    // Eventos
+    // Evento para atualizar UI de Slots
     event Action<int> OnSlotStateChanged;
-    event Action OnDataDirty; 
+    event Action OnDataDirty;
 
-    // Métodos de Leitura
     CropState GetSlotReadOnly(int index);
+    void ProcessNightCycleForSlot(int slotIndex);
 
-    // Métodos de Ação
     bool CanReceiveCard(int index, CardData card);
     InteractionResult ApplyCard(int index, CardData card);
 }
 
-/// <summary>
-/// Estrutura de retorno para operações de jogo.
-/// Evita apenas retornar true/false, permitindo feedback visual (ex: "Sem água!", "Já plantado!").
-/// </summary>
 public struct InteractionResult
 {
-    public bool Success;
+    public bool IsSuccess;
     public string Message;
 
-    public static InteractionResult Fail(string msg) => new InteractionResult { Success = false, Message = msg };
-    public static InteractionResult Ok() => new InteractionResult { Success = true };
+    private InteractionResult(bool success, string message)
+    {
+        IsSuccess = success;
+        Message = message;
+    }
+
+    public bool Success => IsSuccess;
+
+    public static InteractionResult Fail(string message) => new InteractionResult(false, message);
+    public static InteractionResult Ok() => new InteractionResult(true, "");
+    public static InteractionResult SuccessResult(string message) => new InteractionResult(true, message);
 }
 
-/// <summary>
-/// Strategy Pattern para cartas. 
-/// Define como cada tipo de carta se comporta ao interagir com um slot.
-/// </summary>
 public interface ICardInteractionStrategy
 {
-    bool CanInteract(CropState slotState, CardData card);
-    InteractionResult Execute(CropState slotState, CardData card);
+    bool CanInteract(CropState slot, CardData card);
+    InteractionResult Execute(CropState slot, CardData card, IGameLibrary library);
 }
 
 public interface IGameLibrary
 {
     bool TryGetCrop(CropID id, out CropData data);
     bool TryGetCard(CardID id, out CardData data);
-
     IEnumerable<CropData> GetAllCrops();
     IEnumerable<CardData> GetAllCards();
 }

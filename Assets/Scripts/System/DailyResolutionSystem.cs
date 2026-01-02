@@ -67,26 +67,27 @@ public class DailyResolutionSystem : MonoBehaviour
     private IEnumerator ResolveDayRoutine()
     {
         _isProcessing = true;
-
-        // Uso do cache (sem AppCore.Instance...)
         _events.Time.TriggerResolutionStarted();
 
+        IGridService gridService = AppCore.Instance.GetGridLogic();
         var runData = _saveManager.Data.CurrentRun;
-        int slotCount = runData.GridSlots.Length;
+
 
         Debug.Log("Iniciando Resolução Visual...");
 
-        for (int i = 0; i < slotCount; i++)
+        for (int i = 0; i < runData.GridSlots.Length; i++)
         {
-            if (i >= runData.GridSlots.Length) break;
-
-            // Dispara evento visual usando cache
+            // 1. Visual: Câmera/UI foca no slot
             _events.Grid.TriggerAnalyzeSlot(i);
 
-            // Correção do Ponto 3: Lógica não lê Input direto
-            // Pergunta ao InputManager se deve acelerar
-            bool speedUp = _inputManager != null && _inputManager.IsPrimaryButtonHeld;
+            // 2. Lógica: Processa maturação
+            gridService.ProcessNightCycleForSlot(i);
 
+            // 3. Ritmo: Delay para o jogador entender o que aconteceu
+            // Se a planta morreu, o visual atualiza via evento do GridService, 
+            // e este delay permite que o jogador veja o sprite mudando para "Withered".
+
+            bool speedUp = _inputManager.IsPrimaryButtonHeld;
             float delay = speedUp ? _fastDelayPerSlot : _baseDelayPerSlot;
             yield return new WaitForSeconds(delay);
         }
@@ -97,10 +98,7 @@ public class DailyResolutionSystem : MonoBehaviour
         yield return new WaitForSeconds(_isInitialized && _inputManager.IsPrimaryButtonHeld ? _fastDelayPerSlot : _baseDelayPerSlot);
 
         _events.Time.TriggerResolutionEnded();
-
-        // Avança o dia
         _runManager.AdvanceDay();
-
         _isProcessing = false;
     }
 

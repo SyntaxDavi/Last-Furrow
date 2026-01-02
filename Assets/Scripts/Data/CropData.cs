@@ -8,10 +8,12 @@ public class CropData : ScriptableObject
     public string Name;
     [TextArea] public string Description;
 
-    [Header("Regras de Cultivo")]
-    public int DaysToMature;
+    [Header("Regras de Maturação")]
+    [Min(1)] public int DaysToMature;       
+    [Min(0)] public int FreshnessWindow;
+
+    [Header("Economia")]
     public int BaseSellValue;
-    public bool HarvestableOnlyOnDeadLine;
 
     [Header("Visual")]
     public Sprite SeedSprite;
@@ -19,23 +21,30 @@ public class CropData : ScriptableObject
     public Sprite MatureSprite;
     public Sprite WitheredSprite;
 
-    /// <summary>
-    /// Retorna o sprite correto baseado no dia e se está morto.
-    /// </summary>
-    public Sprite GetSpriteForStage(int currentGrowthDay, bool isWithered = false)
+    private void OnValidate()
     {
-        // 1. Se morreu, retorna visual de morto
+        if (DaysToMature < 1) DaysToMature = 1;
+        if (FreshnessWindow < 0) FreshnessWindow = 0;
+    }
+
+    /// <summary>
+    /// Retorna o sprite baseado no estado completo.
+    /// </summary>
+    public Sprite GetSpriteForStage(int currentGrowth, int daysMature, bool isWithered)
+    {
         if (isWithered) return WitheredSprite;
 
-        // 2. Se já madurou, retorna visual maduro
-        if (currentGrowthDay >= DaysToMature) return MatureSprite;
+        // Fase de Maturação (inclui Janela de Frescor)
+        if (currentGrowth >= DaysToMature)
+        {
+            // Opcional: Se quiser um sprite de "quase podre" no último dia
+            // if (daysMature >= FreshnessWindow && FreshnessWindow > 0) return OverripeSprite;
+            return MatureSprite;
+        }
 
-        // 3. Validação de segurança para arrays vazios
+        // Fase de Crescimento
         if (GrowthStages == null || GrowthStages.Length == 0) return SeedSprite;
-
-        // 4. Mapeia o crescimento para o array
-        // Mathf.Clamp garante que não estoure o array se o dia for maior que a quantidade de sprites
-        int index = Mathf.Clamp(currentGrowthDay, 0, GrowthStages.Length - 1);
+        int index = Mathf.Clamp(currentGrowth, 0, GrowthStages.Length - 1);
         return GrowthStages[index];
     }
 }

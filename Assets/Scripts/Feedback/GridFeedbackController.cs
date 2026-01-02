@@ -39,45 +39,31 @@ public class GridFeedbackController : MonoBehaviour
 
     private void HandleSlotUpdated(int slotIndex)
     {
-        // 1. Segurança
         if (_gridManager == null) return;
-
-        // 2. Descobrir o contexto para saber qual som/partícula tocar
-        // Como o evento é genérico, precisamos olhar o estado atual do slot para "adivinhar" a ação
-        // OU (melhor ainda) criar eventos específicos no futuro.
-        // Por enquanto, vamos olhar o estado visual através do GridManager.
 
         var slotState = AppCore.Instance.SaveManager.Data.CurrentRun.GridSlots[slotIndex];
         Vector3 worldPos = _gridManager.GetSlotPosition(slotIndex);
 
-        // Lógica de Feedback (Apenas cosmética)
         if (slotState.IsWatered)
         {
-            // Tocar efeito de água
             PlayFeedback(_waterEffectPrefab, worldPos, _waterSound);
         }
-        else if (!string.IsNullOrEmpty(slotState.CropID) && slotState.CurrentGrowth == 0)
+
+        else if (slotState.CropID.IsValid && slotState.CurrentGrowth == 0)
         {
-            // Se tem planta e crescimento é 0, provavelmente acabou de plantar
             PlayFeedback(_plantEffectPrefab, worldPos, _plantSound);
         }
     }
 
     private void PlayFeedback(ParticleSystem prefab, Vector3 position, string audioName)
     {
-        // Instancia partícula (idealmente usaria um Object Pool, mas Instantiate serve pro MVP)
         if (prefab != null)
         {
             var particle = Instantiate(prefab, position, Quaternion.identity);
             particle.Play();
-            Destroy(particle.gameObject, 2f); // Limpeza automática
+            Destroy(particle.gameObject, 2f);
         }
 
-        // Toca som via AppCore
-        if (!string.IsNullOrEmpty(audioName))
-        {
-            // Assumindo que seu AudioManager é global no AppCore
-           //    AppCore.Instance.AudioManager.PlaySFX(audioName);
-        }
+        // if (!string.IsNullOrEmpty(audioName)) AppCore.Instance.AudioManager.PlaySFX(audioName);
     }
 }

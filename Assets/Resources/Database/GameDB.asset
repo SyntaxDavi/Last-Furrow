@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   AllCrops:
   - {fileID: 11400000, guid: 68c2621930556cd4e97955d9488b95d6, type: 2}
+  - {fileID: 11400000, guid: 536834a8918f85e4693e99cb0d6d0103, type: 2}
   AllCards:
   - {fileID: 11400000, guid: e12b06d8823623d4da1a53942b5439c0, type: 2}
   - {fileID: 11400000, guid: ace3ec00d61515846bc63b8374592163, type: 2}

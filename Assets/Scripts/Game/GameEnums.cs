@@ -29,3 +29,13 @@ public enum CardType
     Harvest,    
     Clear       
 }
+
+public enum GrowthEventType
+{
+    None,
+    Growing,
+    Matured,
+    WitheredByAge,
+    WitheredByOverdose, 
+    LastFreshDayWarning
+}

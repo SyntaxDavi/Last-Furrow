@@ -1,11 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// SINGLETON GLOBAL.
-/// Responsabilidade: Manter sistemas que sobrevivem à troca de cenas (Save, Audio, Input).
-/// Não deve conter lógica de gameplay específica de uma cena.
-/// </summary>
 public class AppCore : MonoBehaviour
 {
     public static AppCore Instance { get; private set; }
@@ -23,12 +18,14 @@ public class AppCore : MonoBehaviour
     public InputManager InputManager;
     public AudioManager AudioManager;
 
-    // DailyResolutionSystem geralmente manipula dados da Run, então pode ficar aqui,
-    // mas não deve ter referências diretas a UI da cena.
+    // DailyResolutionSystem
     public DailyResolutionSystem DailyResolutionSystem;
 
+    // O serviço é privado e só alterado por métodos explícitos
+    private IGridService _gridService;
+
     [Header("Configuração")]
-    [SerializeField] private string _firstSceneName = "Game"; 
+    [SerializeField] private string _firstSceneName = "Game";
 
     private void Awake()
     {
@@ -47,7 +44,6 @@ public class AppCore : MonoBehaviour
 
     private void InitializeGlobalServices()
     {
-        // 1. Inicializa componentes internos (ordem importa se houver dependências)
         if (GameStateManager == null) GameStateManager = GetComponent<GameStateManager>() ?? gameObject.AddComponent<GameStateManager>();
 
         InputManager.Initialize();
@@ -59,20 +55,13 @@ public class AppCore : MonoBehaviour
             GameLibrary = new GameLibraryService(_gameDatabase);
             Debug.Log("[AppCore] GameLibrary Inicializada.");
         }
-        else
-        {
-            Debug.LogError("[AppCore] FATAL: GameDatabaseSO não atribuído!");
-        }
 
-        // 2. Injeta dependências entre sistemas globais
         RunManager.Initialize(SaveManager);
-        DailyResolutionSystem.Initialize(); 
+        DailyResolutionSystem.Initialize();
         GameStateManager.Initialize();
 
-        // 3. Bindings globais
         InputManager.OnAnyInputDetected += () => Events.Player.TriggerAnyInput();
 
-        // 4. Carrega a primeira cena
         SceneManager.sceneLoaded += OnSceneLoaded;
         SceneManager.LoadScene(_firstSceneName);
     }
@@ -89,17 +78,49 @@ public class AppCore : MonoBehaviour
         SceneManager.LoadScene("MainMenu");
     }
 
-    // A única responsabilidade de cena do AppCore é injetar a câmera no InputManager
-    // pois o InputManager é global mas a câmera muda.
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (scene.name == "Boot") return;
-
-        // Atualiza a referência da câmera para o Input System
         Camera activeCamera = Camera.main;
-        if (activeCamera != null)
+        if (activeCamera != null) InputManager.SetCamera(activeCamera);
+    }
+
+    // --- ARQUITETURA ESTRITA DE SERVIÇO ---
+
+    /// <summary>
+    /// Retorna a lógica do Grid atual.
+    /// ATENÇÃO: Lança erro se o Bootstrapper da cena não tiver registrado o serviço.
+    /// Isso garante que não existam serviços "fantasmas".
+    /// </summary>
+    public IGridService GetGridLogic()
+    {
+        if (_gridService == null)
         {
-            InputManager.SetCamera(activeCamera);
+            Debug.LogError("FATAL: Tentativa de acessar GridService antes do Bootstrapper registrar! " +
+                           "Verifique a ordem de execução ou se você está na cena de Gameplay.");
+            return null;
         }
+        return _gridService;
+    }
+
+    /// <summary>
+    /// Chamado EXCLUSIVAMENTE pelo Bootstrapper da cena de Gameplay.
+    /// </summary>
+    public void RegisterGridService(IGridService service)
+    {
+        if (_gridService != null && _gridService != service)
+        {
+            Debug.LogWarning("[AppCore] Substituindo um GridService existente. Isso é normal na troca de cenas, mas perigoso se for acidental.");
+        }
+        _gridService = service;
+        Debug.Log("[AppCore] GridService registrado com sucesso.");
+    }
+
+    /// <summary>
+    /// Limpa a referência quando a cena de gameplay é destruída.
+    /// </summary>
+    public void UnregisterGridService()
+    {
+        _gridService = null;
     }
 }
