@@ -78,7 +78,7 @@ public class GridManager : MonoBehaviour
     {
         InteractionResult result = _gridService.ApplyCard(index, card);
 
-        if (result.Success)
+        if (result.IsSuccess)
         {
             AppCore.Instance.Events.Player.TriggerCardConsumed(card.ID);
         }

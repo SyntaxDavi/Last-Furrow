@@ -41,37 +41,54 @@ public interface ICardReceiver
 {
     bool CanReceiveCard(CardData card);
     void OnReceiveCard(CardData card);
-}   
+}
 
 // --- INTERFACE CORRIGIDA DO GRID SERVICE ---
 public interface IGridService
 {
-    // Evento para atualizar UI de Slots
-    event Action<int> OnSlotStateChanged;
-    event Action OnDataDirty;
+    // Evento antigo (mantemos para UI simples que só quer dar refresh)
+    event System.Action<int> OnSlotStateChanged;
+
+    // NOVO EVENTO RICO (Para Feedback/Audio/Particles)
+    event System.Action<int, GridEventType> OnSlotUpdated;
+
+    event System.Action OnDataDirty;
 
     IReadOnlyCropState GetSlotReadOnly(int index);
+
     void ProcessNightCycleForSlot(int slotIndex);
     bool CanReceiveCard(int index, CardData card);
     InteractionResult ApplyCard(int index, CardData card);
 }
 
-public struct InteractionResult
+public readonly struct InteractionResult
 {
-    public bool IsSuccess;
-    public string Message;
+    // 1. Propriedades de Dados (Renomeado Success -> IsSuccess para evitar conflito)
+    public bool IsSuccess { get; }
+    public string Message { get; }
+    public bool ShouldConsumeCard { get; }
+    public GridEventType EventType { get; } 
 
-    private InteractionResult(bool success, string message)
+    // 2. Construtor Privado
+    private InteractionResult(bool success, string message, GridEventType type, bool consume)
     {
         IsSuccess = success;
         Message = message;
+        EventType = type;
+        ShouldConsumeCard = consume;
     }
 
-    public bool Success => IsSuccess;
+    // --- MÉTODOS FÁBRICA ---
 
-    public static InteractionResult Fail(string message) => new InteractionResult(false, message);
-    public static InteractionResult Ok() => new InteractionResult(true, "");
-    public static InteractionResult SuccessResult(string message) => new InteractionResult(true, message);
+    public static InteractionResult Fail(string message)
+        => new InteractionResult(false, message, GridEventType.GenericUpdate, false);
+
+    // O método pode chamar "Success" agora porque a propriedade chama "IsSuccess"
+    public static InteractionResult Success(string message, GridEventType type, bool consume = true)
+        => new InteractionResult(true, message, type, consume);
+
+    public static InteractionResult Ok()
+        => new InteractionResult(true, "", GridEventType.GenericUpdate, true);
 }
 
 public interface ICardInteractionStrategy

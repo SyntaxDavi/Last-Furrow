@@ -8,9 +8,9 @@ public class GridService : IGridService
 
     public event Action<int> OnSlotStateChanged;
     public event Action OnDataDirty;
-
+    public event Action<int, GridEventType> OnSlotUpdated;
     public GridService(RunData runData, IGameLibrary library)
-    {
+    {   
         _runData = runData;
         _library = library;
     }
@@ -40,17 +40,22 @@ public class GridService : IGridService
 
         if (strategy == null) return InteractionResult.Fail("Sem estratégia");
 
-        // Passamos a Library aqui
         var result = strategy.Execute(slot, card, _library);
 
-        if (result.Success)
+        if (result.IsSuccess)
         {
-            if (_runData.DeckIDs.Contains(card.ID.Value))
+            // CONSUMO CONDICIONAL (Baseado na decisão da estratégia)
+            if (result.ShouldConsumeCard)
             {
-                _runData.DeckIDs.Remove(card.ID.Value);
+                // Aqui ainda assumimos DeckIDs, mas futuramente pode virar HandManager
+                if (_runData.DeckIDs.Contains(card.ID.Value))
+                    _runData.DeckIDs.Remove(card.ID.Value);
             }
 
-            OnSlotStateChanged?.Invoke(index);
+            // DISPARO CENTRALIZADO
+            OnSlotStateChanged?.Invoke(index); // UI Básica (Sprite)
+            OnSlotUpdated?.Invoke(index, result.EventType); // UI Rica (Som/Partícula)
+
             OnDataDirty?.Invoke();
         }
 
@@ -60,42 +65,56 @@ public class GridService : IGridService
     public void ProcessNightCycleForSlot(int index)
     {
         if (IsIndexInvalid(index)) return;
-
         var slot = _runData.GridSlots[index];
 
-        // 1. Captura estado anterior (para saber se precisamos atualizar a tela)
         bool wasWatered = slot.IsWatered;
 
-        // 2. Aplica a Regra do Grid: A noite seca o slot.
-        // Fazemos isso aqui explicitamente para garantir que slots vazios também sequem.
-        // (O CropLogic também faz isso, mas só roda se tiver planta/data)
+        // 1. Seca a terra
         slot.IsWatered = false;
 
-        // Inicialmente, precisamos atualizar a tela se a terra estava molhada e secou
+        GridEventType eventToEmit = GridEventType.GenericUpdate;
         bool visualUpdateNeeded = wasWatered;
 
-        // 3. Se tiver planta, processa a biologia (Crescimento/Morte)
+        // Se secou e nada mais acontecer, o evento é DryOut
+        if (wasWatered) eventToEmit = GridEventType.DryOut;
+
+        // 2. Processa Biologia
         if (!slot.IsEmpty && _library.TryGetCrop(slot.CropID, out var data))
         {
-            // A CropLogic vai calcular crescimento e morte
             var result = CropLogic.ProcessNightlyGrowth(slot, data);
 
-            // Se houve evento biológico (cresceu, morreu, maturou), também precisamos atualizar a tela
             if (result.EventType != GrowthEventType.None)
             {
                 visualUpdateNeeded = true;
 
-                // Logs de debug úteis
-                if (result.EventType == GrowthEventType.WitheredByAge)
-                    Debug.Log($"[GridService] Slot {index} ({data.Name}) morreu de velhice.");
+                // TRADUÇÃO (Logic -> GridEvent)
+                // Eventos biológicos têm prioridade sobre o "DryOut"
+                switch (result.EventType)
+                {
+                    case GrowthEventType.Matured:
+                        eventToEmit = GridEventType.Matured;
+                        break;
+                    case GrowthEventType.WitheredByAge:
+                        eventToEmit = GridEventType.Withered;
+                        break;
+                    // Growing ou LastFreshDayWarning podem ser mapeados para GenericUpdate 
+                    // ou criar eventos específicos se você tiver som de "crescimento"
+                    default:
+                        // Se era DryOut mas cresceu, talvez queira manter DryOut ou Generic?
+                        // Vamos dar prioridade ao DryOut se não for Matured/Withered
+                        if (eventToEmit == GridEventType.GenericUpdate)
+                            eventToEmit = GridEventType.GenericUpdate;
+                        break;
+                }
             }
         }
 
-        // 4. Se houve qualquer mudança visual (água secou OU planta mudou), notifica
         if (visualUpdateNeeded)
         {
             OnSlotStateChanged?.Invoke(index);
-            OnDataDirty?.Invoke(); // Marca para salvar
+            // Emite o evento rico (Matured, Withered ou DryOut)
+            OnSlotUpdated?.Invoke(index, eventToEmit);
+            OnDataDirty?.Invoke();
         }
     }
 

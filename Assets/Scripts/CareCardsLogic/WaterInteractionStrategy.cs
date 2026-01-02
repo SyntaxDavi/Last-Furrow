@@ -1,4 +1,3 @@
-
 public class WaterInteractionStrategy : ICardInteractionStrategy
 {
     public bool CanInteract(CropState slot, CardData card)
@@ -8,28 +7,37 @@ public class WaterInteractionStrategy : ICardInteractionStrategy
 
     public InteractionResult Execute(CropState slot, CardData card, IGameLibrary library)
     {
-        // 1. Resolve Dependência
         if (!library.TryGetCrop(slot.CropID, out CropData cropData))
-            return InteractionResult.Fail("Dados da planta não encontrados na biblioteca.");
-        
-        // 2. Aplica Visual do Slot (Estado da terra)
+            return InteractionResult.Fail("Dados da planta não encontrados.");
+
         slot.IsWatered = true;
 
-        // 3. Delega Lógica Biológica para o Core (Sem duplicar regra!)
         int acceleration = card.GrowthAcceleration > 0 ? card.GrowthAcceleration : 1;
+
+        // Lógica Biológica
         var simResult = CropLogic.ApplyAcceleration(slot, cropData, acceleration);
 
-        // 4. Traduz resultado da simulação para Feedback do Jogador
+        GridEventType finalEvent;
+        string msg;
+
         switch (simResult.EventType)
         {
             case GrowthEventType.WitheredByOverdose:
-                return InteractionResult.SuccessResult("Você regou demais e a planta apodreceu instantaneamente!");
+                finalEvent = GridEventType.Withered;
+                msg = "Você regou demais e a planta morreu!";
+                break;
 
             case GrowthEventType.Matured:
-                return InteractionResult.SuccessResult("A planta cresceu e amadureceu!");
+                finalEvent = GridEventType.Matured;
+                msg = "A aceleração fez a planta amadurecer!";
+                break;
 
             default:
-                return InteractionResult.SuccessResult("Planta regada e acelerada.");
+                finalEvent = GridEventType.Watered;
+                msg = "Planta regada.";
+                break;
         }
+
+        return InteractionResult.Success(msg, finalEvent, consume: true);
     }
 }

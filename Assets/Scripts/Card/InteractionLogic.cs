@@ -9,7 +9,6 @@ public class PlantInteraction : ICardInteractionStrategy
 {
     public bool CanInteract(CropState slotState, CardData card)
     {
-        // Agora usamos IsEmpty do struct CropState
         return slotState.IsEmpty;
     }
 
@@ -19,12 +18,16 @@ public class PlantInteraction : ICardInteractionStrategy
             return InteractionResult.Fail("O slot já está ocupado.");
 
         slotState.CropID = card.CropToPlant.ID;
-
         slotState.CurrentGrowth = 0;
         slotState.IsWatered = false;
         slotState.IsWithered = false;
 
-        return InteractionResult.Ok(); 
+        // RETORNA O EVENTO ESPECÍFICO
+        return InteractionResult.Success(
+            "Plantado com sucesso!",
+            GridEventType.Planted,
+            consume: true
+        );
     }
 }
 

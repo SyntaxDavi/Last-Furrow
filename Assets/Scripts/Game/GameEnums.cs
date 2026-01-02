@@ -39,3 +39,15 @@ public enum GrowthEventType
     WitheredByOverdose, 
     LastFreshDayWarning
 }
+
+public enum GridEventType
+{
+    GenericUpdate = 0, 
+    Planted,
+    Watered,
+    Harvested,
+    Matured,
+    Withered,
+    DryOut,
+    ModificationApplied
+}
