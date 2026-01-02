@@ -15,9 +15,11 @@ public class GridService : IGridService
         _library = library;
     }
 
-    public CropState GetSlotReadOnly(int index)
+    public IReadOnlyCropState GetSlotReadOnly(int index)
     {
         if (IsIndexInvalid(index)) return null;
+
+        // Retorna o objeto concreto, mas o compilador trata como Interface
         return _runData.GridSlots[index];
     }
 

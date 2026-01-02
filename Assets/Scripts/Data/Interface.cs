@@ -41,7 +41,7 @@ public interface ICardReceiver
 {
     bool CanReceiveCard(CardData card);
     void OnReceiveCard(CardData card);
-}
+}   
 
 // --- INTERFACE CORRIGIDA DO GRID SERVICE ---
 public interface IGridService
@@ -50,9 +50,8 @@ public interface IGridService
     event Action<int> OnSlotStateChanged;
     event Action OnDataDirty;
 
-    CropState GetSlotReadOnly(int index);
+    IReadOnlyCropState GetSlotReadOnly(int index);
     void ProcessNightCycleForSlot(int slotIndex);
-
     bool CanReceiveCard(int index, CardData card);
     InteractionResult ApplyCard(int index, CardData card);
 }
@@ -87,4 +86,15 @@ public interface IGameLibrary
     bool TryGetCard(CardID id, out CardData data);
     IEnumerable<CropData> GetAllCrops();
     IEnumerable<CardData> GetAllCards();
+}
+
+public interface IReadOnlyCropState
+{
+    CropID CropID { get; }
+    int CurrentGrowth { get; }
+    int DaysMature { get; } 
+    bool IsWatered { get; }
+    bool IsWithered { get; }
+
+    bool IsEmpty { get; }
 }

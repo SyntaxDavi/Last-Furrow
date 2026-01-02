@@ -99,7 +99,7 @@ public class GridManager : MonoBehaviour
     {
         if (index < 0 || index >= _spawnedSlots.Count) return;
 
-        var state = _gridService.GetSlotReadOnly(index);
+        IReadOnlyCropState state = _gridService.GetSlotReadOnly(index);
         var view = _spawnedSlots[index];
 
         Sprite spriteToRender = null;
@@ -107,10 +107,9 @@ public class GridManager : MonoBehaviour
 
         if (state != null)
         {
-            isWatered = state.IsWatered;
+            isWatered = state.IsWatered; 
 
-            // Só tentamos buscar sprite se tiver ID de planta válido
-            if (state.CropID.IsValid)
+            if (state.CropID.IsValid) 
             {
                 if (_library != null)
                 {
@@ -118,7 +117,7 @@ public class GridManager : MonoBehaviour
                     {
                         spriteToRender = data.GetSpriteForStage(
                             state.CurrentGrowth,
-                            state.DaysMature,
+                            state.DaysMature, 
                             state.IsWithered
                         );
                     }

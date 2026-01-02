@@ -21,7 +21,7 @@ public class GridFeedbackController : MonoBehaviour
 
     private void OnEnable()
     {
-        if (AppCore.Instance != null)
+        if (AppCore.Instance != null)   
         {
             // Escuta eventos globais de notificação
             AppCore.Instance.Events.Grid.OnSlotUpdated += HandleSlotUpdated;
@@ -41,14 +41,26 @@ public class GridFeedbackController : MonoBehaviour
     {
         if (_gridManager == null) return;
 
-        var slotState = AppCore.Instance.SaveManager.Data.CurrentRun.GridSlots[slotIndex];
+        // MUDANÇA: Em vez de acessar SaveManager direto (que expõe tudo), 
+        // vamos ser educados e pedir ao GridService (que agora expõe ReadOnly).
+        // Se preferir manter acesso ao SaveManager, ok, mas o cast automático ajuda.
+
+        // Vamos usar a via segura se tiver acesso ao GridService, 
+        // ou se continuar acessando via AppCore.SaveManager, tudo bem, 
+        // mas aqui vamos assumir que você acessa o dado bruto:
+
+        IReadOnlyCropState slotState = AppCore.Instance.GetGridLogic().GetSlotReadOnly(slotIndex);
+
+        // Se você mudou para usar GridService.GetSlotReadOnly:
+        // IReadOnlyCropState slotState = AppCore.Instance.GetGridLogic().GetSlotReadOnly(slotIndex);
+
         Vector3 worldPos = _gridManager.GetSlotPosition(slotIndex);
 
+        // A lógica abaixo funciona tanto para Classe quanto para Interface
         if (slotState.IsWatered)
         {
             PlayFeedback(_waterEffectPrefab, worldPos, _waterSound);
         }
-
         else if (slotState.CropID.IsValid && slotState.CurrentGrowth == 0)
         {
             PlayFeedback(_plantEffectPrefab, worldPos, _plantSound);
