@@ -1,43 +1,41 @@
 using UnityEngine;
 
-// Implementa IDropTarget para ser reconhecido pelo PlayerInteraction
 public class CardSellArea : MonoBehaviour, IDropTarget
 {
     [Header("Configuração")]
-    [SerializeField] private int _defaultSellValue = 5;
     [SerializeField] private ParticleSystem _sellEffect;
 
-    // Parte da Interface IDropTarget
+    // Removemos a variável fixa "_defaultSellValue = 5"
+
     public bool CanReceive(IDraggable draggable)
     {
-        // Só aceita se for uma Carta
         return draggable is CardView;
     }
 
-    // Parte da Interface IDropTarget
     public void OnReceive(IDraggable draggable)
     {
         if (draggable is CardView cardView)
         {
-            // 1. Executa a Venda
+            // 1. Executa a Venda passando os dados da carta
             SellCard(cardView.Data);
 
-            // 2. Avisa o sistema que a carta visual foi consumida
-            // Isso fará o HandManager remover a carta da mão e do RunData
+            // 2. Avisa o sistema para remover a carta lógica e visual
             AppCore.Instance.Events.Player.TriggerCardConsumed(cardView.Data.ID);
 
-            // 3. Feedback Visual Local
+            // 3. Feedback Visual
             if (_sellEffect != null) _sellEffect.Play();
         }
     }
 
     private void SellCard(CardData card)
     {
-        // Futuro: Ler o valor de venda de dentro do CardData se existir
-        // Por enquanto, valor fixo para "queimar" carta
-        int value = _defaultSellValue;
+        // --- CORREÇÃO AQUI ---
+        // Agora lemos o valor definido no ScriptableObject da carta
+        int value = card.BaseSellValue;
 
-        // Usa o serviço global de economia
+        // Se por acaso esquecer de configurar no asset, usa 1 como segurança
+        if (value <= 0) value = 1;
+
         AppCore.Instance.EconomyService.Earn(value, TransactionType.CardSale);
     }
 }

@@ -18,6 +18,7 @@ MonoBehaviour:
   Icon: {fileID: 0}
   Type: 0
   Cost: 8
+  BaseSellValue: 5
   CropToPlant: {fileID: 11400000, guid: 536834a8918f85e4693e99cb0d6d0103, type: 2}
   GrowthAcceleration: 0
   ValueMultiplier: 0

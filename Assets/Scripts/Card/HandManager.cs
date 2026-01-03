@@ -38,9 +38,9 @@ public class HandManager : MonoBehaviour
         // Eventos Globais (Observer Pattern)
         if (AppCore.Instance != null)
         {
-            AppCore.Instance.Events.Time.OnRunStarted += HandleRunStarted;
-            // Agora usamos o evento tipado (CardID)
+            AppCore.Instance.Events.Time.OnRunStarted += HandleRunStarted;  
             AppCore.Instance.Events.Player.OnCardConsumed += HandleCardConsumed;
+            AppCore.Instance.Events.Player.OnCardAdded += HandleCardAdded;
         }
     }
 
@@ -50,6 +50,7 @@ public class HandManager : MonoBehaviour
         {
             AppCore.Instance.Events.Time.OnRunStarted -= HandleRunStarted;
             AppCore.Instance.Events.Player.OnCardConsumed -= HandleCardConsumed;
+            AppCore.Instance.Events.Player.OnCardAdded -= HandleCardAdded;
         }
     }
 
@@ -61,15 +62,21 @@ public class HandManager : MonoBehaviour
     {
         ClearHand();
 
-        if (_runData == null || _runData.DeckIDs == null) return;
+        // Garante que usa o dado injetado ou busca do save
+        if (_runData == null)
+            _runData = AppCore.Instance.SaveManager.Data.CurrentRun;
 
-        // Itera sobre os IDs salvos (strings)
-        foreach (string idString in _runData.DeckIDs)
+        if (_runData == null) return;
+
+        // Agora o foreach funciona porque CreateCardVisual aceita 'instance'
+        foreach (var instance in _runData.Hand)
         {
-            // Converte string -> CardID (Struct Seguro)
-            CardID id = (CardID)idString;
-            AddCardToHand(id);
+            CreateCardVisual(instance);
         }
+    }
+    private void HandleCardAdded(CardInstance instance)
+    {
+        CreateCardVisual(instance);
     }
 
     private void HandleCardConsumed(CardID cardID)
@@ -79,18 +86,17 @@ public class HandManager : MonoBehaviour
 
         if (cardView != null)
         {
-            // Remove Visual
             RemoveCard(cardView);
 
-            // 2. Remove dos Dados Persistentes (Fonte da Verdade)
-            // Agora essa responsabilidade é do HandManager, que é o "dono" da mão.
-            if (_runData != null && _runData.DeckIDs != null)
+            if (_runData != null && _runData.Hand != null)
             {
-                // Remove apenas a primeira ocorrência (para decks com duplicatas)
-                _runData.DeckIDs.Remove(cardID.Value);
+                var instanceToRemove = _runData.Hand.Find(x => x.TemplateID == cardID);
 
-                // Avisa SaveManager que mudou dados da mão
-                AppCore.Instance.SaveManager.SaveGame();
+                if (!string.IsNullOrEmpty(instanceToRemove.UniqueID))
+                {
+                    _runData.Hand.Remove(instanceToRemove);
+                    AppCore.Instance.SaveManager.SaveGame();
+                }
             }
         }
         else
@@ -103,36 +109,34 @@ public class HandManager : MonoBehaviour
 
     public void AddCardToHand(CardID cardID)
     {
-        // Validação de segurança
-        if (_library == null)
-        {
-            Debug.LogError("[HandManager] Library não configurada! Chame Configure().");
-            return;
-        }
+        if (_library == null) return;
 
-        // Busca segura no banco de dados (O(1))
-        if (_library.TryGetCard(cardID, out CardData data))
-        {
-            CreateCardVisual(data);
-        }
-        else
-        {
-            Debug.LogWarning($"[HandManager] Carta ID '{cardID}' não encontrada na Library.");
-        }
+        // Cria uma instância "falsa" ou nova para satisfazer o método visual
+        CardInstance newInstance = new CardInstance(cardID);
+        CreateCardVisual(newInstance);
     }
 
-    private void CreateCardVisual(CardData data)
+    private void CreateCardVisual(CardInstance instance)
     {
-        var newCard = Instantiate(_cardPrefab, transform);
-        newCard.Initialize(data);
+        // Usa o TemplateID da instância para buscar os dados visuais (ícone, nome)
+        if (_library.TryGetCard(instance.TemplateID, out CardData data))
+        {
+            var newCard = Instantiate(_cardPrefab, transform);
 
-        // Spawn fora da tela (efeito visual)
-        newCard.transform.position = _handCenter.position - Vector3.up * 5f;
+            // A CardView (prefab) precisa ser atualizada para aceitar (CardData, CardInstance)
+            // Se sua CardView ainda não aceita instance, use: newCard.Initialize(data);
+            // Mas o ideal é:
+            newCard.Initialize(data,instance); 
 
-        RegisterCardEvents(newCard);
-        _cardsInHand.Add(newCard);
+            // Hack temporário: Armazena o ID na View para sabermos qual remover depois
+            // (Supondo que CardView tenha um campo para isso, senão apenas Data)
 
-        CalculateHandPositions();
+            newCard.transform.position = _handCenter.position - Vector3.up * 8f;
+
+            RegisterCardEvents(newCard);
+            _cardsInHand.Add(newCard);
+            CalculateHandPositions();
+        }
     }
 
     public void RemoveCard(CardView card)

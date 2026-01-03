@@ -31,6 +31,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable
     public bool IsDragging { get; private set; }
     public Vector3 TargetPosition { get; set; }
     public int HandIndex { get; set; }
+    public CardInstance Instance { get; private set; }
 
     // Dados: Mantemos apenas para renderização. A lógica não deve ler isso daqui para tomar decisões.
     public CardData Data { get; private set; }
@@ -44,9 +45,10 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable
         _baseScale = transform.localScale;
     }
 
-    public void Initialize(CardData data)
+    public void Initialize(CardData data, CardInstance instance)
     {
         Data = data;
+        Instance = instance;
         if (data == null) return;
 
         if (_nameText) _nameText.text = data.Name;

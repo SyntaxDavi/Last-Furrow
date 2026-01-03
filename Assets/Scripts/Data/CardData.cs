@@ -13,6 +13,7 @@ public class CardData : ScriptableObject
 
     [Header("Custo")]
     public int Cost;
+    public int BaseSellValue = 2;
 
     [Header("Efeito (Se for Plantio)")]
     public CropData CropToPlant; 

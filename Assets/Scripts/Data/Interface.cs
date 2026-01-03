@@ -96,7 +96,10 @@ public interface ICardInteractionStrategy
     bool CanInteract(CropState slot, CardData card);
     InteractionResult Execute(CropState slot, CardData card, IGameLibrary library);
 }
-
+public interface ICardSourceStrategy
+{
+    List<CardID> GetNextCardIDs(int amount, RunData currentRun);
+}
 public interface IGameLibrary
 {
     bool TryGetCrop(CropID id, out CropData data);

@@ -17,6 +17,11 @@ public class RunData
     public List<string> DeckIDs;
     public CropState[] GridSlots;
 
+    public List<CardInstance> Hand = new List<CardInstance>();
+
+    public int MaxHandSize = 15;
+    public int CardsDrawPerDay = 5;
+
     public int Money;
     public int TotalMoneyEarned;
 
@@ -36,15 +41,32 @@ public class RunData
         {
             CurrentWeek = 1,
             CurrentDay = 1,
-            GridSlots = new CropState[9] // Garante array limpo
+            GridSlots = new CropState[9],
+            Hand = new List<CardInstance>(), 
+
+            MaxHandSize = 15,
+            CardsDrawPerDay = 5
         };
 
-        // Regra de Design: Deck Inicial
-        run.DeckIDs.Add("card_carrot");
-        run.DeckIDs.Add("card_corn");
-        run.DeckIDs.Add("card_carrot");
-        run.DeckIDs.Add("card_corn");
-        run.DeckIDs.Add("card_water"); 
+        // --- CORREÇÃO AQUI ---
+        // Antes você adicionava strings em DeckIDs.
+        // Agora criamos instâncias reais na lista Hand.
+
+        AddStartingCard(run, "card_carrot");
+        AddStartingCard(run, "card_corn");
+        AddStartingCard(run, "card_carrot");
+        AddStartingCard(run, "card_corn");
+        AddStartingCard(run, "card_water");
+
         return run;
+    }
+
+    // Helper para facilitar a criação (pode ficar dentro do RunData mesmo)
+    private static void AddStartingCard(RunData run, string cardIDString)
+    {
+        // Converte string -> CardID -> CardInstance
+        CardID id = (CardID)cardIDString;
+        CardInstance instance = new CardInstance(id);
+        run.Hand.Add(instance);
     }
 }

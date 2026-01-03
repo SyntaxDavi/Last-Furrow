@@ -2,7 +2,8 @@ public enum TransactionType
 {
     Debug = 0,
     Harvest,           // Venda de colheita (Principal)
-    CardSale,          // Queimar carta da mão
+    CardSale,          //
+    CardOverflow,      // Queimar carta da mão
     GoalBonus,         // Excedeu meta
     ShopPurchase,      // Gasto na loja
     PestControl,       // Gasto com pragas

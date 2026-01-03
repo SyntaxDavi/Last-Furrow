@@ -63,42 +63,46 @@ public class DailyResolutionSystem : MonoBehaviour
 
         StartCoroutine(ResolveDayRoutine());
     }
-
     private IEnumerator ResolveDayRoutine()
     {
         _isProcessing = true;
+
+        // Avisa a UI de tempo que a noite começou
         _events.Time.TriggerResolutionStarted();
 
         IGridService gridService = AppCore.Instance.GetGridLogic();
         var runData = _saveManager.Data.CurrentRun;
 
-
-        Debug.Log("Iniciando Resolução Visual...");
-
+        // 1. Lógica Visual do Grid (Colheita/Morte)
         for (int i = 0; i < runData.GridSlots.Length; i++)
         {
-            // 1. Visual: Câmera/UI foca no slot
             _events.Grid.TriggerAnalyzeSlot(i);
-
-            // 2. Lógica: Processa maturação
             gridService.ProcessNightCycleForSlot(i);
 
-            // 3. Ritmo: Delay para o jogador entender o que aconteceu
-            // Se a planta morreu, o visual atualiza via evento do GridService, 
-            // e este delay permite que o jogador veja o sprite mudando para "Withered".
-
-            bool speedUp = _inputManager.IsPrimaryButtonHeld;
-            float delay = speedUp ? _fastDelayPerSlot : _baseDelayPerSlot;
+            // Pequeno delay visual
+            float delay = _inputManager.IsPrimaryButtonHeld ? 0.05f : 0.3f;
             yield return new WaitForSeconds(delay);
         }
 
-        Debug.Log("Transição Visual Concluída.");
+        yield return new WaitForSeconds(0.5f);
 
-        // Pequena pausa final
-        yield return new WaitForSeconds(_isInitialized && _inputManager.IsPrimaryButtonHeld ? _fastDelayPerSlot : _baseDelayPerSlot);
+        // 2. MUDANÇA DE DIA LÓGICA (Avança dia 1 -> 2)
+        _runManager.AdvanceDay();
+
+        // Atualiza a referência pois o runData pode ter mudado
+        var currentRun = _saveManager.Data.CurrentRun;
+
+        // 3. DRAW DIÁRIO + OVERFLOW
+        // Aqui chamamos o novo sistema que criamos no AppCore
+        AppCore.Instance.DailyHandSystem.ProcessDailyDraw(currentRun);
+
+        // Pequeno delay para permitir que as animações de entrada de carta iniciem visualmente
+        yield return new WaitForSeconds(0.8f);
+
+        // 4. Salvar o estado final (Grid processado + Mão Nova + Dinheiro atualizado)
+        _saveManager.SaveGame();
 
         _events.Time.TriggerResolutionEnded();
-        _runManager.AdvanceDay();
         _isProcessing = false;
     }
 
@@ -106,4 +110,6 @@ public class DailyResolutionSystem : MonoBehaviour
     {
         _isProcessing = false;
     }
+
+
 }
