@@ -17,6 +17,9 @@ public class RunData
     public List<string> DeckIDs;
     public CropState[] GridSlots;
 
+    public int Money;
+    public int TotalMoneyEarned;
+
     // Construtor padrão (usado pelo JSON Utility ou Serializer)
     // Mantemos ele "burro" apenas alocando listas para evitar NullReference
     public RunData()

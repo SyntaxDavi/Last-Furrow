@@ -6,6 +6,7 @@ public class AppCore : MonoBehaviour
     public static AppCore Instance { get; private set; }
     public IGameLibrary GameLibrary { get; private set; }
     public GameEvents Events { get; private set; }
+    public IEconomyService EconomyService { get; private set; }
 
     [Header("Data")]
     [SerializeField] private GameDatabaseSO _gameDatabase;
@@ -59,6 +60,7 @@ public class AppCore : MonoBehaviour
         RunManager.Initialize(SaveManager);
         DailyResolutionSystem.Initialize();
         GameStateManager.Initialize();
+        EconomyService = new EconomyService(RunManager, SaveManager);
 
         InputManager.OnAnyInputDetected += () => Events.Player.TriggerAnyInput();
 

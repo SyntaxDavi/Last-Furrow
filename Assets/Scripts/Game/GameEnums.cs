@@ -27,7 +27,8 @@ public enum CardType
     Plant,      
     Modify,     
     Harvest,    
-    Clear       
+    Clear,
+    Care
 }
 
 public enum GrowthEventType

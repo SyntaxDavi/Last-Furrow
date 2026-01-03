@@ -71,13 +71,8 @@ public static class InteractionFactory
     static InteractionFactory()
     {
         _strategies[CardType.Plant] = new PlantInteraction();
-
-        // CUIDADO: Se você tiver cartas de "Modify" que NÃO são água, 
-        // precisará de uma lógica melhor aqui (ex: um Dictionary de CardID -> Strategy).
-        // Por enquanto, vamos assumir que Modify = Água ou usar a ModifyInteraction genérica.
-
-        // _strategies[CardType.Modify] = new WaterInteractionStrategy(); // Opção A: Força água
-        _strategies[CardType.Modify] = new ModifyInteraction();       // Opção B: Genérico
+        _strategies[CardType.Modify] = new WaterInteractionStrategy(); 
+        _strategies[CardType.Harvest] = new HarvestInteractionStrategy();
     }
 
     public static ICardInteractionStrategy GetStrategy(CardType type)
