@@ -120,7 +120,6 @@ public class InputManager : MonoBehaviour
 #endif
         }
 
-        // AQUI MUDOU: Não chama AppCore. Apenas avisa quem estiver ouvindo.
         if (anyInput)
         {
             OnAnyInputDetected?.Invoke();
