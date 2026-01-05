@@ -59,6 +59,7 @@ public interface IGridService
 
     void ProcessNightCycleForSlot(int slotIndex);
     bool CanReceiveCard(int index, CardData card);
+    float GetGridContaminationPercentage();
     InteractionResult ApplyCard(int index, CardData card);
 }
 

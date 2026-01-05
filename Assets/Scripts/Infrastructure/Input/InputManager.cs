@@ -26,6 +26,7 @@ public class InputManager : MonoBehaviour
     // Útil para UI ou Feedback Visual local
     public event System.Action OnPrimaryClick;
     public event System.Action OnAnyInputDetected;
+    public event System.Action OnBackInput;
 
     public void Initialize()
     {
@@ -67,6 +68,11 @@ public class InputManager : MonoBehaviour
 
         // Dispara eventos locais se necessário
         if (IsPrimaryButtonDown) OnPrimaryClick?.Invoke();
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            OnBackInput?.Invoke();
+        }
 
         DetectAnyInput();
     }

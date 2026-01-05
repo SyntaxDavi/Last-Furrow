@@ -41,5 +41,26 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Grid
+    uniqueID: 409651965
+    locked: 0
+  - name: Crops
+    uniqueID: 1545203455
+    locked: 0
+  - name: Cards_Idle
+    uniqueID: 4019113481
+    locked: 0
+  - name: UI_Overlay
+    uniqueID: 1800061087
+    locked: 0
+  - name: UI_World
+    uniqueID: 2128722371
+    locked: 0
+  - name: Cards_Drag
+    uniqueID: 2207004973
+    locked: 0
+  - name: VFX
+    uniqueID: 3965246615
+    locked: 0
   m_RenderingLayers:
   - Default

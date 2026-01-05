@@ -7,12 +7,13 @@ using System;
 public class CardView : MonoBehaviour, IInteractable, IDraggable
 {
     // --- CONSTANTES (Fim dos números mágicos) ---
-    private const int SORTING_IDLE_BASE = 0;
-    private const int SORTING_HOVER = 100;
-    private const int SORTING_DRAG = 200;
+    private const string LAYER_IDLE = "Cards_Idle";
+    private const string LAYER_DRAG = "Cards_Drag";
 
     private const float Z_DEPTH_IDLE = 0f;
     private const float Z_DEPTH_DRAG = -5f;
+
+    private int _handIndexOrder = 0;
 
     [Header("Referencias")]
     [SerializeField] private SortingGroup _sortingGroup;
@@ -81,16 +82,23 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable
 
     // --- CONTROLE VISUAL ---
 
-    public void SetSortingOrder(int order)
+    public void SetSortingOrder(int handIndex)
     {
-        if (_sortingGroup) _sortingGroup.sortingOrder = order;
+        _handIndexOrder = handIndex;
+        UpdateSorting(LAYER_IDLE, _handIndexOrder);
     }
-
+    private void UpdateSorting(string layerName, int order)
+    {
+        if (_sortingGroup)
+        {
+            _sortingGroup.sortingLayerName = layerName;
+            _sortingGroup.sortingOrder = order;
+        }
+    }
     public void RestoreSorting()
     {
-        // Volta para a ordem baseada no índice da mão (calculada pelo HandManager geralmente)
-        // Por enquanto, usamos um padrão simples:
-        SetSortingOrder(HandIndex * 10);
+        // Volta para a layer de repouso
+        UpdateSorting(LAYER_IDLE, _handIndexOrder * 10);
     }
 
     // --- INTERFACES (Inputs) ---
@@ -109,7 +117,8 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable
     public void OnDragStart()
     {
         IsDragging = true;
-        SetSortingOrder(SORTING_DRAG); // Usa constante
+        // Joga para a layer exclusiva de Drag (acima de todas as outras cartas)
+        UpdateSorting(LAYER_DRAG, 100);
         OnDragStartedEvent?.Invoke(this);
     }
 
@@ -122,11 +131,8 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable
 
     public void OnDragEnd()
     {
-        // Apenas limpamos o estado visual de drag.
         IsDragging = false;
         OnDragEndedEvent?.Invoke(this);
-
-        // HandManager vai reordenar no próximo frame, mas garantimos um reset seguro
         RestoreSorting();
     }
 }

@@ -94,6 +94,22 @@ public class DailyResolutionSystem : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
 
         // -----------------------------------------------------------------------
+        // 1.5. VERIFICAÇÃO DE COLAPSO (GDD: Morte por Sufocamento > 80%)
+        // -----------------------------------------------------------------------
+        float contamination = gridService.GetGridContaminationPercentage();
+        if (contamination >= 0.8f)
+        {
+            Debug.LogError($"GAME OVER: Colapso do Grid ({contamination * 100:F0}% contaminado).");
+
+            // Encerra a run. Isso dispara o evento OnRunEnded -> UIManager -> GameOverView
+            // Certifique-se que RunEndReason.WitheredOverload existe no seu Enum
+            AppCore.Instance.RunManager.EndRun(RunEndReason.WitheredOverload);
+
+            _isProcessing = false; // Garante que a flag seja liberada
+            yield break; // Interrompe o resto do dia imediatamente
+        }
+
+        // -----------------------------------------------------------------------
         // 2. PONTUAÇÃO E METAS (Weekly Goal System)
         // -----------------------------------------------------------------------
 
@@ -118,7 +134,11 @@ public class DailyResolutionSystem : MonoBehaviour
                 Debug.Log($"<color=red>META FALHOU! -1 Vida.</color>");
                 _events.Progression.TriggerLivesChanged(runData.CurrentLives);
 
-                if (runData.CurrentLives <= 0) { /* Game Over Logic */ }
+                if (runData.CurrentLives <= 0)
+                {
+                    // Game Over por falta de vidas (pode ser tratado aqui ou via evento)
+                    /* Game Over Logic */
+                }
             }
             // Zeramos a pontuação AGORA, pois entramos no fim de semana.
             runData.CurrentWeeklyScore = 0;

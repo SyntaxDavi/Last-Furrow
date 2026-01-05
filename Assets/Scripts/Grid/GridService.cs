@@ -78,6 +78,24 @@ public class GridService : IGridService
 
         return result;
     }
+    public float GetGridContaminationPercentage()
+    {
+        if (_runData.GridSlots == null || _runData.GridSlots.Length == 0) return 0f;
+
+        int totalSlots = _runData.GridSlots.Length;
+        int contaminatedSlots = 0;
+
+        foreach (var slot in _runData.GridSlots)
+        {
+            // Contaminação = Planta Morta (Futuro: + Pragas)
+            if (slot.IsWithered)
+            {
+                contaminatedSlots++;
+            }
+        }
+
+        return (float)contaminatedSlots / totalSlots;
+    }
 
     public void ProcessNightCycleForSlot(int index)
     {
