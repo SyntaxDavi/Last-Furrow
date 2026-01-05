@@ -45,7 +45,11 @@ public class GameplayBootstrapper : MonoBehaviour
 
         // --- CRIAÇÃO CENTRALIZADA ---
         // 1. Cria a instância
-        _gridService = new GridService(runData, library);
+        _gridService = new GridService(
+           runData,
+           library,
+           AppCore.Instance.GameStateManager
+       );
 
         // 2. Registra no Global (para DailyResolution, CheatManager, etc)
         AppCore.Instance.RegisterGridService(_gridService);

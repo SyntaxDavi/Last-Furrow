@@ -11,6 +11,7 @@ public class GridManager : MonoBehaviour
     private IGridService _gridService;
     private IGameLibrary _library;
     private List<GridSlotView> _spawnedSlots = new List<GridSlotView>();
+    public IGridService Service => _gridService;
 
     public void Configure(IGridService service, IGameLibrary library)
     {
@@ -67,7 +68,8 @@ public class GridManager : MonoBehaviour
             newSlot.name = $"Slot_{i}";
 
             newSlot.Initialize(i);
-            newSlot.OnCheckDropInteraction += (index, card) => _gridService.CanReceiveCard(index, card);
+            newSlot.Configure(this, i);
+
             newSlot.OnDropInteraction += HandleDropInteraction;
 
             _spawnedSlots.Add(newSlot);

@@ -1,57 +1,79 @@
-using System;
 using UnityEngine;
+using System;
 
 public class GridService : IGridService
 {
     private readonly RunData _runData;
     private readonly IGameLibrary _library;
+    private readonly GameStateManager _gameStateManager;
 
     public event Action<int> OnSlotStateChanged;
     public event Action OnDataDirty;
     public event Action<int, GridEventType> OnSlotUpdated;
-    public GridService(RunData runData, IGameLibrary library)
-    {   
+
+    public GridService(RunData runData, IGameLibrary library, GameStateManager gameStateManager)
+    {
         _runData = runData;
         _library = library;
+        _gameStateManager = gameStateManager;
     }
 
     public IReadOnlyCropState GetSlotReadOnly(int index)
     {
-        if (IsIndexInvalid(index)) return null;
-
-        // Retorna o objeto concreto, mas o compilador trata como Interface
-        return _runData.GridSlots[index];
+        if (IsValidIndex(index)) return _runData.GridSlots[index];
+        return new CropState();
     }
 
+    // --- CORREÇÃO 1: Usando o nome correto e a lógica correta ---
     public bool CanReceiveCard(int index, CardData card)
     {
-        if (IsIndexInvalid(index) || card == null) return false;
+        // Se o índice NÃO for válido (!IsValidIndex), retorna falso.
+        if (!IsValidIndex(index))
+        {
+            Debug.Log($"Fail: Index {index} inválido ou fora do array.");
+            return false;
+        }
+
+        if (card == null) return false;
+
         var slot = _runData.GridSlots[index];
+
         var strategy = InteractionFactory.GetStrategy(card.Type);
-        return strategy != null && strategy.CanInteract(slot, card);
+        if (strategy == null) return false;
+
+        // O Slot está vazio? A estratégia permite?
+        return strategy.CanInteract(slot, card);
     }
 
     public InteractionResult ApplyCard(int index, CardData card)
     {
-        if (IsIndexInvalid(index)) return InteractionResult.Fail("Índice inválido");
+        // 1. PROTEÇÃO DE ESTADO
+        if (_gameStateManager.CurrentState != GameState.Playing)
+        {
+            return InteractionResult.Fail("Ação bloqueada: O jogo não está em fase de produção.");
+        }
+
+        // 2. Validações Padrão
+        // --- CORREÇÃO 2: Adicionado '!' (NOT) ---
+        // Se NÃO for válido, aí sim retorna erro.
+        if (!IsValidIndex(index)) return InteractionResult.Fail("Slot inválido.");
 
         var slot = _runData.GridSlots[index];
-        var strategy = InteractionFactory.GetStrategy(card.Type);
 
-        if (strategy == null) return InteractionResult.Fail("Sem estratégia");
+        // 3. Estratégia de Interação
+        ICardInteractionStrategy strategy = GetStrategyForCard(card);
+        if (strategy == null) return InteractionResult.Fail("Carta sem efeito definido.");
 
+        if (!strategy.CanInteract(slot, card)) return InteractionResult.Fail("Interação inválida neste slot.");
+
+        // 4. Execução
         var result = strategy.Execute(slot, card, _library);
 
         if (result.IsSuccess)
         {
             OnSlotStateChanged?.Invoke(index);
             OnSlotUpdated?.Invoke(index, result.EventType);
-
-            // Marca dados do GRID como sujos
             OnDataDirty?.Invoke();
-
-            // Nota: Quem chamou (HandManager/PlayerInteraction) vai receber o 'result'
-            // e ler 'result.ShouldConsumeCard' para decidir se consome.
         }
 
         return result;
@@ -59,9 +81,10 @@ public class GridService : IGridService
 
     public void ProcessNightCycleForSlot(int index)
     {
-        if (IsIndexInvalid(index)) return;
-        var slot = _runData.GridSlots[index];
+        // --- CORREÇÃO 3: Adicionado '!' (NOT) ---
+        if (!IsValidIndex(index)) return;
 
+        var slot = _runData.GridSlots[index];
         bool wasWatered = slot.IsWatered;
 
         // 1. Seca a terra
@@ -70,7 +93,6 @@ public class GridService : IGridService
         GridEventType eventToEmit = GridEventType.GenericUpdate;
         bool visualUpdateNeeded = wasWatered;
 
-        // Se secou e nada mais acontecer, o evento é DryOut
         if (wasWatered) eventToEmit = GridEventType.DryOut;
 
         // 2. Processa Biologia
@@ -81,9 +103,6 @@ public class GridService : IGridService
             if (result.EventType != GrowthEventType.None)
             {
                 visualUpdateNeeded = true;
-
-                // TRADUÇÃO (Logic -> GridEvent)
-                // Eventos biológicos têm prioridade sobre o "DryOut"
                 switch (result.EventType)
                 {
                     case GrowthEventType.Matured:
@@ -92,11 +111,7 @@ public class GridService : IGridService
                     case GrowthEventType.WitheredByAge:
                         eventToEmit = GridEventType.Withered;
                         break;
-                    // Growing ou LastFreshDayWarning podem ser mapeados para GenericUpdate 
-                    // ou criar eventos específicos se você tiver som de "crescimento"
                     default:
-                        // Se era DryOut mas cresceu, talvez queira manter DryOut ou Generic?
-                        // Vamos dar prioridade ao DryOut se não for Matured/Withered
                         if (eventToEmit == GridEventType.GenericUpdate)
                             eventToEmit = GridEventType.GenericUpdate;
                         break;
@@ -107,11 +122,18 @@ public class GridService : IGridService
         if (visualUpdateNeeded)
         {
             OnSlotStateChanged?.Invoke(index);
-            // Emite o evento rico (Matured, Withered ou DryOut)
             OnSlotUpdated?.Invoke(index, eventToEmit);
             OnDataDirty?.Invoke();
         }
     }
 
-    private bool IsIndexInvalid(int index) => index < 0 || index >= _runData.GridSlots.Length;
+    private ICardInteractionStrategy GetStrategyForCard(CardData card)
+    {
+        if (card == null) return null;
+        return InteractionFactory.GetStrategy(card.Type);
+    }
+
+    // --- HELPER UNIFICADO ---
+    // Retorna TRUE se o índice for BOM.
+    private bool IsValidIndex(int index) => index >= 0 && index < _runData.GridSlots.Length;
 }

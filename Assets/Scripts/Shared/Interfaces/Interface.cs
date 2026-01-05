@@ -15,6 +15,7 @@ public interface IRunManager
     void StartNewRun();
     void AdvanceDay();
     bool IsRunActive { get; }
+    RunPhase CurrentPhase { get; }
 }
 
 public interface IInteractable

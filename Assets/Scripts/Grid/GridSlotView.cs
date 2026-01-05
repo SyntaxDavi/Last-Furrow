@@ -1,5 +1,5 @@
-using UnityEngine;
 using System; // Necessário para Func e Action
+using UnityEngine;
 
 [RequireComponent(typeof(SpriteRenderer), typeof(BoxCollider2D))]
 public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
@@ -16,23 +16,17 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     [Header("Cores de Highlight")]
     [SerializeField] private Color _highlightColor = new Color(1f, 1f, 1f, 0.4f); // Branco transparente
 
-    public int SlotIndex { get; private set; }
-
-    // --- EVENTOS (A Ponte para o Controller) ---
-    // O Controller assina isso para responder "Posso soltar aqui?"
-    public event Func<int, CardData, bool> OnCheckDropInteraction;
+    private GridManager _gridManager;
+    private int _index;
+    public int SlotIndex => _index;
 
     // O Controller assina isso para executar "Soltei aqui!"
     public event Action<int, CardData> OnDropInteraction;
-
-    private void Awake()
-    {
-        ConfigureRenderers();
-    }
+    private void Awake() => ConfigureRenderers();
 
     public void Initialize(int index)
     {
-        SlotIndex = index;
+        _index = index;
 
         // Garante estado visual limpo ao nascer
         _plantRenderer.enabled = false;
@@ -78,31 +72,47 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 
     public void OnClick()
     {
-        // Futuro: Abrir menu de detalhes do slot
+        // Futuro: Abrir menu de detalhes
+    }
+
+    public void Configure(GridManager manager, int index)
+    {
+        _gridManager = manager;
+        _index = index;
     }
 
     // --- INTERFACE IDROPTARGET (DRAG & DROP) ---
 
     public bool CanReceive(IDraggable draggable)
     {
-        // Verifica se é uma carta
-        if (draggable is CardView cardView && cardView.Data != null)
+        // 1. Verifica Estado Global
+        var currentState = AppCore.Instance.GameStateManager.CurrentState;
+        if (currentState != GameState.Playing)
         {
-            // PERGUNTA para quem estiver ouvindo (Controller -> Service)
-            // Se ninguém estiver ouvindo, retorna false por segurança.
-            return OnCheckDropInteraction?.Invoke(SlotIndex, cardView.Data) ?? false;
+            // Pode estar em "Shopping" ou "Initialization"
+             Debug.Log($"[Slot {_index}] Recusado: Estado é {currentState}");
+            return false;
         }
-        return false;
+
+        // 2. Verifica Tipo
+        if (draggable is not CardView cardView) return false;
+
+        // 3. Verifica Lógica (Serviço)
+        bool logicResult = _gridManager.Service.CanReceiveCard(_index, cardView.Data);
+
+        if (!logicResult)
+        {
+             Debug.Log($"[Slot {_index}] Recusado: Regra de Jogo (Service retornou false)");
+        }
+
+        return logicResult;
     }
 
     public void OnReceive(IDraggable draggable)
     {
         if (draggable is CardView cardView)
         {
-            // AVISA que recebeu o drop
             OnDropInteraction?.Invoke(SlotIndex, cardView.Data);
-
-            // Remove o destaque visual imediatamente
             OnHoverExit();
         }
     }

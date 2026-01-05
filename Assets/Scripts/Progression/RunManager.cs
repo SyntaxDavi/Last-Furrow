@@ -3,11 +3,12 @@ using UnityEngine;
 public class RunManager : MonoBehaviour, IRunManager
 {
     private ISaveManager _saveManager;
+    private RunPhase _currentPhase;
 
-    // Constantes para evitar "Magic Numbers" (Ponto 2 do feedback)
     private const int DAYS_IN_PRODUCTION = 5;
-    // O fim de semana começa logo após a produção
-    private const int DAY_WEEKEND_START = DAYS_IN_PRODUCTION + 1;
+    private const int DAY_WEEKEND_START = 6;
+
+    public RunPhase CurrentPhase => _currentPhase;
 
     public void Initialize(ISaveManager saveManager)
     {
@@ -99,9 +100,10 @@ public class RunManager : MonoBehaviour, IRunManager
     {
         Debug.Log("Iniciando Fase de Fim de Semana (Shop)");
 
+        _currentPhase = RunPhase.Weekend;
         AppCore.Instance.GameStateManager.SetState(GameState.Shopping);
         AppCore.Instance.Events.Time.TriggerWeekendStarted();
-        AppCore.Instance.Events.UI.TriggerToggleHand(false); // Esconde cartas de plantio
+        AppCore.Instance.Events.UI.TriggerToggleHand(false);    
     }
 
     private void StartNextWeek(RunData run)
@@ -111,6 +113,7 @@ public class RunManager : MonoBehaviour, IRunManager
 
         Debug.Log($"Iniciando Semana {run.CurrentWeek}");
 
+        _currentPhase = RunPhase.Production;
         AppCore.Instance.GameStateManager.SetState(GameState.Playing);
 
         AppCore.Instance.Events.Time.TriggerWeekChanged(run.CurrentWeek);
