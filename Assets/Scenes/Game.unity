@@ -395,7 +395,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _gridCanvasGroup: {fileID: 0}
-  _gridRenderers: []
+  _gridRenderers:
+  - {fileID: 9080896996990885390, guid: 28b8f0aacff53ce4ab77edbb5b825c91, type: 3}
   _disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
 --- !u!1 &676362681
 GameObject:

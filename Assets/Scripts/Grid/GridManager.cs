@@ -47,6 +47,8 @@ public class GridManager : MonoBehaviour
 
     private void GenerateGrid()
     {
+        List<SpriteRenderer> renderersForFeedback = new List<SpriteRenderer>();
+
         foreach (var slot in _spawnedSlots)
             if (slot != null) Destroy(slot.gameObject);
 
@@ -54,6 +56,7 @@ public class GridManager : MonoBehaviour
 
         foreach (Transform child in _gridContainer)
             Destroy(child.gameObject);
+
 
         for (int i = 0; i < 9; i++)
         {
@@ -64,6 +67,7 @@ public class GridManager : MonoBehaviour
 
             float xPos = (col - 1) * _spacing.x;
             float yPos = (1 - row) * _spacing.y;
+
             newSlot.transform.localPosition = new Vector2(xPos, yPos);
             newSlot.name = $"Slot_{i}";
 
@@ -73,6 +77,18 @@ public class GridManager : MonoBehaviour
             newSlot.OnDropInteraction += HandleDropInteraction;
 
             _spawnedSlots.Add(newSlot);
+
+            var renderer = newSlot.GetComponent<SpriteRenderer>();
+            if (renderer != null)
+            {
+                renderersForFeedback.Add(renderer);
+            }
+        }
+
+        var feedback = GetComponent<GridStateFeedback>();
+        if (feedback != null)
+        {
+            feedback.UpdateRenderers(renderersForFeedback);
         }
     }
 

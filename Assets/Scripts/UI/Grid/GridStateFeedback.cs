@@ -1,13 +1,10 @@
 using UnityEngine;
+using System.Collections.Generic; 
 
 public class GridStateFeedback : MonoBehaviour
 {
-    [Header("Configuração")]
-    [Tooltip("Se usar UI (Canvas)")]
-    [SerializeField] private CanvasGroup _gridCanvasGroup;
+    private List<SpriteRenderer> _gridRenderers = new List<SpriteRenderer>();
 
-    [Tooltip("Se usar Sprites no mundo (2D)")]
-    [SerializeField] private SpriteRenderer[] _gridRenderers;
     [SerializeField] private Color _disabledColor = new Color(0.5f, 0.5f, 0.5f, 1f);
 
     private void OnEnable()
@@ -15,7 +12,7 @@ public class GridStateFeedback : MonoBehaviour
         if (AppCore.Instance != null)
         {
             AppCore.Instance.Events.GameState.OnStateChanged += HandleStateChanged;
-            // Força atualização inicial caso o estado já tenha mudado antes do script ligar
+            // Força atualização inicial
             HandleStateChanged(AppCore.Instance.GameStateManager.CurrentState);
         }
     }
@@ -26,20 +23,21 @@ public class GridStateFeedback : MonoBehaviour
             AppCore.Instance.Events.GameState.OnStateChanged -= HandleStateChanged;
     }
 
+    // --- NOVO MÉTODO: O GridManager chama isso ao nascer ---
+    public void UpdateRenderers(List<SpriteRenderer> renderers)
+    {
+        _gridRenderers = renderers;
+
+        // Aplica o estado atual imediatamente nos novos renderers
+        HandleStateChanged(AppCore.Instance.GameStateManager.CurrentState);
+    }
+
     private void HandleStateChanged(GameState newState)
     {
         bool isPlaying = (newState == GameState.Playing);
 
-        // Lógica para UI (Canvas)
-        if (_gridCanvasGroup != null)
-        {
-            _gridCanvasGroup.alpha = isPlaying ? 1f : 0.6f; // Fica meio transparente no shop
-            _gridCanvasGroup.interactable = isPlaying;
-            _gridCanvasGroup.blocksRaycasts = isPlaying;
-        }
-
-        // Lógica para World Space (Sprites)
-        if (_gridRenderers != null && _gridRenderers.Length > 0)
+        // Lógica Sprites (Agora usa a lista dinâmica)
+        if (_gridRenderers != null && _gridRenderers.Count > 0)
         {
             Color targetColor = isPlaying ? Color.white : _disabledColor;
             foreach (var sprite in _gridRenderers)
