@@ -7,10 +7,6 @@ public class MainHudController : MonoBehaviour
     [Header("UI References")]
     [SerializeField] private TextMeshProUGUI _moneyText;
     [SerializeField] private TextMeshProUGUI _deltaText;
-
-    // Opcional: Animação via código ou Animator
-    [SerializeField] private float _punchScale = 1.2f;
-
     private void Start()
     {
         // Garante estado inicial

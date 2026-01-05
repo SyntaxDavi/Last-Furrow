@@ -5,18 +5,19 @@ public class DailyResolutionSystem : MonoBehaviour
 {
     [Header("Configuração Visual")]
     [SerializeField] private float _baseDelayPerSlot = 0.3f;
-    [SerializeField] private float _fastDelayPerSlot = 0.05f;
+    [SerializeField] private float _fastDelayPerSlot = 0.05f; 
 
     // --- ESTADO INTERNO ---
     private bool _isProcessing = false;
 
-    // --- DEPENDÊNCIAS CACHEADAS (Correção do Ponto 2) ---
+    // --- DEPENDÊNCIAS CACHEADAS ---
     private RunManager _runManager;
     private SaveManager _saveManager;
-    private InputManager _inputManager; // Correção do Ponto 3
-    private GameEvents _events;         // Correção do Ponto 2
+    private InputManager _inputManager;
+    private GameEvents _events;
 
-    private bool _isInitialized = false; // Flag de segurança
+    // Flag de segurança
+    private bool _isInitialized = false;
 
     // Chamado pelo AppCore no boot
     public void Initialize()
@@ -38,13 +39,13 @@ public class DailyResolutionSystem : MonoBehaviour
 
     public void StartEndDaySequence()
     {
-        // 1. Segurança contra inicialização esquecida (Correção do Ponto 1)
+        // 1. Segurança contra inicialização esquecida
         if (!_isInitialized)
         {
             Debug.LogWarning("[DailyResolution] Não inicializado! Tentando inicializar agora...");
             Initialize();
 
-            if (!_isInitialized) // Se falhou mesmo assim
+            if (!_isInitialized)
             {
                 Debug.LogError("[DailyResolution] Falha fatal: Dependências não resolvidas.");
                 return;
@@ -63,45 +64,102 @@ public class DailyResolutionSystem : MonoBehaviour
 
         StartCoroutine(ResolveDayRoutine());
     }
+
     private IEnumerator ResolveDayRoutine()
     {
         _isProcessing = true;
 
-        // Avisa a UI de tempo que a noite começou
+        // Bloqueia interações e avisa UI
         _events.Time.TriggerResolutionStarted();
 
         IGridService gridService = AppCore.Instance.GetGridLogic();
         var runData = _saveManager.Data.CurrentRun;
 
-        // 1. Lógica Visual do Grid (Colheita/Morte)
+        // -----------------------------------------------------------------------
+        // 1. LÓGICA VISUAL DO GRID (Crescimento / Morte)
+        // -----------------------------------------------------------------------
         for (int i = 0; i < runData.GridSlots.Length; i++)
         {
             _events.Grid.TriggerAnalyzeSlot(i);
+
+            // O GridService processa a lógica biológica da planta
             gridService.ProcessNightCycleForSlot(i);
 
-            // Pequeno delay visual
-            float delay = _inputManager.IsPrimaryButtonHeld ? 0.05f : 0.3f;
+            // Controle de ritmo para o jogador ver o que aconteceu
+            float delay = _inputManager.IsPrimaryButtonHeld ? _fastDelayPerSlot : _baseDelayPerSlot;
             yield return new WaitForSeconds(delay);
         }
 
+        // Pequena pausa após terminar o grid
         yield return new WaitForSeconds(0.5f);
 
-        // 2. MUDANÇA DE DIA LÓGICA (Avança dia 1 -> 2)
+        // -----------------------------------------------------------------------
+        // 2. PONTUAÇÃO E METAS (Weekly Goal System)
+        // -----------------------------------------------------------------------
+
+        // Passo A: Calcular Pontos Passivos da Noite (baseado no Grid já processado)
+        AppCore.Instance.WeeklyGoalSystem.ProcessNightlyScoring(runData);
+
+        // Passo B: Verificar se a Semana acabou e obter o Relatório
+        // O CheckEndOfWeek NÃO aplica dano, apenas retorna o resultado (Struct)
+        WeekEvaluationResult weekResult = AppCore.Instance.WeeklyGoalSystem.CheckEndOfProduction(runData);
+
+        if (weekResult.IsWeekEnd) // Isso significa "Fim do ciclo de produção"
+        {
+            Debug.Log($"[DailyResolution] Fim da Produção (Dia {runData.CurrentDay})! Avaliando Meta...");
+
+            if (weekResult.IsSuccess)
+            {
+                Debug.Log("<color=green>META BATIDA!</color>");
+            }
+            else
+            {
+                runData.CurrentLives--;
+                Debug.Log($"<color=red>META FALHOU! -1 Vida.</color>");
+                _events.Progression.TriggerLivesChanged(runData.CurrentLives);
+
+                if (runData.CurrentLives <= 0) { /* Game Over Logic */ }
+            }
+            // Zeramos a pontuação AGORA, pois entramos no fim de semana.
+            runData.CurrentWeeklyScore = 0;
+
+            // Mas mantemos a meta VISUALMENTE antiga ou mostramos a nova?
+            // Geralmente no fim de semana mostramos "Próxima Meta: X"
+            runData.WeeklyGoalTarget = weekResult.NextGoal;
+
+            // Importante: Não incrementamos runData.CurrentWeek aqui se o RunManager já faz isso.
+            // Mas atualizamos os valores de meta.
+
+            _events.Progression.TriggerScoreUpdated(0, runData.WeeklyGoalTarget);
+            _events.Progression.TriggerWeeklyGoalEvaluated(weekResult.IsSuccess, runData.CurrentLives);
+
+            yield return new WaitForSeconds(2.0f);
+        }
+
+        // -----------------------------------------------------------------------
+        // 3. AVANÇO DE DIA E CARTAS
+        // -----------------------------------------------------------------------
+
+        // Avança dia numérico (Dia 1 -> 2)
         _runManager.AdvanceDay();
 
-        // Atualiza a referência pois o runData pode ter mudado
+        // Atualiza a referência local (boa prática após alterar dados estruturais)
         var currentRun = _saveManager.Data.CurrentRun;
 
-        // 3. DRAW DIÁRIO + OVERFLOW
-        // Aqui chamamos o novo sistema que criamos no AppCore
+        // Distribui novas cartas e processa Overflow (Venda automática)
         AppCore.Instance.DailyHandSystem.ProcessDailyDraw(currentRun);
 
-        // Pequeno delay para permitir que as animações de entrada de carta iniciem visualmente
+        // Delay para animação das cartas entrando na mão
         yield return new WaitForSeconds(0.8f);
 
-        // 4. Salvar o estado final (Grid processado + Mão Nova + Dinheiro atualizado)
+        // -----------------------------------------------------------------------
+        // 4. PERSISTÊNCIA E ENCERRAMENTO
+        // -----------------------------------------------------------------------
+
+        // Salva tudo (Grid atualizado, Pontos somados, Cartas na mão, Vidas atualizadas)
         _saveManager.SaveGame();
 
+        // Libera o jogo
         _events.Time.TriggerResolutionEnded();
         _isProcessing = false;
     }
@@ -110,6 +168,4 @@ public class DailyResolutionSystem : MonoBehaviour
     {
         _isProcessing = false;
     }
-
-
 }

@@ -27,83 +27,112 @@ public class CheatManager : MonoBehaviour
         if (_runManager == null || _saveManager == null) return;
         // -----------------------------
 
-        GUILayout.BeginArea(new Rect(10, 10, 220, 400));
-        GUILayout.Box("CHEAT MENU");
+        GUILayout.BeginArea(new Rect(10, 10, 250, 600)); // Aumentei a altura e largura
+        GUILayout.Box("CHEAT MENU (DEBUG)");
 
         GUI.color = Color.green;
-        if (GUILayout.Button("NOVA RUN"))
+        if (GUILayout.Button("NOVA RUN (Reset)"))
         {
-            StartRun();
+            ResetSaveData(); // Reseta e recarrega para garantir dados limpos
         }
         GUI.color = Color.white;
 
+        // ---------------------------------------------------------
+        // SEÇÃO: FLUXO DE TEMPO
+        // ---------------------------------------------------------
         GUILayout.Space(10);
-        GUILayout.Label("--- FLUXO DE JOGO ---");
+        GUILayout.Label($"--- TEMPO (Dia: {_saveManager.Data.CurrentRun?.CurrentDay}) ---");
 
-        // --- BOTÃO ÚNICO E CORRETO ---
-        // Esse botão chama o DailyResolutionSystem.
-        // O DailyResolutionSystem calcula o crescimento E chama o AdvanceDay() no final automaticamente.
         GUI.color = Color.cyan;
-        if (GUILayout.Button("PRÓXIMO DIA (Noite)"))
+        if (GUILayout.Button("ENCERRAR DIA (Noite)"))
         {
             GoToNextDay();
         }
         GUI.color = Color.white;
 
+        // ---------------------------------------------------------
+        // SEÇÃO: PROGRESSÃO (METAS & VIDAS)
+        // ---------------------------------------------------------
         GUILayout.Space(10);
-        GUILayout.Label("--- DEBUG ---");
+        var run = _saveManager.Data.CurrentRun;
 
-        if (GUILayout.Button("Matar Run (Game Over)")) KillRun();
-
-        GUI.color = Color.red;
-        if (GUILayout.Button("Resetar Save")) ResetSaveData();
-        GUI.color = Color.white;
-
-        GUILayout.Space(10);
-
-        if (_runManager.IsRunActive)
+        if (run != null)
         {
-            var run = _saveManager.Data.CurrentRun;
-            GUILayout.Label($"Dia: {run?.CurrentDay} (Semana {run?.CurrentWeek})");
-            GUILayout.Label($"Estado: {AppCore.Instance.GameStateManager.CurrentState}");
+            GUILayout.Label("--- METAS & VIDAS ---");
+            GUILayout.Label($"Vidas: {run.CurrentLives} / {run.MaxLives}");
+            GUILayout.Label($"Meta Semanal: {run.CurrentWeeklyScore} / {run.WeeklyGoalTarget}");
 
-            // Debug rápido para ver se a lógica rodou sem precisar de sprite
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("+50 Pontos"))
+            {
+                run.CurrentWeeklyScore += 50;
+                // Avisa o sistema para atualizar a UI (se houver)
+                AppCore.Instance.Events.Progression.TriggerScoreUpdated(run.CurrentWeeklyScore, run.WeeklyGoalTarget);
+            }
+            if (GUILayout.Button("-1 Vida"))
+            {
+                run.CurrentLives--;
+                AppCore.Instance.Events.Progression.TriggerLivesChanged(run.CurrentLives);
+            }
+            GUILayout.EndHorizontal();
+        }
+
+        // ---------------------------------------------------------
+        // SEÇÃO: ECONOMIA & CARTAS
+        // ---------------------------------------------------------
+        GUILayout.Space(10);
+        if (run != null)
+        {
+            GUILayout.Label("--- ECONOMIA & MÃO ---");
+            GUILayout.Label($"Dinheiro: ${run.Money}");
+            GUILayout.Label($"Cartas na Mão: {run.Hand.Count} / {run.MaxHandSize}");
+
+            if (GUILayout.Button("+ $100 Grana"))
+            {
+                AppCore.Instance.EconomyService.Earn(100, TransactionType.Debug);
+            }
+
+            if (GUILayout.Button("Limpar Mão (Debug)"))
+            {
+                run.Hand.Clear();
+                // Força save para atualizar visual na proxima carga ou implementar evento de refresh total
+                _saveManager.SaveGame();
+                Debug.Log("Mão limpa nos dados. (O visual só atualiza se recarregar ou implementar evento de refresh)");
+            }
+        }
+
+        // ---------------------------------------------------------
+        // SEÇÃO: DADOS TÉCNICOS
+        // ---------------------------------------------------------
+        GUILayout.Space(10);
+        GUILayout.Label("--- ESTADO TÉCNICO ---");
+        GUILayout.Label($"Estado: {AppCore.Instance.GameStateManager.CurrentState}");
+
+        if (run != null)
+        {
             int wateredCount = 0;
             int witheredCount = 0;
+            int cropCount = 0;
             foreach (var s in run.GridSlots)
             {
+                if (!s.IsEmpty) cropCount++;
                 if (s.IsWatered) wateredCount++;
                 if (s.IsWithered) witheredCount++;
             }
-            GUILayout.Label($"Slots Regados: {wateredCount}");
-            GUILayout.Label($"Plantas Mortas: {witheredCount}");
+            GUILayout.Label($"Plantas Vivas: {cropCount}");
+            GUILayout.Label($"Regados: {wateredCount} | Mortas: {witheredCount}");
         }
 
         GUILayout.EndArea();
-    }
-
-    private void StartRun()
-    {
-        if (_runManager.IsRunActive) return;
-        _runManager.StartNewRun();
     }
 
     private void GoToNextDay()
     {
         if (_runManager.IsRunActive && _resolutionSystem != null)
         {
-            Debug.Log("[CHEAT] Iniciando a Noite (Crescimento + Avançar Dia)...");
-            // Isso dispara a Coroutine que:
-            // 1. Processa lógica (GridService)
-            // 2. Espera visualmente
-            // 3. Chama _runManager.AdvanceDay() no final
+            Debug.Log("[CHEAT] Iniciando a Noite...");
             _resolutionSystem.StartEndDaySequence();
         }
-    }
-
-    private void KillRun()
-    {
-        if (_runManager.IsRunActive) _runManager.EndRun(RunEndReason.Abandoned);
     }
 
     private void ResetSaveData()

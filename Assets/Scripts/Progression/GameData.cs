@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 [Serializable]
 public class GameData
@@ -10,8 +11,13 @@ public class GameData
 }
 
 [Serializable]
-public class RunData    
-{
+public class RunData
+{ 
+    [Header("Progressão Semanal")]
+    public int CurrentWeeklyScore;
+    public int WeeklyGoalTarget;
+    public int CurrentLives;
+    public int MaxLives;
     public int CurrentWeek;
     public int CurrentDay;
     public List<string> DeckIDs;
@@ -45,7 +51,12 @@ public class RunData
             Hand = new List<CardInstance>(), 
 
             MaxHandSize = 15,
-            CardsDrawPerDay = 5
+            CardsDrawPerDay = 5,
+
+            CurrentWeeklyScore = 0,
+            WeeklyGoalTarget = 150, // Meta da Semana 1
+            CurrentLives = 3,
+            MaxLives = 3
         };
 
         // --- CORREÇÃO AQUI ---

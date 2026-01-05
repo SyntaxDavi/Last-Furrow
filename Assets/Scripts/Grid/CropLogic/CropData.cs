@@ -12,6 +12,13 @@ public class CropData : ScriptableObject
     [Min(1)] public int DaysToMature;       
     [Min(0)] public int FreshnessWindow;
 
+    [Header("Sistema de Metas")]
+    [Tooltip("Pontos gerados por noite enquanto a planta estiver viva.")]
+    public int BasePassiveScore = 10;
+
+    [Tooltip("Multiplicador se a planta estiver madura.")]
+    public float MatureScoreMultiplier = 1.5f;
+
     [Header("Economia")]
     public int BaseSellValue;
 

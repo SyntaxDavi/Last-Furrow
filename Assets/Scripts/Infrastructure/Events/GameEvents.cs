@@ -18,6 +18,7 @@ public class GameEvents
     public readonly PlayerEvents Player = new PlayerEvents();
     public readonly UIEvents UI = new UIEvents();
     public readonly CameraEvents Camera = new CameraEvents();
+    public readonly ProgressionEvents Progression = new ProgressionEvents();
 
     // Construtor (opcional, mas bom para clareza)
     public GameEvents() { }

@@ -8,9 +8,13 @@ public class AppCore : MonoBehaviour
     public GameEvents Events { get; private set; }
     public IEconomyService EconomyService { get; private set; }
     public DailyHandSystem DailyHandSystem { get; private set; }
+    public WeeklyGoalSystem WeeklyGoalSystem { get; private set; }
 
     [Header("Data")]
     [SerializeField] private GameDatabaseSO _gameDatabase;
+
+    [Header("Game Design Configs")]
+    [SerializeField] private ProgressionSettingsSO _progressionSettings;
 
     [Header("Sistemas Globais")]
     public SaveManager SaveManager;
@@ -63,6 +67,7 @@ public class AppCore : MonoBehaviour
         GameStateManager.Initialize();
         EconomyService = new EconomyService(RunManager, SaveManager);
         DailyHandSystem = new DailyHandSystem(GameLibrary, EconomyService, new SeasonalCardStrategy(), Events.Player);
+        WeeklyGoalSystem = new WeeklyGoalSystem(GameLibrary, Events.Progression, _progressionSettings);
 
         InputManager.OnAnyInputDetected += () => Events.Player.TriggerAnyInput();
 
