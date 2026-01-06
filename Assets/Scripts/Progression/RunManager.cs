@@ -101,12 +101,15 @@ public class RunManager : MonoBehaviour, IRunManager
         Debug.Log("Iniciando Fase de Fim de Semana (Shop)");
 
         _currentPhase = RunPhase.Weekend;
+        var strategy = new WeekendShopStrategy();
+
+        AppCore.Instance.ShopService.OpenShop(strategy);
         AppCore.Instance.GameStateManager.SetState(GameState.Shopping);
         AppCore.Instance.Events.Time.TriggerWeekendStarted();
         AppCore.Instance.Events.UI.TriggerToggleHand(false);    
     }
 
-    private void StartNextWeek(RunData run)
+    public void StartNextWeek(RunData run)
     {
         run.CurrentWeek++;
         run.CurrentDay = 1;
@@ -114,8 +117,8 @@ public class RunManager : MonoBehaviour, IRunManager
         Debug.Log($"Iniciando Semana {run.CurrentWeek}");
 
         _currentPhase = RunPhase.Production;
-        AppCore.Instance.GameStateManager.SetState(GameState.Playing);
 
+        AppCore.Instance.GameStateManager.SetState(GameState.Playing);
         AppCore.Instance.Events.Time.TriggerWeekChanged(run.CurrentWeek);
         AppCore.Instance.Events.Time.TriggerDayChanged(1);
         AppCore.Instance.Events.UI.TriggerToggleHand(true);

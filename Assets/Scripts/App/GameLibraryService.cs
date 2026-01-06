@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using UnityEngine;
+using System.Linq;
 
 public class GameLibraryService : IGameLibrary
 {
@@ -24,8 +24,17 @@ public class GameLibraryService : IGameLibrary
             if (item != null && item.ID.IsValid)
                 _cardMap.TryAdd(item.ID, item);
         }
-    }
 
+
+    }
+    public List<CardData> GetRandomCards(int count)
+    {
+        // Pega todos os valores do dicionário, embaralha (Guid) e pega X
+        return _cardMap.Values
+            .OrderBy(x => System.Guid.NewGuid()) // Embaralha
+            .Take(count)                         // Pega a quantidade pedida
+            .ToList();
+    }
     public bool TryGetCrop(CropID id, out CropData data) => _cropMap.TryGetValue(id, out data);
     public bool TryGetCard(CardID id, out CardData data) => _cardMap.TryGetValue(id, out data);
     public IEnumerable<CropData> GetAllCrops() => _cropMap.Values;

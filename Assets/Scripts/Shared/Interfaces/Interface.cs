@@ -15,6 +15,7 @@ public interface IRunManager
     void StartNewRun();
     void AdvanceDay();
     bool IsRunActive { get; }
+    void StartNextWeek(RunData run);
     RunPhase CurrentPhase { get; }
 }
 
@@ -106,6 +107,7 @@ public interface IGameLibrary
 {
     bool TryGetCrop(CropID id, out CropData data);
     bool TryGetCard(CardID id, out CardData data);
+    List<CardData> GetRandomCards(int count);
     IEnumerable<CropData> GetAllCrops();
     IEnumerable<CardData> GetAllCards();
 }
@@ -134,3 +136,22 @@ public interface IEconomyService
     // Int: Novo Saldo, Int: Diferença (+/-), Type: Motivo
     event System.Action<int, int, TransactionType> OnBalanceChanged;
 }
+public interface IPurchasable
+{
+    string DisplayName { get; }
+    string Description { get; }
+    Sprite Icon { get; }
+    int Price { get; }
+
+    // Validação: Retorna o motivo da falha ou None se puder comprar
+    PurchaseFailReason CanPurchase(PurchaseContext ctx);
+
+    // Ação: Executa a lógica de compra
+    void OnPurchased(PurchaseContext ctx);
+}
+public interface IShopStrategy
+{
+    string ShopTitle { get; }
+    List<IPurchasable> GenerateInventory(RunData run, IGameLibrary library);
+}
+

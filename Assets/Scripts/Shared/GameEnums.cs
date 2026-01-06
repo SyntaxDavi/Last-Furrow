@@ -66,3 +66,11 @@ public enum TransactionType
     TraditionCost,     // Custo de tradição
     EventEffect        // Evento aleatório
 }
+
+public enum PurchaseFailReason
+{
+    None,
+    InsufficientFunds,
+    ConditionsNotMet, // Ex: Vida cheia, Mão cheia
+    ItemUnavailable
+}
