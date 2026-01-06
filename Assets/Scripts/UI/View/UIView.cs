@@ -75,7 +75,7 @@ public abstract class UIView : MonoBehaviour
 
         while (time < _fadeDuration)
         {
-            time += Time.deltaTime;
+            time += Time.unscaledDeltaTime;
             _canvasGroup.alpha = Mathf.Lerp(startAlpha, targetAlpha, time / _fadeDuration);
             yield return null;
         }
