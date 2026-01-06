@@ -10,59 +10,51 @@ public class ShopView : UIView
     [SerializeField] private Transform _itemsContainer;
     [SerializeField] private ShopItemView _itemPrefab;
     [SerializeField] private TextMeshProUGUI _shopTitleText;
+
+    [Header("Ações Globais")]
     [SerializeField] private Button _closeButton;
+    [SerializeField] private Button _buyButton;  
+    [SerializeField] private Button _sellButton;
 
     // --- ESTADO & CACHE ---
-    // Cache do serviço para evitar chamar AppCore.Instance toda hora
     private ShopService _shopService;
-
-    // Object Pooling: Lista de itens criados (ativos e inativos)
     private List<ShopItemView> _itemPool = new List<ShopItemView>();
 
-    // Evento para avisar o mundo externo que queremos sair
+    // Estado da Seleção Atual
+    private IPurchasable _selectedItem;
+    private ShopItemView _selectedView;
+
     public event Action OnExitRequested;
 
     protected override void Awake()
     {
         base.Awake();
 
-        // Fail Fast: Validação de referências obrigatórias
-        if (_itemPrefab == null) Debug.LogError("[ShopView] Prefab do item não atribuído!");
-        if (_itemsContainer == null) Debug.LogError("[ShopView] Container não atribuído!");
-
-        if (_closeButton)
-            _closeButton.onClick.AddListener(HandleCloseClick);
+        if (_closeButton) _closeButton.onClick.AddListener(HandleCloseClick);
+        if (_buyButton) _buyButton.onClick.AddListener(HandleBuyClick);
+        if (_sellButton) _sellButton.onClick.AddListener(HandleSellClick);
     }
 
     private void Start()
     {
-        // Cache seguro das dependências
-        if (AppCore.Instance != null)
-        {
-            _shopService = AppCore.Instance.ShopService;
-        }
+        if (AppCore.Instance != null) _shopService = AppCore.Instance.ShopService;
     }
 
     private void OnEnable()
     {
         if (AppCore.Instance != null)
-        {
             AppCore.Instance.ShopService.OnStockRefreshed += RefreshUI;
-        }
     }
 
     private void OnDisable()
     {
         if (AppCore.Instance != null)
-        {
             AppCore.Instance.ShopService.OnStockRefreshed -= RefreshUI;
-        }
     }
 
     public override void Show()
     {
         base.Show();
-        // Garante que o serviço esteja cacheado se o Start ainda não rodou (caso raro de Race Condition)
         if (_shopService == null && AppCore.Instance != null)
             _shopService = AppCore.Instance.ShopService;
 
@@ -71,53 +63,99 @@ public class ShopView : UIView
 
     private void RefreshUI()
     {
+        // Reseta seleção ao abrir ou atualizar estoque
+        DeselectAll();
+
         if (_shopService == null) return;
 
-        // 1. Limpeza via Pooling (Desativar em vez de Destruir)
-        foreach (var item in _itemPool)
-        {
-            item.gameObject.SetActive(false);
-        }
+        // Limpeza (Pooling)
+        foreach (var item in _itemPool) item.gameObject.SetActive(false);
 
-        // 2. Atualiza Título
-        if (_shopTitleText)
-            _shopTitleText.text = _shopService.CurrentShopTitle;
+        if (_shopTitleText) _shopTitleText.text = _shopService.CurrentShopTitle;
 
-        // 3. Popula Itens
         var stock = _shopService.CurrentStock;
         if (stock != null)
         {
             for (int i = 0; i < stock.Count; i++)
             {
-                // Pega ou Cria (Get from Pool)
                 ShopItemView itemView = GetItemView(i);
 
-                // Configura
-                itemView.Setup(stock[i]);
+                // Passa o método HandleItemSelected como callback
+                itemView.Setup(stock[i], HandleItemSelected);
                 itemView.gameObject.SetActive(true);
             }
         }
     }
 
-    // Lógica simples de Pool: Reusa existentes, cria novos se faltar
-    private ShopItemView GetItemView(int index)
+    // --- LÓGICA DE SELEÇÃO ---
+
+    private void HandleItemSelected(ShopItemView view, IPurchasable item)
     {
-        if (index < _itemPool.Count)
+        // 1. Remove destaque do anterior
+        if (_selectedView != null) _selectedView.SetSelected(false);
+
+        // 2. Atualiza estado
+        _selectedItem = item;
+        _selectedView = view;
+
+        // 3. Destaca novo
+        if (_selectedView != null) _selectedView.SetSelected(true);
+
+        // 4. Habilita o botão de comprar
+        UpdateButtonsState();
+    }
+
+    private void DeselectAll()
+    {
+        _selectedItem = null;
+        if (_selectedView != null) _selectedView.SetSelected(false);
+        _selectedView = null;
+        UpdateButtonsState();
+    }
+
+    private void UpdateButtonsState()
+    {
+        if (_buyButton)
         {
-            return _itemPool[index];
+            // Só pode clicar em comprar se tiver algo selecionado
+            _buyButton.interactable = (_selectedItem != null);
         }
-        else
+
+        // Lógica do botão vender (Implementar futuramente)
+        if (_sellButton)
         {
-            var newItem = Instantiate(_itemPrefab, _itemsContainer);
-            _itemPool.Add(newItem);
-            return newItem;
+            _sellButton.interactable = true; // Ou lógica específica de venda
         }
+    }
+
+    // --- AÇÕES ---
+
+    private void HandleBuyClick()
+    {
+        if (_selectedItem != null && _shopService != null)
+        {
+            _shopService.TryPurchase(_selectedItem);
+            // Se a compra for sucesso, o evento OnStockRefreshed vai rodar o RefreshUI e limpar a seleção
+        }
+    }
+
+    private void HandleSellClick()
+    {
+        Debug.Log("Lógica de Venda Global ainda não implementada.");
+        // Futuro: Abrir um painel lateral de venda ou mudar o modo de interação
     }
 
     private void HandleCloseClick()
     {
-        // Desacoplamento: A View apenas avisa "Quero sair".
-        // Quem decide o que acontece (avançar semana, fechar janela) é o UIManager ou RunManager.
         OnExitRequested?.Invoke();
+    }
+
+    // --- POOLING ---
+    private ShopItemView GetItemView(int index)
+    {
+        if (index < _itemPool.Count) return _itemPool[index];
+        var newItem = Instantiate(_itemPrefab, _itemsContainer);
+        _itemPool.Add(newItem);
+        return newItem;
     }
 }

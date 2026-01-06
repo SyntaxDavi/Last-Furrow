@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 public class WeekendShopStrategy : IShopStrategy
 {
-    public string ShopTitle => "Mercado de Fim de Semana";
+    public string ShopTitle => "Loja";
 
     public List<IPurchasable> GenerateInventory(RunData run, IGameLibrary library)
     {

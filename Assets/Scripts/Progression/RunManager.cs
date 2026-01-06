@@ -96,7 +96,7 @@ public class RunManager : MonoBehaviour, IRunManager
         }
     }
 
-    private void StartWeekendPhase()
+    public void StartWeekendPhase()
     {
         Debug.Log("Iniciando Fase de Fim de Semana (Shop)");
 

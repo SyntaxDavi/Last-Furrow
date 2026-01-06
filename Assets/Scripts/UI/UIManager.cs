@@ -24,6 +24,7 @@ public class UIManager : MonoBehaviour
             AppCore.Instance.Events.Time.OnRunEnded += HandleRunEnded;
             AppCore.Instance.Events.GameState.OnStateChanged += HandleStateChanged;
             AppCore.Instance.InputManager.OnBackInput += HandleBackInput;
+            AppCore.Instance.InputManager.OnShopToggleInput += HandleShopToggle;
         }
 
         if (_shopView != null)
@@ -39,6 +40,7 @@ public class UIManager : MonoBehaviour
             AppCore.Instance.Events.Time.OnRunEnded -= HandleRunEnded;
             AppCore.Instance.Events.GameState.OnStateChanged -= HandleStateChanged;
             AppCore.Instance.InputManager.OnBackInput -= HandleBackInput;
+            AppCore.Instance.InputManager.OnShopToggleInput -= HandleShopToggle;
         }
 
         if (_shopView != null)
@@ -88,7 +90,26 @@ public class UIManager : MonoBehaviour
         _gameOverView.Setup(reason);
         _gameOverView.Show();
     }
+    private void HandleShopToggle()
+    {
+        // Só permite alternar se estivermos na FASE de fim de semana
+        if (AppCore.Instance.RunManager.CurrentPhase != RunPhase.Weekend) return;
 
+        var stateManager = AppCore.Instance.GameStateManager;
+        var currentState = stateManager.CurrentState;
+
+        if (currentState == GameState.Shopping)
+        {
+            // FECHAR LOJA: Volta para Playing (para ver o grid)
+            // A ShopView vai sumir automaticamente por causa do StateObserver
+            stateManager.SetState(GameState.Playing);
+        }
+        else if (currentState == GameState.Playing)
+        {
+            // ABRIR LOJA: Volta para Shopping
+            stateManager.SetState(GameState.Shopping);
+        }
+    }
     private void HandleBackInput()
     {
         if (_gameOverView.IsVisible) return;

@@ -25,6 +25,11 @@ public class CheatManager : MonoBehaviour
         }
 
         if (_runManager == null || _saveManager == null) return;
+
+        if (AppCore.Instance.GameStateManager.CurrentState == GameState.Shopping)
+        {
+            return;
+        }
         // -----------------------------
 
         GUILayout.BeginArea(new Rect(10, 10, 250, 600)); // Aumentei a altura e largura
@@ -48,6 +53,12 @@ public class CheatManager : MonoBehaviour
         {
             GoToNextDay();
         }
+
+        if (GUILayout.Button("Forçar Shop (Debug)"))
+        {
+            _runManager.StartWeekendPhase();
+        }
+
         GUI.color = Color.white;
 
         // ---------------------------------------------------------

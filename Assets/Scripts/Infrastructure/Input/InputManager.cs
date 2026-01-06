@@ -27,6 +27,7 @@ public class InputManager : MonoBehaviour
     public event System.Action OnPrimaryClick;
     public event System.Action OnAnyInputDetected;
     public event System.Action OnBackInput;
+    public event System.Action OnShopToggleInput;
 
     public void Initialize()
     {
@@ -72,6 +73,11 @@ public class InputManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             OnBackInput?.Invoke();
+        }
+
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            OnShopToggleInput?.Invoke();
         }
 
         DetectAnyInput();
