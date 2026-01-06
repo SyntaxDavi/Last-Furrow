@@ -2,31 +2,51 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using System;
 
-// Herda de UIView para ter o Fade In/Out automático
 public class ShopView : UIView
 {
     [Header("Estrutura")]
-    [SerializeField] private Transform _itemsContainer; // Onde os itens vão aparecer (Content do Grid Layout)
-    [SerializeField] private ShopItemView _itemPrefab;  // O prefab do passo 2
+    [SerializeField] private Transform _itemsContainer;
+    [SerializeField] private ShopItemView _itemPrefab;
     [SerializeField] private TextMeshProUGUI _shopTitleText;
-    [SerializeField] private Button _closeButton;       // Botão "Ir Trabalhar"
+    [SerializeField] private Button _closeButton;
 
-    private List<GameObject> _spawnedItems = new List<GameObject>();
-        
+    // --- ESTADO & CACHE ---
+    // Cache do serviço para evitar chamar AppCore.Instance toda hora
+    private ShopService _shopService;
+
+    // Object Pooling: Lista de itens criados (ativos e inativos)
+    private List<ShopItemView> _itemPool = new List<ShopItemView>();
+
+    // Evento para avisar o mundo externo que queremos sair
+    public event Action OnExitRequested;
+
     protected override void Awake()
     {
         base.Awake();
 
+        // Fail Fast: Validação de referências obrigatórias
+        if (_itemPrefab == null) Debug.LogError("[ShopView] Prefab do item não atribuído!");
+        if (_itemsContainer == null) Debug.LogError("[ShopView] Container não atribuído!");
+
         if (_closeButton)
-            _closeButton.onClick.AddListener(OnCloseClicked);
+            _closeButton.onClick.AddListener(HandleCloseClick);
+    }
+
+    private void Start()
+    {
+        // Cache seguro das dependências
+        if (AppCore.Instance != null)
+        {
+            _shopService = AppCore.Instance.ShopService;
+        }
     }
 
     private void OnEnable()
     {
         if (AppCore.Instance != null)
         {
-            // Ouve atualizações do estoque
             AppCore.Instance.ShopService.OnStockRefreshed += RefreshUI;
         }
     }
@@ -39,42 +59,65 @@ public class ShopView : UIView
         }
     }
 
-    // Sobrescreve o Show() para garantir que a UI atualize ao abrir
     public override void Show()
     {
         base.Show();
+        // Garante que o serviço esteja cacheado se o Start ainda não rodou (caso raro de Race Condition)
+        if (_shopService == null && AppCore.Instance != null)
+            _shopService = AppCore.Instance.ShopService;
+
         RefreshUI();
     }
 
     private void RefreshUI()
     {
-        // 1. Limpa itens antigos
-        foreach (var item in _spawnedItems) Destroy(item);
-        _spawnedItems.Clear();
+        if (_shopService == null) return;
+
+        // 1. Limpeza via Pooling (Desativar em vez de Destruir)
+        foreach (var item in _itemPool)
+        {
+            item.gameObject.SetActive(false);
+        }
 
         // 2. Atualiza Título
         if (_shopTitleText)
-            _shopTitleText.text = AppCore.Instance.ShopService.CurrentShopTitle;
+            _shopTitleText.text = _shopService.CurrentShopTitle;
 
-        // 3. Cria novos itens baseado no Estoque Real
-        var stock = AppCore.Instance.ShopService.CurrentStock;
-
+        // 3. Popula Itens
+        var stock = _shopService.CurrentStock;
         if (stock != null)
         {
-            foreach (var item in stock)
+            for (int i = 0; i < stock.Count; i++)
             {
-                ShopItemView newItem = Instantiate(_itemPrefab, _itemsContainer);
-                newItem.Setup(item);
-                _spawnedItems.Add(newItem.gameObject);
+                // Pega ou Cria (Get from Pool)
+                ShopItemView itemView = GetItemView(i);
+
+                // Configura
+                itemView.Setup(stock[i]);
+                itemView.gameObject.SetActive(true);
             }
         }
     }
 
-    private void OnCloseClicked()
+    // Lógica simples de Pool: Reusa existentes, cria novos se faltar
+    private ShopItemView GetItemView(int index)
     {
-        // Chama o RunManager para avançar para a próxima semana
-        // (Como você fez no CheatManager ou RunManager.StartNextWeek)
-        var run = AppCore.Instance.SaveManager.Data.CurrentRun;
-        AppCore.Instance.RunManager.StartNextWeek(run);
+        if (index < _itemPool.Count)
+        {
+            return _itemPool[index];
+        }
+        else
+        {
+            var newItem = Instantiate(_itemPrefab, _itemsContainer);
+            _itemPool.Add(newItem);
+            return newItem;
+        }
+    }
+
+    private void HandleCloseClick()
+    {
+        // Desacoplamento: A View apenas avisa "Quero sair".
+        // Quem decide o que acontece (avançar semana, fechar janela) é o UIManager ou RunManager.
+        OnExitRequested?.Invoke();
     }
 }

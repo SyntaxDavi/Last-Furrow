@@ -6,7 +6,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private MainHudView _hudView;
     [SerializeField] private PauseMenuView _pauseView; // Crie este script simples herdando de UIView depois
     [SerializeField] private GameOverView _gameOverView;
-    [SerializeField] private ShopView _shopView; // Crie depois
+    [SerializeField] private ShopView _shopView;
 
     private void Start()
     {
@@ -25,6 +25,11 @@ public class UIManager : MonoBehaviour
             AppCore.Instance.Events.GameState.OnStateChanged += HandleStateChanged;
             AppCore.Instance.InputManager.OnBackInput += HandleBackInput;
         }
+
+        if (_shopView != null)
+        {
+            _shopView.OnExitRequested += HandleShopExit;
+        }
     }
 
     private void OnDisable()
@@ -35,8 +40,21 @@ public class UIManager : MonoBehaviour
             AppCore.Instance.Events.GameState.OnStateChanged -= HandleStateChanged;
             AppCore.Instance.InputManager.OnBackInput -= HandleBackInput;
         }
-    }
 
+        if (_shopView != null)
+        {
+            _shopView.OnExitRequested -= HandleShopExit;
+        }
+    }
+    private void HandleShopExit()
+    {
+        // Lógica de Fluxo: Sair da loja significa avançar a semana
+        if (AppCore.Instance != null)
+        {
+            var run = AppCore.Instance.SaveManager.Data.CurrentRun;
+            AppCore.Instance.RunManager.StartNextWeek(run);
+        }
+    }
     private void HandleStateChanged(GameState newState)
     {
         // Se estiver em Game Over, ignora mudanças de estado padrão para evitar reabrir HUD
