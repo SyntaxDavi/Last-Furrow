@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class RunManager : MonoBehaviour, IRunManager
@@ -7,6 +8,10 @@ public class RunManager : MonoBehaviour, IRunManager
 
     private const int DAYS_IN_PRODUCTION = 5;
     private const int DAY_WEEKEND_START = 6;
+
+    [Header("Configuração de Lojas")]
+    [SerializeField] private ShopProfileSO _defaultWeekendShop;
+    [SerializeField] private List<ShopProfileSO> _specialShops;
 
     public RunPhase CurrentPhase => _currentPhase;
 
@@ -101,7 +106,19 @@ public class RunManager : MonoBehaviour, IRunManager
         Debug.Log("Iniciando Fase de Fim de Semana (Shop)");
 
         _currentPhase = RunPhase.Weekend;
-        var strategy = new WeekendShopStrategy();
+
+        if (_defaultWeekendShop == null)
+        {
+            Debug.LogError("[RunManager] CRÍTICO: Nenhum ShopProfile atribuído no Inspector!");
+            return;
+        }
+
+        ShopProfileSO profileToUse = _defaultWeekendShop;
+
+        // Exemplo simples: A cada 4 semanas, uma loja especial
+        // if (run.CurrentWeek % 4 == 0) profileToUse = _specialShops[0];
+
+        var strategy = new ConfigurableShopStrategy(_defaultWeekendShop);
 
         AppCore.Instance.ShopService.OpenShop(strategy);
         AppCore.Instance.GameStateManager.SetState(GameState.Shopping);

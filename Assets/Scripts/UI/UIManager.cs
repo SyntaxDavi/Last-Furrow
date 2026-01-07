@@ -59,7 +59,6 @@ public class UIManager : MonoBehaviour
     }
     private void HandleStateChanged(GameState newState)
     {
-        // Se estiver em Game Over, ignora mudanças de estado padrão para evitar reabrir HUD
         if (_gameOverView.IsVisible) return;
 
         switch (newState)
@@ -70,10 +69,11 @@ public class UIManager : MonoBehaviour
                 if (_shopView) _shopView.Hide();
                 break;
             case GameState.Shopping:
-                _hudView.Hide();
+                _hudView.Show();
                 if (_shopView) _shopView.Show();
                 break;
             case GameState.Paused:
+                _hudView.Hide();
                 if (_pauseView) _pauseView.Show();
                 break;
         }
