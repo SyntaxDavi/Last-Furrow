@@ -62,6 +62,23 @@ public class RunData
 
     // FACTORY METHOD (A Regra de Negócio mora aqui)
     // É aqui que definimos como uma Run começa de verdade.
+
+    public bool IsHealthFull()
+    {
+        return CurrentLives >= MaxLives;
+    }
+    public void Heal(int amount)
+    {
+        if (amount <= 0) return;
+
+        CurrentLives += amount;
+        if (CurrentLives > MaxLives)
+        {
+            CurrentLives = MaxLives;
+        }
+        // Nota: Não disparamos evento aqui porque RunData é apenas DADOS.
+        // Quem chama (Service ou Item) dispara o evento.
+    }
     public static RunData CreateNewRun()
     {
         var run = new RunData

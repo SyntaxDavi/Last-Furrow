@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class RestoreLifeItem : IPurchasable
 {
-    // Propriedades vindas da Fábrica
     public string DisplayName { get; }
     public string Description { get; }
     public Sprite Icon { get; }
@@ -10,19 +9,54 @@ public class RestoreLifeItem : IPurchasable
 
     private readonly int _healAmount;
 
-    // Construtor que recebe a configuração
     public RestoreLifeItem(string name, string desc, Sprite icon, int healAmount, int price)
     {
-        DisplayName = name;
-        Description = desc;
+        // 1. SANITIZAÇÃO (Fallback Seguro em vez de Crash)
+        // Se vier errado, corrigimos para um valor seguro e avisamos o dev, mas o jogo continua.
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            DisplayName = "Item de Cura (Nome Inválido)";
+            Debug.LogWarning("[RestoreLifeItem] Configuração inválida: Nome vazio.");
+        }
+        else
+        {
+            DisplayName = name;
+        }
+
+        if (healAmount <= 0)
+        {
+            _healAmount = 1; // Fallback para 1
+            Debug.LogWarning($"[RestoreLifeItem] '{DisplayName}': Cura <= 0. Forçando para 1.");
+        }
+        else
+        {
+            _healAmount = healAmount; 
+        }
+
+        if (price < 0)
+        {
+            Price = 0; // Fallback para grátis
+            Debug.LogWarning($"[RestoreLifeItem] '{DisplayName}': Preço negativo. Forçando para 0.");
+        }
+        else
+        {
+            Price = price;
+        }
+
+        // 2. DESCRIÇÃO DINÂMICA
+        // Agora _healAmount já tem valor garantido.
+        Description = !string.IsNullOrWhiteSpace(desc)
+            ? desc
+            : $"Recupera {_healAmount} coração(ões).";
+
         Icon = icon;
-        _healAmount = healAmount;
-        Price = price;
     }
 
     public PurchaseFailReason CanPurchase(PurchaseContext ctx)
     {
-        if (ctx.RunData.CurrentLives >= ctx.RunData.MaxLives)
+        // Uso do método encapsulado no RunData
+        if (ctx.RunData.IsHealthFull())
             return PurchaseFailReason.ConditionsNotMet;
 
         return PurchaseFailReason.None;
@@ -30,13 +64,12 @@ public class RestoreLifeItem : IPurchasable
 
     public void OnPurchased(PurchaseContext ctx)
     {
-        ctx.RunData.CurrentLives += _healAmount;
+        // 3. EXECUÇÃO VIA DOMÍNIO
+        ctx.RunData.Heal(_healAmount);
 
-        // Garante que não ultrapasse o máximo
-        if (ctx.RunData.CurrentLives > ctx.RunData.MaxLives)
-            ctx.RunData.CurrentLives = ctx.RunData.MaxLives;
-
-        // Usa o evento injetado pelo contexto
+        // Notificação
         ctx.ProgressionEvents.TriggerLivesChanged(ctx.RunData.CurrentLives);
+
+        // Removemos o Debug.Log daqui (Feedback aceito: não poluir log de produção)
     }
 }

@@ -7,24 +7,24 @@ public class RandomCardsSourceSO : ShopInventorySourceSO
     [Header("Regras de Geração")]
     [Min(1)][SerializeField] private int _amount = 3;
 
-    [Tooltip("Se verdadeiro, usa o preço padrão da carta. Se falso, pode aplicar desconto/aumento.")]
+    [Header("Preço")]
     [SerializeField] private bool _useDefaultPrice = true;
-    [SerializeField] private int _overridePrice = 10;
+    [SerializeField][Min(0)] private int _fixedPrice = 10; // Nome mais claro que overridePrice
 
-    public override IEnumerable<IPurchasable> GenerateItems(RunData run, IGameLibrary library)
+    // MUDANÇA: Retorno explícito de List (Materializado)
+    public override List<IPurchasable> GenerateItems(RunData run, IGameLibrary library)
     {
         var results = new List<IPurchasable>();
-
-        // Aqui a fonte pede dados à library, isolando a lógica
         var randomCards = library.GetRandomCards(_amount);
 
         foreach (var cardData in randomCards)
         {
-            int price = _useDefaultPrice ? -1 : _overridePrice;
+            // Lógica de preço mais clara
+            int? price = _useDefaultPrice ? (int?)null : _fixedPrice;
 
-            // Isolamos a criação do CardPurchaseItem aqui. 
-            // A Strategy principal não sabe mais que essa classe existe.
-            results.Add(new CardPurchaseItem(cardData, price));
+            // Usa o Builder centralizado em vez de dar new direto
+            // Se amanhã CardPurchaseItem mudar, só mexemos no Builder.
+            results.Add(ShopItemBuilder.CreateCardItem(cardData, price));
         }
 
         return results;
