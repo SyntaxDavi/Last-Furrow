@@ -13,12 +13,15 @@ public class ShopView : UIView
 
     [Header("Ações Globais")]
     [SerializeField] private Button _closeButton;
-    [SerializeField] private Button _buyButton;  
+    [SerializeField] private Button _buyButton;
     [SerializeField] private Button _sellButton;
 
     // --- ESTADO & CACHE ---
+    // Injeção de dependência: A View não busca o serviço, ela RECEBE o serviço.
     private ShopService _shopService;
-    private List<ShopItemView> _itemPool = new List<ShopItemView>();
+
+    // Readonly garante que a lista nunca seja substituída, apenas limpa/populada
+    private readonly List<ShopItemView> _itemPool = new List<ShopItemView>();
 
     // Estado da Seleção Atual
     private IPurchasable _selectedItem;
@@ -32,41 +35,56 @@ public class ShopView : UIView
 
         if (_closeButton) _closeButton.onClick.AddListener(HandleCloseClick);
         if (_buyButton) _buyButton.onClick.AddListener(HandleBuyClick);
-        if (_sellButton) _sellButton.onClick.AddListener(HandleSellClick);
+        if (_sellButton)
+        {
+            _sellButton.onClick.AddListener(HandleSellClick);
+            _sellButton.interactable = false; 
+        }
     }
 
-    private void Start()
+    /// <summary>
+    /// Configura a View com suas dependências.
+    /// Deve ser chamado pelo UIManager ou Bootstrapper.
+    /// </summary>
+    public void Initialize(ShopService shopService)
     {
-        if (AppCore.Instance != null) _shopService = AppCore.Instance.ShopService;
+        // Se já tinha um serviço antes, remove os listeners antigos para não duplicar
+        if (_shopService != null)
+        {
+            _shopService.OnStockRefreshed -= RefreshUI;
+        }
+
+        _shopService = shopService;
+
+        if (_shopService != null)
+        {
+            _shopService.OnStockRefreshed += RefreshUI;
+        }
     }
 
-    private void OnEnable()
+    private void OnDestroy()
     {
-        if (AppCore.Instance != null)
-            AppCore.Instance.ShopService.OnStockRefreshed += RefreshUI;
-    }
-
-    private void OnDisable()
-    {
-        if (AppCore.Instance != null)
-            AppCore.Instance.ShopService.OnStockRefreshed -= RefreshUI;
+        if (_shopService != null)
+        {
+            _shopService.OnStockRefreshed -= RefreshUI;
+        }
     }
 
     public override void Show()
     {
-        base.Show();
-        if (_shopService == null && AppCore.Instance != null)
-            _shopService = AppCore.Instance.ShopService;
+        if (_shopService == null)
+        {
+            Debug.LogError("[ShopView] Tentativa de abrir loja sem inicializar o serviço!");
+            return;
+        }
 
+        base.Show();
         RefreshUI();
     }
 
     private void RefreshUI()
     {
-        // Reseta seleção ao abrir ou atualizar estoque
         DeselectAll();
-
-        if (_shopService == null) return;
 
         // Limpeza (Pooling)
         foreach (var item in _itemPool) item.gameObject.SetActive(false);
@@ -79,9 +97,7 @@ public class ShopView : UIView
             for (int i = 0; i < stock.Count; i++)
             {
                 ShopItemView itemView = GetItemView(i);
-
-                // Passa o método HandleItemSelected como callback
-                itemView.Setup(stock[i], HandleItemSelected);
+                itemView.Setup(stock[i], HandleItemClicked);
                 itemView.gameObject.SetActive(true);
             }
         }
@@ -89,19 +105,15 @@ public class ShopView : UIView
 
     // --- LÓGICA DE SELEÇÃO ---
 
-    private void HandleItemSelected(ShopItemView view, IPurchasable item)
+    private void HandleItemClicked(ShopItemView clickedView)
     {
-        // 1. Remove destaque do anterior
         if (_selectedView != null) _selectedView.SetSelected(false);
 
-        // 2. Atualiza estado
-        _selectedItem = item;
-        _selectedView = view;
+        _selectedView = clickedView;
+        _selectedItem = clickedView.Data;
 
-        // 3. Destaca novo
         if (_selectedView != null) _selectedView.SetSelected(true);
 
-        // 4. Habilita o botão de comprar
         UpdateButtonsState();
     }
 
@@ -117,15 +129,10 @@ public class ShopView : UIView
     {
         if (_buyButton)
         {
-            // Só pode clicar em comprar se tiver algo selecionado
             _buyButton.interactable = (_selectedItem != null);
         }
 
-        // Lógica do botão vender (Implementar futuramente)
-        if (_sellButton)
-        {
-            _sellButton.interactable = true; // Ou lógica específica de venda
-        }
+        // Futuro: Lógica de venda
     }
 
     // --- AÇÕES ---
@@ -135,14 +142,12 @@ public class ShopView : UIView
         if (_selectedItem != null && _shopService != null)
         {
             _shopService.TryPurchase(_selectedItem);
-            // Se a compra for sucesso, o evento OnStockRefreshed vai rodar o RefreshUI e limpar a seleção
         }
     }
 
     private void HandleSellClick()
     {
-        Debug.Log("Lógica de Venda Global ainda não implementada.");
-        // Futuro: Abrir um painel lateral de venda ou mudar o modo de interação
+        Debug.Log("Funcionalidade de Venda em desenvolvimento.");
     }
 
     private void HandleCloseClick()

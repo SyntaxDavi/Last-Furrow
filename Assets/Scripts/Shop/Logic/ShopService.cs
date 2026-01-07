@@ -5,48 +5,58 @@ using UnityEngine;
 public class ShopService
 {
     private readonly IEconomyService _economy;
-    private readonly SaveManager _saveManager;
+    private readonly ISaveManager _saveManager; 
     private readonly IGameLibrary _library;
-    private readonly GameEvents _gameEvents; 
+    private readonly GameEvents _gameEvents;
 
-    // Estado Volátil (Estoque atual da sessão)
-    public List<IPurchasable> CurrentStock { get; private set; }
-    public string CurrentShopTitle { get; private set; }
+    public ShopSession CurrentSession { get; private set; }
+
+    // Helpers de acesso rápido para manter compatibilidade com a UI atual
+    // A UI pode ler ShopService.CurrentStock e internamente lemos da Sessão
+    public List<IPurchasable> CurrentStock => CurrentSession?.Stock;
+    public string CurrentShopTitle => CurrentSession?.Title;
 
     // Eventos
     public event Action OnStockRefreshed;
     public event Action<IPurchasable> OnItemPurchased;
-    public event Action<PurchaseFailReason> OnPurchaseFailed; 
+    public event Action<PurchaseFailReason> OnPurchaseFailed;
 
-    public ShopService(IEconomyService economy, SaveManager save, IGameLibrary library, GameEvents events)
+    public ShopService(IEconomyService economy, ISaveManager save, IGameLibrary library, GameEvents events)
     {
         _economy = economy;
         _saveManager = save;
         _library = library;
         _gameEvents = events;
-        CurrentStock = new List<IPurchasable>();
     }
 
     public void OpenShop(IShopStrategy strategy)
     {
         var run = _saveManager.Data.CurrentRun;
 
-        CurrentShopTitle = strategy.ShopTitle;
-        CurrentStock = strategy.GenerateInventory(run, _library);
+        // Cria uma nova sessão limpa
+        string title = strategy.ShopTitle;
+        List<IPurchasable> stock = strategy.GenerateInventory(run, _library);
 
-        Debug.Log($"[ShopService] Loja Aberta: {CurrentShopTitle} ({CurrentStock.Count} itens)");
+        CurrentSession = new ShopSession(title, stock);
+
+        Debug.Log($"[ShopService] Sessão iniciada: {title} ({stock.Count} itens)");
         OnStockRefreshed?.Invoke();
     }
 
     public void TryPurchase(IPurchasable item)
     {
-        var run = _saveManager.Data.CurrentRun;
+        if (CurrentSession == null)
+        {
+            Debug.LogError("[ShopService] Tentativa de compra sem sessão ativa.");
+            return;
+        }
 
-        // 1. Cria o contexto de execução (Injeção de Dependência Local)
+        // 1. Preparação
+        var run = _saveManager.Data.CurrentRun;
         var context = new PurchaseContext(run, _gameEvents);
 
-        // 2. Validação Lógica do Item
-        var failReason = item.CanPurchase(context);
+        // 2. Validação (Método separado)
+        var failReason = ValidatePurchase(item, context);
         if (failReason != PurchaseFailReason.None)
         {
             OnPurchaseFailed?.Invoke(failReason);
@@ -54,20 +64,47 @@ public class ShopService
             return;
         }
 
-        // 3. Validação Econômica
+        // 3. Execução (Transação Financeira e Lógica)
+        ProcessTransaction(item, context);
+    }
+
+    private PurchaseFailReason ValidatePurchase(IPurchasable item, PurchaseContext context)
+    {
+        // A) Regras do Item (Estado do jogo, Mão cheia, Vida cheia)
+        var itemCheck = item.CanPurchase(context);
+        if (itemCheck != PurchaseFailReason.None)
+        {
+            return itemCheck;
+        }
+
+        // B) Regras Econômicas (Dinheiro)
+        // Nota: Verificamos se PODE gastar, mas não gastamos ainda.
+        // O EconomyService idealmente teria um "CanSpend", mas usaremos a lógica inversa aqui
+        if (_economy.CurrentMoney < item.Price)
+        {
+            return PurchaseFailReason.InsufficientFunds;
+        }
+
+        return PurchaseFailReason.None;
+    }
+
+    private void ProcessTransaction(IPurchasable item, PurchaseContext context)
+    {
+        // A) Debitar Dinheiro
+        // Como já validamos, o TrySpend deve passar (a menos que haja race condition, raro aqui)
         if (!_economy.TrySpend(item.Price, TransactionType.ShopPurchase))
         {
             OnPurchaseFailed?.Invoke(PurchaseFailReason.InsufficientFunds);
             return;
         }
 
-        // 4. Sucesso: Executa a compra
+        // B) Entregar Produto
         item.OnPurchased(context);
 
-        // 5. Remove do estoque (consumível único por visita)
-        CurrentStock.Remove(item);
+        // C) Atualizar Estoque da Sessão
+        CurrentSession.TryRemoveItem(item);
 
-        // 6. Salva o progresso
+        // D) Persistência e Notificação
         _saveManager.SaveGame();
 
         OnItemPurchased?.Invoke(item);

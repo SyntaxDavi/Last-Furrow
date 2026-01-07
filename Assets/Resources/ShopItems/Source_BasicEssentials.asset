@@ -12,4 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d57eaabf3f46b8045b08e68f7c28cf42, type: 3}
   m_Name: Source_BasicEssentials
   m_EditorClassIdentifier: 
-  _itemsToCreate: []
+  _itemsToCreate:
+  - {fileID: 11400000, guid: e8ef613a09076534294fe7fbf625f38e, type: 2}

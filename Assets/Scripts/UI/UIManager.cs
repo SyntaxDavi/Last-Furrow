@@ -4,12 +4,18 @@ public class UIManager : MonoBehaviour
 {
     [Header("Views Principais")]
     [SerializeField] private MainHudView _hudView;
-    [SerializeField] private PauseMenuView _pauseView; // Crie este script simples herdando de UIView depois
+    [SerializeField] private PauseMenuView _pauseView;
     [SerializeField] private GameOverView _gameOverView;
     [SerializeField] private ShopView _shopView;
 
     private void Start()
     {
+        if (AppCore.Instance != null && _shopView != null)
+        {
+            _shopView.Initialize(AppCore.Instance.ShopService);
+            _shopView.OnExitRequested += HandleShopExit;
+        }
+
         // Estado Inicial garantido
         _hudView.Show();
         if (_pauseView) _pauseView.HideImmediate();
@@ -18,18 +24,13 @@ public class UIManager : MonoBehaviour
     }
 
     private void OnEnable()
-    {
+    {   
         if (AppCore.Instance != null)
         {
             AppCore.Instance.Events.Time.OnRunEnded += HandleRunEnded;
             AppCore.Instance.Events.GameState.OnStateChanged += HandleStateChanged;
             AppCore.Instance.InputManager.OnBackInput += HandleBackInput;
             AppCore.Instance.InputManager.OnShopToggleInput += HandleShopToggle;
-        }
-
-        if (_shopView != null)
-        {
-            _shopView.OnExitRequested += HandleShopExit;
         }
     }
 
@@ -64,12 +65,12 @@ public class UIManager : MonoBehaviour
         switch (newState)
         {
             case GameState.Playing:
-                _hudView.Show();
+                if (_hudView) _hudView.Show();
                 if (_pauseView) _pauseView.Hide();
                 if (_shopView) _shopView.Hide();
                 break;
             case GameState.Shopping:
-                _hudView.Show();
+                if (_hudView) _hudView.Show();
                 if (_shopView) _shopView.Show();
                 break;
             case GameState.Paused:

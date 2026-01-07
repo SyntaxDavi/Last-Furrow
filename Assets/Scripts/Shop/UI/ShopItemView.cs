@@ -11,18 +11,60 @@ public class ShopItemView : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _priceText;
 
     [Header("Interação")]
-    [SerializeField] private Button _selectionButton; // O botão que cobre o card inteiro
-    [SerializeField] private GameObject _highlightBorder; // Objeto visual de seleção (borda/brilho)
+    [SerializeField] private Button _selectionButton;
+    [SerializeField] private GameObject _highlightBorder;
 
-    private IPurchasable _item;
-    private Action<ShopItemView, IPurchasable> _onSelectedCallback;
+    // Estado Interno (State)
+    private bool _isSelected;
+    private IPurchasable _data; 
 
-    public void Setup(IPurchasable item, Action<ShopItemView, IPurchasable> onSelected)
+    // Evento Simplificado: A View avisa "Fui clicada", o Pai decide o que fazer.
+    private Action<ShopItemView> _onClickCallback;
+
+    // Propriedade para o pai ler o dado de volta sem passar no evento
+    public IPurchasable Data => _data;
+
+    private void Awake()
     {
-        _item = item;
-        _onSelectedCallback = onSelected;
+        // SEGURANÇA DE EVENTOS:
+        // Adicionamos o listener apenas UMA vez no ciclo de vida.
+        // Nunca usamos RemoveAllListeners, pois designers podem ter colocado sons no Inspector.
+        if (_selectionButton)
+        {
+            _selectionButton.onClick.AddListener(HandleClick);
+        }
+        else
+        {
+            Debug.LogError($"[ShopItemView] Botão de seleção não atribuído no objeto {gameObject.name}");
+        }
+    }
 
-        // Visual
+    private void OnDestroy()
+    {
+        if (_selectionButton) _selectionButton.onClick.RemoveListener(HandleClick);
+    }
+
+    public void Setup(IPurchasable item, Action<ShopItemView> onSelected)
+    {
+        // 1. GUARD CLAUSES (Validação Defensiva)
+        if (item == null)
+        {
+            Debug.LogError("[ShopItemView] Setup recebeu item nulo! Ignorando.");
+            gameObject.SetActive(false); // Esconde para não mostrar lixo na tela
+            return;
+        }
+
+        if (onSelected == null)
+        {
+            Debug.LogWarning("[ShopItemView] Setup recebeu callback nulo. O item não será clicável.");
+        }
+
+        // 2. Atualização de Dados
+        _data = item;
+        _onClickCallback = onSelected;
+
+        // 3. Atualização Visual (Data Binding)
+        // Aqui extraímos os dados primitivos (string/int) imediatamente
         if (_nameText) _nameText.text = item.DisplayName;
         if (_priceText) _priceText.text = $"${item.Price}";
 
@@ -32,25 +74,32 @@ public class ShopItemView : MonoBehaviour
             _iconImage.enabled = item.Icon != null;
         }
 
-        // Configura Seleção
-        if (_selectionButton)
-        {
-            _selectionButton.onClick.RemoveAllListeners();
-            _selectionButton.onClick.AddListener(HandleClick);
-        }
-
-        // Reseta estado visual
+        // 4. Reset de Estado
+        // Força atualização visual inicial garantindo que comece desmarcado
+        _isSelected = true; // Hack lógico para forçar o SetSelected(false) a rodar visualmente
         SetSelected(false);
     }
 
     public void SetSelected(bool isSelected)
     {
-        if (_highlightBorder) _highlightBorder.SetActive(isSelected);
+        // OTIMIZAÇÃO DE ESTADO:
+        // Se já estiver no estado desejado, não faz nada. Evita redraw desnecessário.
+        if (_isSelected == isSelected) return;
+
+        _isSelected = isSelected;
+
+        if (_highlightBorder)
+            _highlightBorder.SetActive(_isSelected);
+
+        // Futuro: Tocar animação ou som de seleção aqui
     }
 
     private void HandleClick()
     {
-        // Avisa a ShopView: "Fui clicado! Eu sou este item."
-        _onSelectedCallback?.Invoke(this, _item);
+        // Se não tiver dados (clique antes do setup), ignora
+        if (_data == null) return;
+
+        // Avisa quem estiver ouvindo (ShopView)
+        _onClickCallback?.Invoke(this);
     }
 }

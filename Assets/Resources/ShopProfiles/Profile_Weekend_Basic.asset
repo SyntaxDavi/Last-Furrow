@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: Profile_Weekend_Basic
   m_EditorClassIdentifier: 
   ShopTitle: Loja
-  GuaranteedItems:
-  - {fileID: 11400000, guid: e8ef613a09076534294fe7fbf625f38e, type: 2}
-  RandomCardsCount: 3
-  IncludeRandomCards: 1
+  InventorySources:
+  - {fileID: 11400000, guid: 8377cf78f20d7284c809e13f3482012a, type: 2}
+  - {fileID: 11400000, guid: 5d95e6ebfbd1dc545b6e032cac4feb3a, type: 2}
