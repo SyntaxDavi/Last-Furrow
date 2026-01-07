@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-
+//Se não for “orquestrar fontes”, não entra aqui.
 public class ConfigurableShopStrategy : IShopStrategy
 {
     private readonly ShopProfileSO _profile;
@@ -14,39 +14,21 @@ public class ConfigurableShopStrategy : IShopStrategy
 
     public List<IPurchasable> GenerateInventory(RunData run, IGameLibrary library)
     {
-        var stock = new List<IPurchasable>();
+        var fullStock = new List<IPurchasable>();
 
-        // 1. Gera Itens Garantidos (Passando o Contexto!)
-        if (_profile.GuaranteedItems != null)
+        if (_profile.InventorySources == null) return fullStock;
+
+        // Itera sobre cada fonte configurada no perfil
+        foreach (var source in _profile.InventorySources)
         {
-            foreach (var factory in _profile.GuaranteedItems)
+            if (source != null)
             {
-                if (factory != null)
-                {
-                    // MUDANÇA CRÍTICA: Passamos 'run' para a fábrica.
-                    // Agora a fábrica tem poder de decisão baseado no estado do jogo.
-                    IPurchasable item = factory.CreateItem(run);
-
-                    if (item != null)
-                    {
-                        stock.Add(item);
-                    }
-                }
+                // Delega a geração para a fonte especializada, passando o contexto
+                var items = source.GenerateItems(run, library);
+                fullStock.AddRange(items);
             }
         }
 
-        // 2. Gera Cartas Aleatórias
-        if (_profile.IncludeRandomCards)
-        {
-            var randomCards = library.GetRandomCards(_profile.RandomCardsCount);
-            foreach (var card in randomCards)
-            {
-                // Cartas aleatórias usam preço padrão (-1)
-                // Nota: Poderíamos criar uma fábrica genérica para Random Cards também no futuro
-                stock.Add(new CardPurchaseItem(card, -1));
-            }
-        }
-
-        return stock;
+        return fullStock;
     }
 }
