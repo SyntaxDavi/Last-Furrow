@@ -92,26 +92,34 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    private void HandleDropInteraction(int index, CardData card)
+    private void HandleDropInteraction(int index, CardView cardView)
     {
-        InteractionResult result = _gridService.ApplyCard(index, card);
+        CardData data = cardView.Data;
+        CardInstance instance = cardView.Instance;
+
+        // A lógica do Grid usa os DADOS (Regras do jogo)
+        InteractionResult result = _gridService.ApplyCard(index, data);
 
         if (result.IsSuccess)
         {
             if (result.ShouldConsumeCard)
             {
-                AppCore.Instance.Events.Player.TriggerCardConsumed(card.ID);
+                // SOLUÇÃO:
+                // 1. CardRemoved: Remove visualmente da mão e da lista lógica (HandManager ouve isso)
+                AppCore.Instance.Events.Player.TriggerCardRemoved(instance);
+
+                // 2. CardConsumed: Apenas para estatísticas/analytics (opcional, mas bom manter)
+                AppCore.Instance.Events.Player.TriggerCardConsumed(data.ID);
             }
             else
             {
-                // Feedback: Carta usada mas não consumida (Ex: Ferramenta)
-                Debug.Log("[GridManager] Carta usada, mas mantida na mão (Ferramenta).");
+                Debug.Log("[GridManager] Carta usada (ex: Regador infinito), mas mantida na mão.");
             }
         }
         else
         {
             Debug.Log($"[GridManager] Ação falhou: {result.Message}");
-            // Ex: Shake da carta, som de erro
+            // Feedback de erro visual na carta (opcional)
         }
     }
 

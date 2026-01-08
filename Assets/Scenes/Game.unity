@@ -3112,12 +3112,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c34caf5fa57dd414f9980ab1aa6ab393, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _layoutConfig: {fileID: 11400000, guid: 8a3da3928d50c514dbc63bea31cd3b17, type: 2}
+  _visualConfig: {fileID: 11400000, guid: e3cf8478dfad57044b0a6fdd75881fe4, type: 2}
   _cardPrefab: {fileID: 6941554981388740021, guid: 47e21a452166bc344bf0e6af08ad0e32, type: 3}
   _handCenter: {fileID: 2128607302}
-  _cardSpacing: 1
-  _maxHandWidth: 12
-  _arcHeight: 0.3
-  _rotationIntensity: 10
 --- !u!1 &1400629001
 GameObject:
   m_ObjectHideFlags: 0

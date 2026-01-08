@@ -21,7 +21,7 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     public int SlotIndex => _index;
 
     // O Controller assina isso para executar "Soltei aqui!"
-    public event Action<int, CardData> OnDropInteraction;
+    public event Action<int, CardView> OnDropInteraction;
     private void Awake() => ConfigureRenderers();
 
     public void Initialize(int index)
@@ -112,7 +112,8 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     {
         if (draggable is CardView cardView)
         {
-            OnDropInteraction?.Invoke(SlotIndex, cardView.Data);
+            // Passamos o CardView inteiro
+            OnDropInteraction?.Invoke(SlotIndex, cardView);
             OnHoverExit();
         }
     }

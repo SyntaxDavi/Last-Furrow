@@ -102,12 +102,13 @@ public class ShopView : UIView
 
     private void SetState(ShopUIState newState)
     {
-        if (_currentState == newState) return; // Evita reentrada
+        if (_currentState == newState) return;
 
         // 1. Saída do estado anterior (Cleanup)
         if (_currentState == ShopUIState.Selling)
         {
-            CardView.OnCardClickedGlobal -= HandleCardClickedToSell;
+            if (AppCore.Instance != null)
+                AppCore.Instance.Events.Player.OnCardClicked -= HandleCardClickedToSell;
         }
 
         _currentState = newState;
@@ -115,13 +116,12 @@ public class ShopView : UIView
         // 2. Entrada no novo estado (Setup)
         if (_currentState == ShopUIState.Selling)
         {
-            CardView.OnCardClickedGlobal += HandleCardClickedToSell;
+            // CORREÇÃO: Assinando AppCore Events
+            if (AppCore.Instance != null)
+                AppCore.Instance.Events.Player.OnCardClicked += HandleCardClickedToSell;
         }
 
-        // 3. Atualização Visual
         UpdateVisualState(newState);
-
-        // 4. Atualização de Botões (Ex: desativar comprar se estiver vendendo)
         UpdateButtonsState();
     }
 
