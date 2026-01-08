@@ -46,7 +46,7 @@ public class RunData
 
     public List<CardInstance> Hand = new List<CardInstance>();
 
-    public int MaxHandSize = 15;
+    public int MaxHandSize = 10;
     public int CardsDrawPerDay = 3;
 
     public int Money;
@@ -88,7 +88,7 @@ public class RunData
             GridSlots = new CropState[9],
             Hand = new List<CardInstance>(), 
 
-            MaxHandSize = 15,
+            MaxHandSize = 10,
             CardsDrawPerDay = 3,
 
             CurrentWeeklyScore = 0,
