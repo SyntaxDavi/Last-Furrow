@@ -73,51 +73,60 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         Vector3 finalScale = Vector3.one;
         int finalSort = _layoutTarget.SortingOrder;
 
-        // --- 1. EFEITO BALATRO (FLUTUAÇÃO) ---
-        // Só flutua se não estiver sendo arrastada
-        if (CurrentState == CardVisualState.Idle || CurrentState == CardVisualState.Selected)
-        {
-            float time = Time.time + _randomSeed;
-
-            // Flutuação Y (Sobe e desce suavemente)
-            float floatY = Mathf.Sin(time * _visualConfig.IdleFloatSpeed) * _visualConfig.IdleFloatAmount;
-
-            // Rotação Z (Balança bem pouquinho)
-            float floatRot = Mathf.Cos(time * (_visualConfig.IdleFloatSpeed * 0.5f)) * _visualConfig.IdleRotationAmount;
-
-            finalPos.y += floatY;
-            finalRot *= Quaternion.Euler(0, 0, floatRot);
-        }
+        // --- 1. CÁLCULO DA FLUTUAÇÃO (BALATRO FEELING) ---
+        // Calcula sempre, para somar depois
+        float time = Time.time + _randomSeed;
+        float floatY = Mathf.Sin(time * _visualConfig.IdleFloatSpeed) * _visualConfig.IdleFloatAmount;
+        float floatRot = Mathf.Cos(time * (_visualConfig.IdleFloatSpeed * 0.5f)) * _visualConfig.IdleRotationAmount;
 
         // --- 2. LÓGICA DE ESTADOS ---
         switch (CurrentState)
         {
-            case CardVisualState.Selected: // CLICADA
+            case CardVisualState.Selected:
+                // Clicada: Sobe muito, para a flutuação (foco total), fica reta
                 finalPos += Vector3.up * _visualConfig.SelectedYOffset;
-                finalPos.z = -2f;
-                finalRot = Quaternion.identity; // Fica reta
+                finalPos.z = -3f;
+                finalRot = Quaternion.identity;
                 finalScale = Vector3.one * _visualConfig.SelectedScale;
-                finalSort = CardSortingConstants.HOVER_LAYER;
+                finalSort = CardSortingConstants.HOVER_LAYER; // Prioridade alta
                 break;
 
             case CardVisualState.Idle:
-                // Se o mouse está em cima (mas não clicou), dá um "Peek" (espiadinha)
+                // Aplica a flutuação base
+                finalPos.y += floatY;
+                finalRot *= Quaternion.Euler(0, 0, floatRot);
+
+                // HOVER (Mouse em cima):
                 if (_isMouseOver)
                 {
+                    // Sobe um pouco ALÉM da flutuação
                     finalPos += Vector3.up * _visualConfig.PeekYOffset;
+
+                    // Traz para frente da câmera (Z negativo) para o Raycast pegar melhor
+                    finalPos.z = -1.5f;
+
+                    // Escala um pouco
                     finalScale = Vector3.one * _visualConfig.PeekScale;
-                    finalSort = _layoutTarget.SortingOrder + 5; // Levemente acima das vizinhas
+
+                    // *** O PULO DO GATO DA PRIORIDADE ***
+                    // Força o Sorting Order lá para cima. 
+                    // Como o PlayerInteraction agora escolhe o maior Order, 
+                    // essa carta vira a "Vencedora" imbatível do Raycast.
+                    finalSort = CardSortingConstants.HOVER_LAYER;
                 }
                 break;
         }
 
         // --- 3. APLICAÇÃO FÍSICA (SmoothDamp) ---
-        // (Igual ao anterior, código omitido para brevidade, mas mantenha o SmoothDamp aqui)
         transform.position = Vector3.SmoothDamp(transform.position, finalPos, ref _currentVelocityPos, _visualConfig.PositionSmoothTime);
+
         float newScale = Mathf.SmoothDamp(transform.localScale.x, finalScale.x, ref _currentVelocityScale, _visualConfig.ScaleSmoothTime);
         transform.localScale = Vector3.one * newScale;
+
         transform.rotation = Quaternion.Slerp(transform.rotation, finalRot, Time.deltaTime * _visualConfig.RotationSpeed);
-        if (_sortingGroup.sortingOrder != finalSort) _sortingGroup.sortingOrder = finalSort;
+
+        if (_sortingGroup.sortingOrder != finalSort)
+            _sortingGroup.sortingOrder = finalSort;
     }
 
     // --- MÉTODOS PÚBLICOS PARA O MANAGER CONTROLAR ---

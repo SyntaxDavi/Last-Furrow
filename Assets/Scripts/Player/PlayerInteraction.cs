@@ -222,25 +222,48 @@ public class PlayerInteraction : MonoBehaviour
 
     private void HandleHover(Vector2 worldPos)
     {
-        // Detecta objetos interagíveis OU drop zones (para mostrar tooltip, highlight, etc)
+        // 1. Busca TODOS os colisores embaixo do mouse (não só o primeiro)
         LayerMask combinedMask = _draggableLayer | _dropLayer;
-        Collider2D col = Physics2D.OverlapPoint(worldPos, combinedMask);
+        Collider2D[] hitColliders = Physics2D.OverlapPointAll(worldPos, combinedMask);
 
-        IInteractable newHover = null;
-        if (col != null)
+        IInteractable bestCandidate = null;
+        int highestSortingOrder = int.MinValue;
+
+        // 2. Filtra o "Vencedor" baseado na Ordem de Renderização (SortingGroup)
+        foreach (var col in hitColliders)
         {
-            newHover = col.GetComponent<IInteractable>();
+            var interactable = col.GetComponent<IInteractable>();
+            if (interactable == null) continue;
+
+            // Tenta pegar o SortingGroup para ver quem está por cima
+            var sortingGroup = col.GetComponent<UnityEngine.Rendering.SortingGroup>();
+
+            // Se tiver SortingGroup, usa a ordem dele. Se não (ex: Slot), usa prioridade baixa (0)
+            int currentOrder = (sortingGroup != null) ? sortingGroup.sortingOrder : 0;
+
+            // Se a carta está sendo arrastada, ignoramos ela para Hover (ela já é activeDrag)
+            if (interactable is IDraggable draggable && IsObjectDragging(draggable)) continue;
+
+            // Lógica do Rei da Montanha: Quem tem maior Sorting Order ganha o Hover
+            if (currentOrder > highestSortingOrder)
+            {
+                highestSortingOrder = currentOrder;
+                bestCandidate = interactable;
+            }
         }
 
-        if (newHover != _currentHover)
+        // 3. Aplica a Lógica de Troca (Entrada/Saída)
+        if (bestCandidate != _currentHover)
         {
+            // Saiu do anterior
             if (_currentHover != null && IsObjectAlive(_currentHover))
             {
                 _currentHover.OnHoverExit();
             }
 
-            _currentHover = newHover;
+            _currentHover = bestCandidate;
 
+            // Entrou no novo
             if (_currentHover != null)
             {
                 _currentHover.OnHoverEnter();
@@ -251,9 +274,16 @@ public class PlayerInteraction : MonoBehaviour
     // --- UTILITÁRIOS ---
 
     // Helper para checar se interface Unity ainda existe (lidar com Destroy())
-    private bool IsObjectAlive(object o)
+
+    private bool IsObjectDragging(IDraggable draggable)
     {
-        return o != null && (o as UnityEngine.Object) != null;
+        return _isDragging && _activeDrag == draggable;
+    }
+
+    // Helper de segurança para Unity (checa se foi destruído)
+    private bool IsObjectAlive(object obj)
+    {
+        return obj != null && !((obj is UnityEngine.Object unityObj) && unityObj == null);
     }
 
     private void Log(string msg)
