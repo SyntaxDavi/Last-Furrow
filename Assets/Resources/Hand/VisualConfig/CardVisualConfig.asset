@@ -15,6 +15,10 @@ MonoBehaviour:
   PositionSmoothTime: 0.1
   ScaleSmoothTime: 0.1
   RotationSpeed: 12
+  IdleZ: 0
+  HoverZ: -1.5
+  SelectedZ: -3
+  DragZ: -5
   IdleFloatSpeed: 1.2
   IdleFloatAmount: 0.1
   IdleRotationAmount: 0.8
@@ -22,6 +26,8 @@ MonoBehaviour:
   PeekYOffset: 0.3
   SelectedYOffset: 1.2
   SelectedScale: 1.25
-  DragZDepth: -5
+  LookRotationStrength: 1
+  MagneticPullStrength: 0.1
+  MaxInteractionDistance: 0.3
   DragTiltAmount: 20
   DragTiltSpeed: 10

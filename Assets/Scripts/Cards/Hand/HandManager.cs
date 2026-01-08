@@ -6,7 +6,7 @@ public class HandManager : MonoBehaviour
 {
     [Header("Data Configs")]
     [SerializeField] private HandLayoutConfig _layoutConfig;
-    [SerializeField] private CardVisualConfig _visualConfig; // Novo config visual
+    [SerializeField] private CardVisualConfig _visualConfig;
 
     [Header("Scene Refs")]
     [SerializeField] private CardView _cardPrefab;
@@ -16,6 +16,9 @@ public class HandManager : MonoBehaviour
     private List<CardView> _activeCards = new List<CardView>();
     private RunData _runData;
     private IGameLibrary _library;
+
+    // OTIMIZAÇÃO: Flag para evitar cálculos desnecessários no Update
+    private bool _isLayoutDirty = false;
 
     // --- SETUP ---
     public void Configure(RunData runData, IGameLibrary library)
@@ -31,6 +34,7 @@ public class HandManager : MonoBehaviour
         {
             AppCore.Instance.Events.Player.OnCardAdded += HandleCardAdded;
             AppCore.Instance.Events.Player.OnCardRemoved += HandleCardRemoved;
+            AppCore.Instance.InputManager.OnPrimaryClick += HandleGlobalClick;
         }
     }
 
@@ -40,21 +44,24 @@ public class HandManager : MonoBehaviour
         {
             AppCore.Instance.Events.Player.OnCardAdded -= HandleCardAdded;
             AppCore.Instance.Events.Player.OnCardRemoved -= HandleCardRemoved;
+            AppCore.Instance.InputManager.OnPrimaryClick -= HandleGlobalClick;
         }
     }
 
     private void Update()
     {
-        // Roda sempre. Garante que se uma carta for removida ou arrastada,
-        // as outras reajam suavemente (Juicy) sem precisar de flags complexas.
-        if (_activeCards.Count > 0)
+        // CORREÇÃO DE PERFORMANCE:
+        // Só recalculamos a matemática do arco se a mão mudou (carta entrou/saiu).
+        // As cartas (CardView) continuam interpolando suavemente para seus alvos no Update delas.
+        if (_isLayoutDirty)
         {
-            UpdateHandLayout();
+            RecalculateLayoutTargets();
+            _isLayoutDirty = false;
         }
     }
 
-
     // --- LÓGICA DE LISTA ---
+
     private void InitializeHandFromRun()
     {
         ClearHand();
@@ -64,6 +71,9 @@ public class HandManager : MonoBehaviour
         {
             CreateCardView(instance);
         }
+
+        // Marca para calcular no próximo frame
+        _isLayoutDirty = true;
     }
 
     private void CreateCardView(CardInstance instance)
@@ -72,43 +82,87 @@ public class HandManager : MonoBehaviour
 
         var newCard = Instantiate(_cardPrefab, transform);
 
-        // Injeta Dependências
-        newCard.Initialize(data, instance, _visualConfig);
+        // Injeção de Dependências
+        newCard.Initialize(
+            data,
+            instance,
+            _visualConfig,
+            AppCore.Instance.InputManager
+        );
 
-        // Posição inicial (Spawn point fora da tela)
+        // Posição inicial (Spawn point)
         newCard.transform.position = _handCenter.position - Vector3.up * 6f;
 
-        // Assina Eventos Locais (Callback pattern)
+        // Assinatura de Eventos
         newCard.OnDragStartEvent += OnCardDragStart;
         newCard.OnDragEndEvent += OnCardDragEnd;
-        newCard.OnClickEvent += OnCardClicked;
         newCard.OnClickEvent += HandleCardClicked;
 
         _activeCards.Add(newCard);
+
+        // A mão mudou, precisa recalcular
+        _isLayoutDirty = true;
     }
+
+    // --- LÓGICA DE SELEÇÃO (Rádio Button) ---
     private void HandleCardClicked(CardView clickedCard)
     {
-        // 1. Lógica Visual (Rádio Button)
+        // 1. Lógica Visual Local
         if (clickedCard.CurrentState == CardVisualState.Selected)
         {
-            // Se já estava selecionada e clicou de novo: Deseleciona (Toggle Off)
             clickedCard.Deselect();
+            // Avisa o sistema que NADA está selecionado (passando null ou criando evento de deseleção)
+            // Por enquanto, apenas o clique propaga
         }
         else
         {
-            // Se não estava: Seleciona ela e Deseleciona TODAS as outras
+            clickedCard.Select();
             foreach (var card in _activeCards)
             {
-                if (card == clickedCard)
-                    card.Select();
-                else
-                    card.Deselect();
+                if (card != clickedCard) card.Deselect();
             }
         }
 
-        // 2. Propaga para o AppCore (para a Loja saber)
+        // 2. Propagação Global
         AppCore.Instance.Events.Player.TriggerCardClicked(clickedCard);
     }
+    private void HandleGlobalClick()
+    {
+        // Se a mão estiver vazia, ignora
+        if (_activeCards.Count == 0) return;
+
+        // VERIFICAÇÃO INTELIGENTE:
+        // Se o mouse estiver em cima de QUALQUER carta da minha mão,
+        // eu ignoro esse clique global, porque o evento 'OnClick' da própria carta
+        // já vai lidar com a seleção/troca.
+        bool clickedOnACard = _activeCards.Any(card => card.IsHovered);
+
+        if (!clickedOnACard)
+        {
+            // Se clicou no "vazio" (chão, céu, UI sem bloqueio), deseleciona tudo.
+            DeselectAllCards();
+        }
+    }
+    private void DeselectAllCards()
+    {
+        bool anyChanged = false;
+        foreach (var card in _activeCards)
+        {
+            if (card.CurrentState == CardVisualState.Selected)
+            {
+                card.Deselect();
+                anyChanged = true;
+            }
+        }
+
+        // Se algo foi deselecionado, avisa o sistema global (UI/Loja) que limpou a seleção
+        if (anyChanged)
+        {
+            AppCore.Instance.Events.Player.TriggerCardClicked(null);
+        }
+    }
+
+    // --- MANIPULAÇÃO DE DADOS ---
 
     private void HandleCardAdded(CardInstance instance) => CreateCardView(instance);
 
@@ -125,36 +179,48 @@ public class HandManager : MonoBehaviour
     {
         if (_activeCards.Contains(card))
         {
-            // Remove Eventos antes de destruir (Safety)
+            // EDGE CASE FIX: Se a carta removida estava selecionada, avisa o sistema!
+            // Isso evita que a loja tente vender uma carta que não existe mais visualmente.
+            if (card.CurrentState == CardVisualState.Selected)
+            {
+                // Dispara evento com null para limpar UI de detalhes/loja
+                AppCore.Instance.Events.Player.TriggerCardClicked(null);
+            }
+
+            // Remove listeners para evitar memory leaks
             card.OnClickEvent -= HandleCardClicked;
             card.OnDragStartEvent -= OnCardDragStart;
             card.OnDragEndEvent -= OnCardDragEnd;
-            card.OnClickEvent -= OnCardClicked;
 
             _activeCards.Remove(card);
             Destroy(card.gameObject);
+
+            // A mão mudou, precisa recalcular o layout das que sobraram
+            _isLayoutDirty = true;
         }
     }
 
     private void ClearHand()
     {
-        // Itera de trás pra frente ou cria cópia da lista para destruição segura
         var cleanupList = new List<CardView>(_activeCards);
         foreach (var card in cleanupList)
         {
             RemoveCardView(card);
         }
         _activeCards.Clear();
+        _isLayoutDirty = false; // Mão vazia não precisa de cálculo
     }
 
-    // --- LAYOUT ---
-    private void UpdateHandLayout()
+    // --- LAYOUT (Matemática) ---
+
+    // Renomeado para deixar claro que isso apenas define os ALVOS, não move os objetos
+    private void RecalculateLayoutTargets()
     {
         int count = _activeCards.Count;
+        if (count == 0) return;
 
         for (int i = 0; i < count; i++)
         {
-            // Pede o cálculo matemático puro (Stateless)
             var targetSlot = HandLayoutCalculator.CalculateSlot(
                 i,
                 count,
@@ -162,28 +228,32 @@ public class HandManager : MonoBehaviour
                 _handCenter.position
             );
 
-            // Passa o alvo para a carta (Stateful)
+            // Apenas atualiza o "destino" da carta.
+            // O CardView.Update() vai interpolar suavemente até lá.
             _activeCards[i].UpdateLayoutTarget(targetSlot);
         }
     }
 
-    // --- EVENT HANDLERS (Callback -> AppCore) ---
-
-    private void OnCardClicked(CardView card)
-    {
-        Debug.Log($"[HandManager] Clique em {card.Data.Name} detectado. Propagando...");
-
-        // Dispara o evento global para que o ShopView possa ouvir
-        AppCore.Instance.Events.Player.TriggerCardClicked(card);
-    }
+    // --- EFEITOS DE DRAG ---
 
     private void OnCardDragStart(CardView card)
     {
-        // Opcional: Efeitos globais na mão (ex: escurecer outras cartas)
+        // UX: Ao arrastar, limpa seleções para focar na ação
+        foreach (var c in _activeCards)
+        {
+            if (c != card && c.CurrentState == CardVisualState.Selected)
+            {
+                c.Deselect();
+            }
+        }
+        // Ao arrastar, não mudamos o layout (buraco fica onde estava ou fecha depois)
+        // Se quiser fechar o buraco enquanto arrasta, teria que remover temporariamente da lista de layout.
     }
 
     private void OnCardDragEnd(CardView card)
     {
-        // Opcional: Resetar efeitos globais
+        // Se soltou e não foi consumida, volta pro lugar.
+        // Como o layout não mudou, o target continua o mesmo.
+        // O CardView.OnDragEnd vai setar estado para Idle e ele voltará sozinho.
     }
 }
