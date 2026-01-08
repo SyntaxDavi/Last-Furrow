@@ -16,6 +16,13 @@ public class ShopView : UIView
     [SerializeField] private Button _buyButton;
     [SerializeField] private Button _sellButton;
 
+    [Header("Modo Venda")]
+    [SerializeField] private CanvasGroup _mainShopGroup; // O painel principal da loja (Cards, Botões)
+    [SerializeField] private GameObject _sellModePanel;  // Painel pequeno: "Selecione carta / Cancelar"
+    [SerializeField] private Button _cancelSellButton;
+
+    private bool _isSellMode = false;
+
     // --- ESTADO & CACHE ---
     // Injeção de dependência: A View não busca o serviço, ela RECEBE o serviço.
     private ShopService _shopService;
@@ -31,15 +38,30 @@ public class ShopView : UIView
 
     protected override void Awake()
     {
-        base.Awake();
+        base.Awake(); // Configura CanvasGroup do pai
 
-        if (_closeButton) _closeButton.onClick.AddListener(HandleCloseClick);
-        if (_buyButton) _buyButton.onClick.AddListener(HandleBuyClick);
+        // Configura Botão Comprar
+        if (_buyButton)
+            _buyButton.onClick.AddListener(HandleBuyClick);
+
+        // Configura Botão Fechar
+        if (_closeButton)
+            _closeButton.onClick.AddListener(HandleCloseClick);
+
+        // Configura Botão Vender 
         if (_sellButton)
         {
-            _sellButton.onClick.AddListener(HandleSellClick);
-            _sellButton.interactable = false; 
+            _sellButton.interactable = true; // Garante que começa ativo
+            _sellButton.onClick.AddListener(EnterSellMode); // Chama o modo minimizar
         }
+
+        // Configura Botão Cancelar Venda (Voltar pra loja)
+        if (_cancelSellButton)
+            _cancelSellButton.onClick.AddListener(ExitSellMode);
+
+        // Garante que o painelzinho de "Selecione carta" comece escondido
+        if (_sellModePanel)
+            _sellModePanel.SetActive(false);
     }
 
     /// <summary>
@@ -61,7 +83,30 @@ public class ShopView : UIView
             _shopService.OnStockRefreshed += RefreshUI;
         }
     }
+    private void OnDisable()
+    {
+        if (AppCore.Instance != null && AppCore.Instance.ShopService != null)
+            AppCore.Instance.ShopService.OnStockRefreshed -= RefreshUI;
 
+        // 2. LIMPEZA DO MODO VENDA (O Fix)
+        // Garante que paramos de escutar cliques nas cartas
+        CardView.OnCardClickedGlobal -= HandleCardClickedToSell;
+
+        // Reseta a flag lógica
+        _isSellMode = false;
+
+        // Esconde a barra de "Escolha sua carta" na marra
+        if (_sellModePanel) _sellModePanel.SetActive(false);
+
+        // Reseta a opacidade da loja principal para a próxima vez que abrir
+        if (_mainShopGroup)
+        {
+            _mainShopGroup.alpha = 1;
+            _mainShopGroup.blocksRaycasts = true;
+        }
+        ExitSellMode();
+    }
+        
     private void OnDestroy()
     {
         if (_shopService != null)
@@ -81,7 +126,19 @@ public class ShopView : UIView
         base.Show();
         RefreshUI();
     }
+    public override void Hide()
+    {
+        base.Hide(); 
 
+        // FORÇA A SAÍDA DO MODO VENDA
+        if (_isSellMode)
+        {
+            ExitSellMode();
+        }
+
+        // Garante que o painelzinho suma mesmo se não estivesse no modo venda (segurança)
+        if (_sellModePanel) _sellModePanel.SetActive(false);
+    }
     private void RefreshUI()
     {
         DeselectAll();
@@ -136,18 +193,58 @@ public class ShopView : UIView
     }
 
     // --- AÇÕES ---
+    private void EnterSellMode()
+    {
+        _isSellMode = true;
 
+        // 1. Esconde a Loja (Fade Out rápido) but keep ShopView active
+        // Usamos o CanvasGroup interno do painel principal, não o da Window inteira
+        if (_mainShopGroup)
+        {
+            _mainShopGroup.alpha = 0;
+            _mainShopGroup.blocksRaycasts = false;
+        }
+
+        // 2. Mostra barra de instrução
+        if (_sellModePanel) _sellModePanel.SetActive(true);
+
+        // 3. Escuta cliques nas cartas
+        CardView.OnCardClickedGlobal += HandleCardClickedToSell;
+    }
+    private void ExitSellMode()
+    {
+        _isSellMode = false;
+
+        // 1. Mostra a Loja
+        if (_mainShopGroup)
+        {
+            _mainShopGroup.alpha = 1;
+            _mainShopGroup.blocksRaycasts = true;
+        }
+
+        // 2. Esconde instrução
+        if (_sellModePanel) _sellModePanel.SetActive(false);
+
+        // 3. Para de escutar
+        CardView.OnCardClickedGlobal -= HandleCardClickedToSell;
+    }
+
+    private void HandleCardClickedToSell(CardView cardView)
+    {
+        // DEBUG NOVO
+        Debug.Log($"[ShopView] Recebeu clique na carta: {cardView.Data.Name}. Modo Venda: {_isSellMode}");
+
+        if (!_isSellMode) return;
+
+        // Lógica de Venda
+        _shopService.SellCard(cardView.Instance);
+    }
     private void HandleBuyClick()
     {
         if (_selectedItem != null && _shopService != null)
         {
             _shopService.TryPurchase(_selectedItem);
         }
-    }
-
-    private void HandleSellClick()
-    {
-        Debug.Log("Funcionalidade de Venda em desenvolvimento.");
     }
 
     private void HandleCloseClick()

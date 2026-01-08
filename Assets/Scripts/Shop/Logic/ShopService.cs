@@ -87,6 +87,31 @@ public class ShopService
 
         return PurchaseFailReason.None;
     }
+    public void SellCard(CardInstance cardInstance)
+    {
+        var run = _saveManager.Data.CurrentRun;
+
+        if (_library.TryGetCard(cardInstance.TemplateID, out CardData data))
+        {
+            int sellPrice = data.BaseSellValue;
+            if (sellPrice <= 0) sellPrice = 1;
+
+            _economy.Earn(sellPrice, TransactionType.CardSale);
+
+            // Lógica de Remoção Segura
+            // Procura a instância exata pelo ID Único (GUID)
+            var instanceToRemove = run.Hand.Find(x => x.UniqueID == cardInstance.UniqueID);
+
+            if (!string.IsNullOrEmpty(instanceToRemove.UniqueID))
+            {
+                run.Hand.Remove(instanceToRemove);
+                _gameEvents.Player.TriggerCardRemoved(instanceToRemove);
+            }
+
+            _saveManager.SaveGame();
+            Debug.Log($"[Shop] Vendeu {data.Name} (ID: {cardInstance.UniqueID.Substring(0, 4)}...)");
+        }
+    }
 
     private void ProcessTransaction(IPurchasable item, PurchaseContext context)
     {

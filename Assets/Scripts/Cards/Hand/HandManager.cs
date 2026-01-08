@@ -41,6 +41,7 @@ public class HandManager : MonoBehaviour
             AppCore.Instance.Events.Time.OnRunStarted += HandleRunStarted;  
             AppCore.Instance.Events.Player.OnCardConsumed += HandleCardConsumed;
             AppCore.Instance.Events.Player.OnCardAdded += HandleCardAdded;
+            AppCore.Instance.Events.Player.OnCardRemoved += HandleCardRemoved;
         }
     }
 
@@ -51,6 +52,7 @@ public class HandManager : MonoBehaviour
             AppCore.Instance.Events.Time.OnRunStarted -= HandleRunStarted;
             AppCore.Instance.Events.Player.OnCardConsumed -= HandleCardConsumed;
             AppCore.Instance.Events.Player.OnCardAdded -= HandleCardAdded;
+            AppCore.Instance.Events.Player.OnCardRemoved -= HandleCardRemoved;
         }
     }
 
@@ -74,6 +76,25 @@ public class HandManager : MonoBehaviour
             CreateCardVisual(instance);
         }
     }
+    private void HandleCardRemoved(CardInstance instance)
+    {
+        // Procura na lista visual quem tem o mesmo UniqueID da instância removida
+        var cardView = _cardsInHand.Find(view => view.Instance.UniqueID == instance.UniqueID);
+
+        if (cardView != null)
+        {
+            RemoveCard(cardView);
+        }
+        else
+        {
+            // Se cair aqui, é porque a UI já estava dessincronizada
+            Debug.LogWarning("[HandManager] Tentou remover carta visualmente, mas não encontrou o ID: " + instance.UniqueID);
+
+            // Fallback de segurança: Reconstruir a mão inteira para garantir sincronia
+            InitializeHandFromRun();
+        }
+    }
+
     private void HandleCardAdded(CardInstance instance)
     {
         CreateCardVisual(instance);

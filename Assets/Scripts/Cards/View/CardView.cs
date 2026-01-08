@@ -1,10 +1,11 @@
-using UnityEngine;
-using TMPro;
-using UnityEngine.Rendering;
 using System; 
+using TMPro;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(SortingGroup))]
-public class CardView : MonoBehaviour, IInteractable, IDraggable
+public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickHandler
 {
     // --- CONSTANTES (Fim dos números mágicos) ---
     private const string LAYER_IDLE = "Cards_Idle";
@@ -27,6 +28,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable
 
     public event Action<CardView> OnDragStartedEvent;
     public event Action<CardView> OnDragEndedEvent;
+    public static event Action<CardView> OnCardClickedGlobal;
 
     // Estado Público (Apenas leitura para inputs, escrita restrita)
     public bool IsDragging { get; private set; }
@@ -108,10 +110,16 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable
 
     public void OnClick()
     {
-        // Apenas visual/som. A lógica real deve vir de quem detectou o clique.
         Debug.Log($"Visual Click: {Data?.Name}");
+        OnCardClickedGlobal?.Invoke(this);
     }
-
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (!IsDragging)
+        {
+            OnCardClickedGlobal?.Invoke(this);
+        }
+    }
     // --- IDraggable Implementation ---
 
     public void OnDragStart()
