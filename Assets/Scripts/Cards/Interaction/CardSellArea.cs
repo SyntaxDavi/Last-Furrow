@@ -29,17 +29,18 @@ public class CardSellArea : MonoBehaviour, IDropTarget
     {
         if (draggable is CardView cardView)
         {
-            // 1. Executa a Venda
+            // 1. Executa a Venda ($$)
             SellCard(cardView.Data);
 
-            // 2. Avisa o sistema para remover a carta (Lógica e Visual)
-            // O HandManager vai escutar isso e remover a carta da mão e dos dados
-            AppCore.Instance.Events.Player.TriggerCardConsumed(cardView.Data.ID);
+            // 2. REMOÇÃO LÓGICA E VISUAL (A Correção é aqui)
+            // Removemos a instância específica. O HandManager ouve isso e destrói o objeto.
+            AppCore.Instance.Events.Player.TriggerCardRemoved(cardView.Instance);
 
-            // 3. Feedback Visual (Partículas)
+            // Opcional: Manter o evento de consumo se você usa para quests/estatísticas
+            // AppCore.Instance.Events.Player.TriggerCardConsumed(cardView.Data.ID);
+
+            // 3. Feedback Visual
             if (_sellEffect != null) _sellEffect.Play();
-
-            // O Feedback de Texto (+Gold) é automático porque a UI escuta o EconomyService
         }
     }
 

@@ -82,8 +82,32 @@ public class HandManager : MonoBehaviour
         newCard.OnDragStartEvent += OnCardDragStart;
         newCard.OnDragEndEvent += OnCardDragEnd;
         newCard.OnClickEvent += OnCardClicked;
+        newCard.OnClickEvent += HandleCardClicked;
 
         _activeCards.Add(newCard);
+    }
+    private void HandleCardClicked(CardView clickedCard)
+    {
+        // 1. Lógica Visual (Rádio Button)
+        if (clickedCard.CurrentState == CardVisualState.Selected)
+        {
+            // Se já estava selecionada e clicou de novo: Deseleciona (Toggle Off)
+            clickedCard.Deselect();
+        }
+        else
+        {
+            // Se não estava: Seleciona ela e Deseleciona TODAS as outras
+            foreach (var card in _activeCards)
+            {
+                if (card == clickedCard)
+                    card.Select();
+                else
+                    card.Deselect();
+            }
+        }
+
+        // 2. Propaga para o AppCore (para a Loja saber)
+        AppCore.Instance.Events.Player.TriggerCardClicked(clickedCard);
     }
 
     private void HandleCardAdded(CardInstance instance) => CreateCardView(instance);
@@ -102,6 +126,7 @@ public class HandManager : MonoBehaviour
         if (_activeCards.Contains(card))
         {
             // Remove Eventos antes de destruir (Safety)
+            card.OnClickEvent -= HandleCardClicked;
             card.OnDragStartEvent -= OnCardDragStart;
             card.OnDragEndEvent -= OnCardDragEnd;
             card.OnClickEvent -= OnCardClicked;

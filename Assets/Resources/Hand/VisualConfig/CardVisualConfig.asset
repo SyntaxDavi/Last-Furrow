@@ -9,14 +9,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: ff9321d8fd0a31944b6f6d22e9eded74, type: 3}
   m_Name: CardVisualConfig
-  m_EditorClassIdentifier: Assembly-CSharp::CardVisualConfig
-  PositionSmoothTime: 0.3
-  ScaleSmoothTime: 0.3
+  m_EditorClassIdentifier: 
+  PositionSmoothTime: 0.1
+  ScaleSmoothTime: 0.1
   RotationSpeed: 12
-  DragTiltAmount: 20
-  DragTiltSpeed: 5
-  HoverYOffset: 1
-  HoverScale: 1.2
+  IdleFloatSpeed: 1.2
+  IdleFloatAmount: 0.1
+  IdleRotationAmount: 0.8
+  PeekScale: 1.3
+  PeekYOffset: 0.3
+  SelectedYOffset: 1.2
+  SelectedScale: 1.25
   DragZDepth: -5
+  DragTiltAmount: 20
+  DragTiltSpeed: 10
