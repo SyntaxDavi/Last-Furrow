@@ -47,7 +47,7 @@ public class RunData
     public List<CardInstance> Hand = new List<CardInstance>();
 
     public int MaxHandSize = 15;
-    public int CardsDrawPerDay = 5;
+    public int CardsDrawPerDay = 3;
 
     public int Money;
     public int TotalMoneyEarned;
@@ -89,7 +89,7 @@ public class RunData
             Hand = new List<CardInstance>(), 
 
             MaxHandSize = 15,
-            CardsDrawPerDay = 5,
+            CardsDrawPerDay = 3,
 
             CurrentWeeklyScore = 0,
             WeeklyGoalTarget = 150, // Meta da Semana 1
