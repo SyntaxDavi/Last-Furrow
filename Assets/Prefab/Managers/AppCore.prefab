@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 7645439710493714262}
   - component: {fileID: 403808487855815489}
   - component: {fileID: 2460188282646121636}
+  - component: {fileID: 6733796699465726355}
   m_Layer: 0
   m_Name: AppCore
   m_TagString: Untagged
@@ -53,6 +54,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _gameDatabase: {fileID: 11400000, guid: b446a172f8996d947a109c603930a1b8, type: 2}
+  _progressionSettings: {fileID: 11400000, guid: ec9251d361cfa6f4ab7879e6c9e8f50c, type: 2}
+  _defaultShop: {fileID: 11400000, guid: 8358f38becfe960478a7e54d10d77e95, type: 2}
+  _specialShops: []
   SaveManager: {fileID: 6774691640661748804}
   RunManager: {fileID: 2026137997213601888}
   GameStateManager: {fileID: 403808487855815489}
@@ -60,6 +64,7 @@ MonoBehaviour:
   InputManager: {fileID: 5558657295551827975}
   AudioManager: {fileID: 2458983469160152068}
   DailyResolutionSystem: {fileID: 2460188282646121636}
+  WeekendFlowController: {fileID: 6733796699465726355}
   _firstSceneName: Game
 --- !u!114 &6774691640661748804
 MonoBehaviour:
@@ -166,3 +171,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _baseDelayPerSlot: 0.3
   _fastDelayPerSlot: 0.05
+--- !u!114 &6733796699465726355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5398887748843182172}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3695063e408700245bcbc59da386b271, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

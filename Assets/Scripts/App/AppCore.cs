@@ -1,9 +1,12 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic; 
 
 public class AppCore : MonoBehaviour
 {
     public static AppCore Instance { get; private set; }
+
+    // Serviços Globais
     public IGameLibrary GameLibrary { get; private set; }
     public GameEvents Events { get; private set; }
     public IEconomyService EconomyService { get; private set; }
@@ -17,19 +20,23 @@ public class AppCore : MonoBehaviour
     [Header("Game Design Configs")]
     [SerializeField] private ProgressionSettingsSO _progressionSettings;
 
-    [Header("Sistemas Globais")]
+    [Header("Configuração de Loja (Para o Flow)")]
+    [SerializeField] private ShopProfileSO _defaultShop;
+    [SerializeField] private List<ShopProfileSO> _specialShops;
+
+    [Header("Sistemas Globais (MonoBehaviours)")]
     public SaveManager SaveManager;
     public RunManager RunManager;
     public GameStateManager GameStateManager;
     public TimeManager TimeManager;
     public InputManager InputManager;
     public AudioManager AudioManager;
-
-    // DailyResolutionSystem
     public DailyResolutionSystem DailyResolutionSystem;
 
-    // O serviço é privado e só alterado por métodos explícitos
-    private IGridService _gridService;
+    // O Controlador do Flow (Arraste na cena)
+    public WeekendFlowController WeekendFlowController;
+
+    private IGridService _gridService; // Privado
 
     [Header("Configuração")]
     [SerializeField] private string _firstSceneName = "Game";
@@ -51,8 +58,8 @@ public class AppCore : MonoBehaviour
 
     private void InitializeGlobalServices()
     {
+        // 1. MonoBehaviours Básicos
         if (GameStateManager == null) GameStateManager = GetComponent<GameStateManager>() ?? gameObject.AddComponent<GameStateManager>();
-
         InputManager.Initialize();
         AudioManager.Initialize();
         SaveManager.Initialize();
@@ -63,14 +70,45 @@ public class AppCore : MonoBehaviour
             Debug.Log("[AppCore] GameLibrary Inicializada.");
         }
 
+        // 2. Inicializa Domínio
         RunManager.Initialize(SaveManager);
+
+        // 3. Inicializa Sistemas de Regra
         DailyResolutionSystem.Initialize();
         GameStateManager.Initialize();
 
+        // 4. Inicializa Serviços Puros (C# Classes)
         EconomyService = new EconomyService(RunManager, SaveManager);
         DailyHandSystem = new DailyHandSystem(GameLibrary, EconomyService, new SeasonalCardStrategy(), Events.Player);
         WeeklyGoalSystem = new WeeklyGoalSystem(GameLibrary, Events.Progression, _progressionSettings);
         ShopService = new ShopService(EconomyService, SaveManager, GameLibrary, Events);
+
+        // --- 5. INJEÇÃO DE DEPENDÊNCIA MANUAL (O FLOW) ---
+        // Aqui conectamos o Flow Controller com os Serviços e Domínio
+        if (WeekendFlowController != null)
+        {
+            // A. Criar Módulos (Sub-Flows)
+            var weekendStateFlow = new WeekendStateFlow(GameStateManager);
+            var weekendUIFlow = new WeekendUIFlow(Events.UI);
+            var weekendContentResolver = new WeekendContentResolver(ShopService, _defaultShop, _specialShops);
+
+            // B. Criar o Builder e injetar os módulos
+            var weekendBuilder = new DefaultWeekendFlowBuilder(
+                weekendStateFlow,
+                weekendUIFlow,
+                weekendContentResolver
+            );
+
+            // C. Inicializar o Controller injetando o Builder e o RunManager
+            WeekendFlowController.Initialize(RunManager, weekendBuilder);
+
+            Debug.Log("[AppCore] WeekendFlowController Inicializado com sucesso.");
+        }
+        else
+        {
+            Debug.LogError("[AppCore] CRÍTICO: WeekendFlowController não atribuído no Inspector!");
+        }
+        // -----------------------------------------------
 
         InputManager.OnAnyInputDetected += () => Events.Player.TriggerAnyInput();
 
@@ -97,40 +135,23 @@ public class AppCore : MonoBehaviour
         if (activeCamera != null) InputManager.SetCamera(activeCamera);
     }
 
-    // --- ARQUITETURA ESTRITA DE SERVIÇO ---
+    // --- REGISTRO DE SERVIÇOS DE CENA ---
 
-    /// <summary>
-    /// Retorna a lógica do Grid atual.
-    /// ATENÇÃO: Lança erro se o Bootstrapper da cena não tiver registrado o serviço.
-    /// Isso garante que não existam serviços "fantasmas".
-    /// </summary>
     public IGridService GetGridLogic()
     {
         if (_gridService == null)
         {
-            Debug.LogError("FATAL: Tentativa de acessar GridService antes do Bootstrapper registrar! " +
-                           "Verifique a ordem de execução ou se você está na cena de Gameplay.");
+            Debug.LogError("FATAL: GridService não encontrado!");
             return null;
         }
         return _gridService;
     }
 
-    /// <summary>
-    /// Chamado EXCLUSIVAMENTE pelo Bootstrapper da cena de Gameplay.
-    /// </summary>
     public void RegisterGridService(IGridService service)
     {
-        if (_gridService != null && _gridService != service)
-        {
-            Debug.LogWarning("[AppCore] Substituindo um GridService existente. Isso é normal na troca de cenas, mas perigoso se for acidental.");
-        }
         _gridService = service;
-        Debug.Log("[AppCore] GridService registrado com sucesso.");
     }
 
-    /// <summary>
-    /// Limpa a referência quando a cena de gameplay é destruída.
-    /// </summary>
     public void UnregisterGridService()
     {
         _gridService = null;
