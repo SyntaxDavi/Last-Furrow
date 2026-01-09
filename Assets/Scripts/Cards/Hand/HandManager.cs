@@ -68,36 +68,20 @@ public class HandManager : MonoBehaviour
     {
         ClearHand();
         if (_runData?.Hand == null) return;
-
         foreach (var instance in _runData.Hand)
         {
-            CreateCardView(instance);
+            _pendingCards.Enqueue(instance);
         }
 
-        // Marca para calcular no próximo frame
+        // Inicia o processamento da fila
+        if (!_isSpawning)
+        {
+            StartCoroutine(ProcessCardQueue());
+        }
+
         _isLayoutDirty = true;
 
-        StopAllCoroutines();
-        StartCoroutine(SpawnHandRoutine());
     }
-    private System.Collections.IEnumerator SpawnHandRoutine()
-    {
-        ClearHand();
-
-        // Pequena espera técnica para garantir que sistemas carregaram
-        yield return null;
-
-        if (_runData?.Hand == null) yield break;
-
-        foreach (var instance in _runData.Hand)
-        {
-            CreateCardView(instance);
-
-            // O Segredo: Espera um pouquinho antes da próxima
-            yield return new WaitForSeconds(_layoutConfig.SpawnDelay);
-        }
-    }
-
     private System.Collections.IEnumerator ProcessCardQueue()
     {
         _isSpawning = true;
