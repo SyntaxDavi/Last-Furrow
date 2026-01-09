@@ -19,22 +19,32 @@ public class WeekendContentResolver : IWeekendContentResolver
 
     public void ResolveContent(RunData currentRun)
     {
-        // 1. Lógica de Decisão: Qual loja abrir?
-        ShopProfileSO selectedProfile = _defaultShop;
+        // 1. DECISÃO: Qual perfil de loja vamos usar hoje?
+        ShopProfileSO selectedProfile = SelectProfileLogic(currentRun);
 
-        // Exemplo: A cada 4 semanas, abre uma loja especial (se houver alguma na lista)
+        Debug.Log($"[WeekendResolver] Abrindo loja: {selectedProfile.ShopTitle}");
+
+        IShopStrategy strategy = new ConfigurableShopStrategy(selectedProfile);
+        _shopService.OpenShop(strategy);
+    }
+
+    // Lógica isolada para escolher o perfil (fácil de testar/alterar)
+    private ShopProfileSO SelectProfileLogic(RunData run)
+    {
+        // Exemplo: A cada 4 semanas, loja especial 0
+        // Exemplo: A cada 6 semanas, loja especial 1
+
         if (_specialShops != null && _specialShops.Count > 0)
         {
-            if (currentRun.CurrentWeek % 4 == 0)
+            // Se for semana múltipla de 4, pega uma especial (exemplo simples)
+            if (run.CurrentWeek % 4 == 0)
             {
-                // Pega a primeira especial (ou poderia ser aleatória / baseada em progresso)
-                selectedProfile = _specialShops[0];
-                Debug.Log($"[ContentResolver] Semana {currentRun.CurrentWeek}: Abrindo Loja Especial!");
+                int index = (run.CurrentWeek / 4) % _specialShops.Count;
+                return _specialShops[index];
             }
         }
 
-        // 2. Cria a estratégia e executa o serviço
-        var strategy = new ConfigurableShopStrategy(selectedProfile);
-        _shopService.OpenShop(strategy);
+        // Padrão
+        return _defaultShop;
     }
 }
