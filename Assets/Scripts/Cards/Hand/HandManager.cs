@@ -203,20 +203,23 @@ public class HandManager : MonoBehaviour
 
     private void HandleCardRemoved(CardInstance instance)
     {
-        Debug.Log($"[HandManager] Tentando remover carta {instance.UniqueID}");
-        Debug.Log($"[HandManager] Cartas na mão: {_activeCards.Count}");
-
+        // 1. Remoção Visual (O que você vê)
         var cardView = _activeCards.FirstOrDefault(c => c.Instance.UniqueID == instance.UniqueID);
-
         if (cardView != null)
         {
-            Debug.Log($"[HandManager] Carta encontrada! Removendo {cardView.Data.Name}");
             RemoveCardView(cardView);
-            _runData.Hand.Remove(instance);
         }
 
-        Debug.Log($"[HandManager] Após remoção: {_activeCards.Count} cartas");
-        Debug.Log($"[HandManager] RunData.Hand agora tem: {_runData.Hand.Count} cartas");
+        // 2. Remoção de Dados (O que o computador vê)
+        // --- ISSO ESTAVA FALTANDO ---
+        if (_runData != null && _runData.Hand != null)
+        {
+            // Remove da lista lógica usando o ID único
+            _runData.Hand.RemoveAll(c => c.UniqueID == instance.UniqueID);
+
+            // Debug para garantir
+            Debug.Log($"[HandManager] Carta removida. Dados: {_runData.Hand.Count} | Visual: {_activeCards.Count}");
+        }
     }
 
     private void RemoveCardView(CardView card)

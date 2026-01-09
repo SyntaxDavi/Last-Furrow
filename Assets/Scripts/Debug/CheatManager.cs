@@ -56,7 +56,7 @@ public class CheatManager : MonoBehaviour
 
         if (GUILayout.Button("Forçar Shop (Debug)"))
         {
-            _runManager.StartWeekendPhase();
+            _runManager.StartWeekendPhase(_saveManager.Data.CurrentRun);
         }
 
         GUI.color = Color.white;

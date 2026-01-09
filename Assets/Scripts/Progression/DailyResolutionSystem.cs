@@ -160,28 +160,45 @@ public class DailyResolutionSystem : MonoBehaviour
         // 3. AVANÇO DE DIA E CARTAS
         // -----------------------------------------------------------------------
 
-        // Avança dia numérico (Dia 1 -> 2)
+        // 1. Avança o dia numérico (Ex: 5 -> 6, ou 7 -> 1)
+        // O AdvanceDay() também gerencia a troca de Fase (Production <-> Weekend) internamente.
         _runManager.AdvanceDay();
 
-        // Atualiza a referência local (boa prática após alterar dados estruturais)
+        // Pega a referência ATUALIZADA dos dados da Run
         var currentRun = _saveManager.Data.CurrentRun;
 
-        // Distribui novas cartas e processa Overflow (Venda automática)
-        AppCore.Instance.DailyHandSystem.ProcessDailyDraw(currentRun);
+        // --- A LÓGICA DE CONTROLE DE CARTAS ---
+        // Verificamos a Fase APÓS avançar o dia. Se for dias de PRODUÇÃO, sim, compramos cartas.
+        if (_runManager.CurrentPhase == RunPhase.Production)
+        {
+            Debug.Log("[DailyResolution] Dia de Produção: Iniciando Draw Diário...");
 
-        // Delay para animação das cartas entrando na mão
-        yield return new WaitForSeconds(0.8f);
+            // Processa o Draw e o Overflow para as cartas da mão
+            AppCore.Instance.DailyHandSystem.ProcessDailyDraw(currentRun);
+
+            // Delay para a animação visual das cartas entrando (Fan Out)
+            yield return new WaitForSeconds(0.8f);
+        }
+        else
+        {
+            // Se a fase é Weekend, apenas logamos que não haverá draw.
+            Debug.Log("[DailyResolution] Fim de Semana: Sem draw de novas cartas.");
+            // Um pequeno delay para não pular direto para o save, dando um respiro visual
+            yield return new WaitForSeconds(0.5f);
+        }
 
         // -----------------------------------------------------------------------
         // 4. PERSISTÊNCIA E ENCERRAMENTO
         // -----------------------------------------------------------------------
 
-        // Salva tudo (Grid atualizado, Pontos somados, Cartas na mão, Vidas atualizadas)
+        // Salva o estado atualizado do jogo
         _saveManager.SaveGame();
 
-        // Libera o jogo
+        // Libera o fluxo visual e de jogo
         _events.Time.TriggerResolutionEnded();
         _isProcessing = false;
+
+        Debug.Log("=== Resolução do Dia Concluída ===");
     }
 
     private void OnDisable()
