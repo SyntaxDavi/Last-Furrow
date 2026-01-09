@@ -155,6 +155,10 @@ public class ShopView : UIView
     {
         // Validação explícita de estado
         if (_currentState != ShopUIState.Selling || _shopService == null) return;
+        if (cardView == null)
+        {
+            return;
+        }
 
         Debug.Log($"[ShopView] Vendendo: {cardView.Data.Name}");
         _shopService.SellCard(cardView.Instance);

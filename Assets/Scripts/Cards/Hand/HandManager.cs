@@ -19,6 +19,8 @@ public class HandManager : MonoBehaviour
 
     // OTIMIZAÇÃO: Flag para evitar cálculos desnecessários no Update
     private bool _isLayoutDirty = false;
+    private Queue<CardInstance> _pendingCards = new Queue<CardInstance>();
+    private bool _isSpawning = false;   
 
     // --- SETUP ---
     public void Configure(RunData runData, IGameLibrary library)
@@ -74,6 +76,42 @@ public class HandManager : MonoBehaviour
 
         // Marca para calcular no próximo frame
         _isLayoutDirty = true;
+
+        StopAllCoroutines();
+        StartCoroutine(SpawnHandRoutine());
+    }
+    private System.Collections.IEnumerator SpawnHandRoutine()
+    {
+        ClearHand();
+
+        // Pequena espera técnica para garantir que sistemas carregaram
+        yield return null;
+
+        if (_runData?.Hand == null) yield break;
+
+        foreach (var instance in _runData.Hand)
+        {
+            CreateCardView(instance);
+
+            // O Segredo: Espera um pouquinho antes da próxima
+            yield return new WaitForSeconds(_layoutConfig.SpawnDelay);
+        }
+    }
+
+    private System.Collections.IEnumerator ProcessCardQueue()
+    {
+        _isSpawning = true;
+
+        while (_pendingCards.Count > 0)
+        {
+            var instance = _pendingCards.Dequeue();
+            CreateCardView(instance);
+
+            // Espera antes da próxima carta
+            yield return new WaitForSeconds(_layoutConfig.SpawnDelay);
+        }
+
+        _isSpawning = false;
     }
 
     private void CreateCardView(CardInstance instance)
@@ -82,7 +120,6 @@ public class HandManager : MonoBehaviour
 
         var newCard = Instantiate(_cardPrefab, transform);
 
-        // Injeção de Dependências
         newCard.Initialize(
             data,
             instance,
@@ -90,17 +127,21 @@ public class HandManager : MonoBehaviour
             AppCore.Instance.InputManager
         );
 
-        // Posição inicial (Spawn point)
-        newCard.transform.position = _handCenter.position - Vector3.up * 6f;
+        // --- MUDANÇA AQUI ---
+        // Em vez de hardcoded (-6f), usamos o config para definir de onde a carta vem (Deck)
+        Vector3 spawnPos = _handCenter.position + (Vector3)_layoutConfig.SpawnOffset;
+        spawnPos.z = 0; // Garante que não nasça bugada no Z
+        newCard.transform.position = spawnPos;
+        // --------------------
 
-        // Assinatura de Eventos
         newCard.OnDragStartEvent += OnCardDragStart;
         newCard.OnDragEndEvent += OnCardDragEnd;
         newCard.OnClickEvent += HandleCardClicked;
 
         _activeCards.Add(newCard);
 
-        // A mão mudou, precisa recalcular
+        // Marca como sujo para que o Update() recalcule o espaço das cartas
+        // Isso faz com que as cartas que já estão na mão "abram espaço" para a nova chegando
         _isLayoutDirty = true;
     }
 
@@ -164,38 +205,60 @@ public class HandManager : MonoBehaviour
 
     // --- MANIPULAÇÃO DE DADOS ---
 
-    private void HandleCardAdded(CardInstance instance) => CreateCardView(instance);
+    private void HandleCardAdded(CardInstance instance)
+    {
+        // Adiciona na fila
+        _pendingCards.Enqueue(instance);
+
+        // Se não estiver processando, inicia a coroutine
+        if (!_isSpawning)
+        {
+            StartCoroutine(ProcessCardQueue());
+        }
+    }
 
     private void HandleCardRemoved(CardInstance instance)
     {
+        Debug.Log($"[HandManager] Tentando remover carta {instance.UniqueID}");
+        Debug.Log($"[HandManager] Cartas na mão: {_activeCards.Count}");
+
         var cardView = _activeCards.FirstOrDefault(c => c.Instance.UniqueID == instance.UniqueID);
+
         if (cardView != null)
         {
+            Debug.Log($"[HandManager] Carta encontrada! Removendo {cardView.Data.Name}");
             RemoveCardView(cardView);
+            _runData.Hand.Remove(instance);
         }
+
+        Debug.Log($"[HandManager] Após remoção: {_activeCards.Count} cartas");
+        Debug.Log($"[HandManager] RunData.Hand agora tem: {_runData.Hand.Count} cartas");
     }
 
     private void RemoveCardView(CardView card)
     {
         if (_activeCards.Contains(card))
         {
-            // EDGE CASE FIX: Se a carta removida estava selecionada, avisa o sistema!
-            // Isso evita que a loja tente vender uma carta que não existe mais visualmente.
+            // 1. Remove listeners PRIMEIRO (evita que a carta morta receba eventos)
+            card.OnClickEvent -= HandleCardClicked;
+            card.OnDragStartEvent -= OnCardDragStart;
+            card.OnDragEndEvent -= OnCardDragEnd;
+
+            // 2. Limpa seleção global SE estava selecionada
             if (card.CurrentState == CardVisualState.Selected)
             {
                 // Dispara evento com null para limpar UI de detalhes/loja
                 AppCore.Instance.Events.Player.TriggerCardClicked(null);
             }
 
-            // Remove listeners para evitar memory leaks
-            card.OnClickEvent -= HandleCardClicked;
-            card.OnDragStartEvent -= OnCardDragStart;
-            card.OnDragEndEvent -= OnCardDragEnd;
-
+            // 3. Remove da lista e destrói
             _activeCards.Remove(card);
+
+            _runData.Hand.Remove(card.Instance);
+
             Destroy(card.gameObject);
 
-            // A mão mudou, precisa recalcular o layout das que sobraram
+            // 4. Marca layout como sujo
             _isLayoutDirty = true;
         }
     }
@@ -209,6 +272,8 @@ public class HandManager : MonoBehaviour
         }
         _activeCards.Clear();
         _isLayoutDirty = false; // Mão vazia não precisa de cálculo
+        _pendingCards.Clear();
+        _isSpawning = false;
     }
 
     // --- LAYOUT (Matemática) ---

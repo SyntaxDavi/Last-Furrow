@@ -38,7 +38,7 @@ public class DailyHandSystem
             {
                 // Caminho Feliz: Adiciona
                 AddToHand(runData, newInstance);
-            }
+            }   
             else
             {
                 // Caminho de Overflow: Vende
