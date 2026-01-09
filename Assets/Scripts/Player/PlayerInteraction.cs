@@ -50,10 +50,20 @@ public class PlayerInteraction : MonoBehaviour
 
     private void Update()
     {
-        // Se o jogo estiver pausado ou input nulo, não faz nada
         if (_input == null) return;
 
-        // (Opcional) Aqui você poderia checar: if (AppCore.Instance.GameStateManager.IsPaused) return;
+        // 1. Contexto Atual
+        var currentState = AppCore.Instance.GameStateManager.CurrentState;
+
+        // Regra de Ouro:
+        // - Drag: Só permitido em Playing (Produção)
+        // - Click/Hover: Permitido em Playing E Shopping (para vender cartas)
+        // - Pausa: Bloqueia tudo
+
+        bool inputAllowed = (currentState == GameState.Playing || currentState == GameState.Shopping);
+        bool dragAllowed = (currentState == GameState.Playing);
+
+        if (!inputAllowed) return; // Bloqueio total (Pause / Game Over)
 
         Vector2 mouseScreenPos = _input.MouseScreenPosition;
         Vector2 mouseWorldPos = _input.MouseWorldPosition;
@@ -65,19 +75,19 @@ public class PlayerInteraction : MonoBehaviour
         else
         {
             HandleHover(mouseWorldPos);
-            HandleInput(mouseScreenPos, mouseWorldPos);
+            // Passamos o 'dragAllowed' para dentro do HandleInput
+            HandleInput(mouseScreenPos, mouseWorldPos, dragAllowed);
         }
     }
 
     // --- LÓGICA DE INPUT (Clique e Início de Drag) ---
 
-    private void HandleInput(Vector2 screenPos, Vector2 worldPos)
+    private void HandleInput(Vector2 screenPos, Vector2 worldPos, bool dragAllowed)
     {
-        // 1. Mouse Down: Identificar potencial alvo
+        // 1. Mouse Down: Identificar
         if (_input.IsPrimaryButtonDown)
         {
             Collider2D col = Physics2D.OverlapPoint(worldPos, _draggableLayer);
-
             if (col != null)
             {
                 var draggable = col.GetComponent<IDraggable>();
@@ -85,13 +95,12 @@ public class PlayerInteraction : MonoBehaviour
                 {
                     _potentialDrag = draggable;
                     _dragStartScreenPos = screenPos;
-                    Log($"[Input] Potencial drag detectado: {col.name}");
                 }
             }
         }
 
-        // 2. Mouse Hold: Verificar threshold para iniciar Drag
-        if (_potentialDrag != null && _input.IsPrimaryButtonHeld)
+        // 2. Mouse Hold: Drag (SOMENTE SE PERMITIDO)
+        if (dragAllowed && _potentialDrag != null && _input.IsPrimaryButtonHeld)
         {
             if (!_isDragging)
             {
@@ -103,16 +112,15 @@ public class PlayerInteraction : MonoBehaviour
             }
         }
 
-        // 3. Mouse Up: Clique simples ou cancelamento
+        // 3. Mouse Up: Clique (SEMPRE PERMITIDO SE INPUTALLOWED = TRUE)
         if (_input.IsPrimaryButtonUp)
         {
             if (_potentialDrag != null && !_isDragging)
             {
-                // É um clique simples
+                // É um clique simples (Serve para selecionar no grid ou VENDER na loja)
                 if (_potentialDrag is IInteractable interactable)
                 {
                     interactable.OnClick();
-                    Log("[Input] Clique processado.");
                 }
             }
             _potentialDrag = null;
@@ -220,12 +228,17 @@ public class PlayerInteraction : MonoBehaviour
 
     // --- LÓGICA DE HOVER (Passivo/Mouse Over) ---
 
-    private void HandleHover(Vector2 worldPos)
+    private void HandleHover(Vector2 worldPos)  
     {
-        // 1. Busca TODOS os colisores embaixo do mouse (não só o primeiro)
-        LayerMask combinedMask = _draggableLayer | _dropLayer;
-        Collider2D[] hitColliders = Physics2D.OverlapPointAll(worldPos, combinedMask);
+        LayerMask targetMask = _draggableLayer;
 
+        if (AppCore.Instance.GameStateManager.CurrentState == GameState.Playing)
+        {
+            // Em jogo normal, queremos tudo
+            targetMask |= _dropLayer;
+        }
+
+        Collider2D[] hitColliders = Physics2D.OverlapPointAll(worldPos, targetMask);
         IInteractable bestCandidate = null;
         int highestSortingOrder = int.MinValue;
 
