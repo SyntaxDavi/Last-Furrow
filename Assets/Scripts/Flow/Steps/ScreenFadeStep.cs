@@ -15,7 +15,7 @@ public class ScreenFadeStep : IFlowStep
     public IEnumerator Execute()
     {
         // Se você tiver um sistema de Fade no AppCore, chame aqui.
-        // Ex: yield return AppCore.Instance.ScreenFader.Fade(_fadeIn, _duration);
+        // yield return AppCore.Instance.ScreenFader.Fade(_fadeIn, _duration);
 
         // POR ENQUANTO (Simulação para não quebrar seu código):
         Debug.Log($"[Step] Iniciando Fade {(_fadeIn ? "In" : "Out")} ({_duration}s)...");

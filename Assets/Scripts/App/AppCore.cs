@@ -58,7 +58,7 @@ public class AppCore : MonoBehaviour
 
     private void InitializeGlobalServices()
     {
-        // 1. MonoBehaviours Básicos
+        // 1. MonoBehaviours Básicos (Sem dependências complexas)
         if (GameStateManager == null) GameStateManager = GetComponent<GameStateManager>() ?? gameObject.AddComponent<GameStateManager>();
         InputManager.Initialize();
         AudioManager.Initialize();
@@ -73,40 +73,40 @@ public class AppCore : MonoBehaviour
         // 2. Inicializa Domínio
         RunManager.Initialize(SaveManager);
 
-        // 3. Inicializa Sistemas de Regra
-        DailyResolutionSystem.Initialize();
-        GameStateManager.Initialize();
+        // --- MUDANÇA AQUI: CRIAR SERVIÇOS PUROS PRIMEIRO ---
+        // Eles precisam existir antes que o DailyResolutionSystem tente acessá-los.
 
-        // 4. Inicializa Serviços Puros (C# Classes)
         EconomyService = new EconomyService(RunManager, SaveManager);
         DailyHandSystem = new DailyHandSystem(GameLibrary, EconomyService, new SeasonalCardStrategy(), Events.Player);
         WeeklyGoalSystem = new WeeklyGoalSystem(GameLibrary, Events.Progression, _progressionSettings);
         ShopService = new ShopService(EconomyService, SaveManager, GameLibrary, Events);
 
-        // --- 5. INJEÇÃO DE DEPENDÊNCIA MANUAL (O FLOW) ---
-        // Aqui conectamos o Flow Controller com os Serviços e Domínio
+        // ----------------------------------------------------
+
+        // 3. Inicializa Sistemas de Regra (QUE DEPENDEM DOS SERVIÇOS ACIMA)
+        // Agora, quando Initialize() rodar, o WeeklyGoalSystem já existe!
+        DailyResolutionSystem.Initialize();
+
+        GameStateManager.Initialize();
+
+        // 4. Injeção de Dependência do Flow (Mantido igual)
         if (WeekendFlowController != null)
         {
-            // A. Criar Módulos (Sub-Flows)
             var weekendStateFlow = new WeekendStateFlow(GameStateManager);
             var weekendUIFlow = new WeekendUIFlow(Events.UI);
             var weekendContentResolver = new WeekendContentResolver(ShopService, _defaultShop, _specialShops);
 
-            // B. Criar o Builder e injetar os módulos
             var weekendBuilder = new DefaultWeekendFlowBuilder(
                 weekendStateFlow,
                 weekendUIFlow,
                 weekendContentResolver
             );
 
-            // C. Inicializar o Controller injetando o Builder e o RunManager
             WeekendFlowController.Initialize(RunManager, weekendBuilder);
-
-            Debug.Log("[AppCore] WeekendFlowController Inicializado com sucesso.");
         }
         else
         {
-            Debug.LogError("[AppCore] CRÍTICO: WeekendFlowController não atribuído no Inspector!");
+            Debug.LogError("[AppCore] WeekendFlowController não atribuído!");
         }
         // -----------------------------------------------
 
