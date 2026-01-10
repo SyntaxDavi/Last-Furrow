@@ -3,6 +3,9 @@ using System;
 
 public class RunManager : MonoBehaviour, IRunManager
 {
+    [Header("Configuração de Jogo")]
+    [SerializeField] private ProgressionSettingsSO _progressionSettings;
+
     private ISaveManager _saveManager;
 
     // Estado privado, leitura pública
@@ -34,8 +37,10 @@ public class RunManager : MonoBehaviour, IRunManager
 
     public void StartNewRun()
     {
+        int initialGoal = _progressionSettings != null ? _progressionSettings.GetGoalForWeek(1) : 150;
+
         // 1. Criação Pura de Dados (Domain)
-        RunData newRun = RunData.CreateNewRun();
+        RunData newRun = RunData.CreateNewRun(initialGoal);
 
         // 2. Persistência
         _saveManager.Data.CurrentRun = newRun;

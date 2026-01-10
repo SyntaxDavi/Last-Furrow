@@ -4,19 +4,18 @@ using UnityEngine;
 public class CardData : ScriptableObject
 {
     [Header("Identificação")]
-    public CardID ID; 
+    public CardID ID;
     public string Name;
     public Sprite Icon;
 
     [Header("Comportamento")]
     public CardType Type;
 
-    [Header("Custo")]
-    public int Cost;
-    public int BaseSellValue = 2;
+    [Header("Economia")]
+    public int BaseSellValue = 2; // Valor se vender a carta na loja
 
     [Header("Efeito (Se for Plantio)")]
-    public CropData CropToPlant; 
+    public CropData CropToPlant;
 
     [Header("Efeito (Se for Modificador)")]
     public int GrowthAcceleration; // Ex: +1 dia

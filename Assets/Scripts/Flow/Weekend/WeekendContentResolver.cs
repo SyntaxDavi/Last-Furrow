@@ -28,7 +28,7 @@ public class WeekendContentResolver : IWeekendContentResolver
         _shopService.OpenShop(strategy);
     }
 
-    // Lógica isolada para escolher o perfil (fácil de testar/alterar)
+    // Lógica isolada para escolher o perfil (fácil de testar/alterar)  
     private ShopProfileSO SelectProfileLogic(RunData run)
     {
         // Exemplo: A cada 4 semanas, loja especial 0

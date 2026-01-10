@@ -50,7 +50,7 @@ public class RunData
         // Nota: Não disparamos evento aqui porque RunData é apenas DADOS.
         // Quem chama (Service ou Item) dispara o evento.
     }
-    public static RunData CreateNewRun()
+    public static RunData CreateNewRun(int startingGoal = 150)
     {
         var run = new RunData
         {
@@ -63,7 +63,7 @@ public class RunData
             CardsDrawPerDay = 3,
 
             CurrentWeeklyScore = 0,
-            WeeklyGoalTarget = 150, // Meta da Semana 1
+            WeeklyGoalTarget = startingGoal, // Meta da Semana 1
             CurrentLives = 3,
             MaxLives = 3
         };
@@ -74,8 +74,8 @@ public class RunData
 
         AddStartingCard(run, "card_carrot");
         AddStartingCard(run, "card_corn");
-        AddStartingCard(run, "card_carrot");
-        AddStartingCard(run, "card_corn");
+        AddStartingCard(run, "card_harvest");
+        AddStartingCard(run, "card_shovel");
         AddStartingCard(run, "card_water");
 
         return run;

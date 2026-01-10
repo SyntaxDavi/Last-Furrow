@@ -9,11 +9,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2076f5aeafd6e6447900ffd1664ea4a8, type: 3}
-  m_Name: ProgressionSettings
+  m_Script: {fileID: 11500000, guid: c4326d99a298970448385a0826c5b265, type: 3}
+  m_Name: Card_shovel
   m_EditorClassIdentifier: 
-  ProductionDays: 5
-  WeekendDays: 2
-  BaseWeeklyGoal: 500
-  GoalIncreasePerWeek: 200
-  MaxLives: 3
+  ID:
+    _value: card_shovel
+  Name: Shovel
+  Icon: {fileID: 0}
+  Type: 3
+  BaseSellValue: 10
+  CropToPlant: {fileID: 0}
+  GrowthAcceleration: 0
+  ValueMultiplier: 0

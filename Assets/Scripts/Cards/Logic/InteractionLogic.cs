@@ -59,28 +59,6 @@ public class ModifyInteraction : ICardInteractionStrategy
     }
 }
 
-// ===================================================================================
+// ==============================================================================
 // FACTORY (Padrão Flyweight)
-// ===================================================================================
-
-public static class InteractionFactory
-{
-    private static readonly Dictionary<CardType, ICardInteractionStrategy> _strategies
-        = new Dictionary<CardType, ICardInteractionStrategy>();
-
-    static InteractionFactory()
-    {
-        _strategies[CardType.Plant] = new PlantInteraction();
-        _strategies[CardType.Modify] = new WaterInteractionStrategy(); 
-        _strategies[CardType.Harvest] = new HarvestInteractionStrategy();
-    }
-
-    public static ICardInteractionStrategy GetStrategy(CardType type)
-    {
-        if (_strategies.TryGetValue(type, out var strategy))
-        {
-            return strategy;
-        }
-        return null;
-    }
-}
+// ==============================================================================

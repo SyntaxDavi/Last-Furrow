@@ -70,7 +70,7 @@ public class AppCore : MonoBehaviour
             Debug.Log("[AppCore] GameLibrary Inicializada.");
         }
 
-        // 2. Inicializa Domínio
+        // 2. Inicializa Domínio    
         RunManager.Initialize(SaveManager);
 
         // --- MUDANÇA AQUI: CRIAR SERVIÇOS PUROS PRIMEIRO ---

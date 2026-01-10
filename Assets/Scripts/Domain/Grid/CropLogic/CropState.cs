@@ -3,7 +3,7 @@ using System;
 [Serializable]
 public class CropState : IReadOnlyCropState
 {
-    // --- CAMPOS MÚTAVEIS (Dados para JSON) ---
+    // --- CAMPOS ---
     public CropID CropID;
     public int CurrentGrowth;
     public int DaysMature;
@@ -11,30 +11,34 @@ public class CropState : IReadOnlyCropState
     public bool IsWatered;
 
     // --- CONSTRUTORES ---
-    public CropState()
-    {
-        CropID = CropID.Empty;
-    }
+    public CropState() => Clear(); // Construtor padrão já nasce limpo
 
     public CropState(CropID cropID)
     {
+        Clear(); // Garante defaults
         CropID = cropID;
+    }
+
+    // --- LÓGICA DE LIMPEZA (SÊNIOR) ---
+    // Único ponto de verdade sobre como resetar um slot.
+    public void Clear()
+    {
+        CropID = CropID.Empty;
         CurrentGrowth = 0;
         DaysMature = 0;
         IsWithered = false;
         IsWatered = false;
+        // Se amanhã você adicionar "public int PragaAmount", 
+        // você só precisa adicionar "PragaAmount = 0" AQUI.
+        // Todas as estratégias (Colheita, Pá, Explosão) serão atualizadas automaticamente.
     }
 
-    // --- IMPLEMENTAÇÃO DA INTERFACE (READ-ONLY) ---
-    // Estas setas '=>' apontam para os campos acima.
-    // Quem ver como 'IReadOnlyCropState' só consegue ler.
-
+    // --- IMPLEMENTAÇÃO DA INTERFACE ---
     CropID IReadOnlyCropState.CropID => CropID;
     int IReadOnlyCropState.CurrentGrowth => CurrentGrowth;
     int IReadOnlyCropState.DaysMature => DaysMature;
     bool IReadOnlyCropState.IsWatered => IsWatered;
     bool IReadOnlyCropState.IsWithered => IsWithered;
 
-    // Lógica encapsulada de leitura
     public bool IsEmpty => !CropID.IsValid;
 }

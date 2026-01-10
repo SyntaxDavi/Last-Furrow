@@ -27,7 +27,7 @@ public class CardPurchaseItem : IPurchasable
         if (price <= 0)
         {
             // Mathf.Max garante que nunca custe 0 ou negativo, mesmo que o custo da carta seja 0
-            _price = Mathf.Max(1, card.Cost * DEFAULT_PRICE_MULTIPLIER);
+            _price = Mathf.Max(1, card.BaseSellValue * DEFAULT_PRICE_MULTIPLIER);
         }
         else
         {

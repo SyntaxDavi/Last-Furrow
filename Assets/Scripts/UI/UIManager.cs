@@ -16,10 +16,13 @@ public class UIManager : MonoBehaviour
             _shopView.OnExitRequested += HandleShopExitButton;
         }
 
-        // Estado Inicial Limpo
-        UpdateHUDMode(HUDMode.Production);
         if (_pauseView) _pauseView.HideImmediate();
         if (_gameOverView) _gameOverView.HideImmediate();
+
+        if (AppCore.Instance != null)
+        {
+            AppCore.Instance.Events.UI.RequestHUDMode(HUDMode.Production);
+        }   
     }
 
     private void OnEnable()
