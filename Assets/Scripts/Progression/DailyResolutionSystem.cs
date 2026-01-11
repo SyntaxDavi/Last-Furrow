@@ -99,7 +99,7 @@ public class DailyResolutionSystem : MonoBehaviour
         if (result.IsWeekEnd)
         {
             // Lógica de feedback de meta (Vitória/Derrota)
-            runData.WeeklyGoalTarget = result.NextGoal; 
+            runData.WeeklyGoalTarget = result.NextGoal;
             runData.CurrentWeeklyScore = 0;
 
             _events.Progression.TriggerWeeklyGoalEvaluated(result.IsSuccess, runData.CurrentLives);
