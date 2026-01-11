@@ -16,3 +16,5 @@ MonoBehaviour:
   MaxHandWidth: 10
   ArcHeight: 0.5
   RotationIntensity: 12
+  SpawnDelay: 0.01
+  SpawnOffset: {x: -15, y: -10}

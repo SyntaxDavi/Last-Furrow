@@ -36,7 +36,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     private Vector3 _currentVelocityPos;
     private float _currentVelocityScale;
     private float _randomSeed;
-    private bool _isMouseOver;
+
 
     // CONTROLE DE INPUT
     private float _lastClickTime;
@@ -116,7 +116,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         ApplyFloatEffect(ref targetPos, ref targetRot);
 
         // 2. Modificadores de Hover (Peek)
-        if (_isMouseOver)
+        if (IsHovered)
         {
             targetPos += Vector3.up * _config.PeekYOffset;
             targetPos.z = _config.HoverZ;
@@ -175,10 +175,17 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
 
     private void ApplyPhysics(Vector3 tPos, Quaternion tRot, Vector3 tScale, int tSort, float smoothTime)
     {
+        if (Time.deltaTime <= 0.0001f) return;
+
         transform.position = Vector3.SmoothDamp(transform.position, tPos, ref _currentVelocityPos, smoothTime);
 
         float newScale = Mathf.SmoothDamp(transform.localScale.x, tScale.x, ref _currentVelocityScale, _config.ScaleSmoothTime);
         transform.localScale = Vector3.one * newScale;
+
+        if (!float.IsNaN(newScale))
+        {
+            transform.localScale = Vector3.one * newScale;
+        }
 
         transform.rotation = Quaternion.Slerp(transform.rotation, tRot, Time.deltaTime * _config.RotationSpeed);
 
@@ -200,6 +207,14 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
 
     private void PerformClick()
     {
+        var app = AppCore.Instance;
+        if (app != null)
+        {
+            var state = app.GameStateManager.CurrentState;
+            // Se estiver pausado ou Game Over, sai imediatamente
+            if (state == GameState.Paused || state == GameState.GameOver) return;
+        }
+
         // Debounce Global
         if (Time.time - _lastClickTime < CLICK_DEBOUNCE) return;
         _lastClickTime = Time.time;
@@ -217,8 +232,8 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     // --- ESTADOS EXTERNOS ---
 
     public void UpdateLayoutTarget(HandLayoutCalculator.CardTransformTarget target) => _layoutTarget = target;
-    public void OnHoverEnter() => _isMouseOver = true;
-    public void OnHoverExit() => _isMouseOver = false;
+    public void OnHoverEnter() => IsHovered = true;
+    public void OnHoverExit() => IsHovered = false;
 
     public void Select()
     {
@@ -239,9 +254,9 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
 
     public void OnDragStart()
     {
+        if (AppCore.Instance.GameStateManager.CurrentState != GameState.Playing) return;
         CurrentState = CardVisualState.Dragging;
-        _isMouseOver = false;
-        IsHovered = false;
+        IsHovered = false; 
         _currentVelocityPos = Vector3.zero;
         _sortingGroup.sortingOrder = CardSortingConstants.DRAG_LAYER;
         OnDragStartEvent?.Invoke(this);
@@ -251,7 +266,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     {
         // Drag é físico e direto, bypass no sistema de SmoothDamp
         Vector3 targetPos = new Vector3(worldPos.x, worldPos.y, _config.DragZ);
-        transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * 20f);
+        transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * 20f); 
 
         // Tilt Calculation
         float deltaX = (targetPos.x - transform.position.x) * -2f;

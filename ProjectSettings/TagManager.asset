@@ -62,7 +62,7 @@ TagManager:
   - name: VFX
     uniqueID: 3965246615
     locked: 0
-  - name: PausePanel
+  - name: UI_Pause
     uniqueID: 1046053907
     locked: 0
   m_RenderingLayers:
