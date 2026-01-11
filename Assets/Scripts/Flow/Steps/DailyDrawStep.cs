@@ -14,7 +14,7 @@ public class DailyDrawStep : IFlowStep
         _runData = runData;
     }
 
-    public IEnumerator Execute()
+    public IEnumerator Execute(FlowControl control)
     {
         // REGRA DE OURO: Só dá cartas se for dia de trabalho
         if (_runManager.CurrentPhase == RunPhase.Production)

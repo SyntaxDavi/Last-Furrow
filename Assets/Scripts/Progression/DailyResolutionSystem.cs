@@ -57,62 +57,39 @@ public class DailyResolutionSystem : MonoBehaviour
         _isProcessing = true;
         _events.Time.TriggerResolutionStarted();
 
-        // --- CONSTRUÇÃO DO PIPELINE (ON THE FLY) ---
-        // Aqui definimos a "Playlist" do fim do dia.
-        // No futuro, isso pode ir para um Builder (IDailyFlowBuilder).
+        // 1. Cria o Token de Controle
+        var flowControl = new FlowControl();
 
         var pipeline = new List<IFlowStep>
         {
-            // 1. Crescimento das Plantas
             new GrowGridStep(AppCore.Instance.GetGridLogic(), _events, _inputManager, runData),
-            
-            // 2. Cálculo de Pontos & Metas (Poderia ser um Step separado também)
-            // Por enquanto, mantivemos inline para não criar 10 arquivos hoje, mas idealmente seria CalculateScoreStep
-            new LambdaStep(() => ProcessScoring(runData)), 
-
-            // 3. Avanço de Tempo e Save
+            new CalculateScoreStep(_goalSystem, _runManager, runData, _events.Progression),
             new AdvanceTimeStep(_runManager, _saveManager),
-
-            // 4. Cartas (Draw ou Skip)
             new DailyDrawStep(_handSystem, _runManager, runData)
         };
 
-        // --- EXECUÇÃO ---
+        // --- EXECUÇÃO SEGURA ---
         foreach (var step in pipeline)
         {
-            yield return step.Execute();
+            // Passa o token para o passo
+            yield return step.Execute(flowControl);
+
+            // CHECKPOINT: Se alguém apertou o botão vermelho, PARAR TUDO.
+            if (flowControl.ShouldAbort)
+            {
+                Debug.Log("[DailyResolution] Pipeline abortado por solicitação de um Step.");
+                break; // Sai do loop foreach imediatamente
+            }
         }
 
-        // Finalização
-        _events.Time.TriggerResolutionEnded();
-        _isProcessing = false;
-        Debug.Log("=== Resolução do Dia Concluída ===");
-    }
-
-    // Lógica auxiliar encapsulada para o passo "Lambda"
-    // No futuro, mova isso para um CalculateScoreStep.cs
-    private IEnumerator ProcessScoring(RunData runData)
-    {
-        _goalSystem.ProcessNightlyScoring(runData);
-
-        var result = _goalSystem.CheckEndOfProduction(runData);
-        if (result.IsWeekEnd)
+        // Se abortou, talvez não devamos disparar 'ResolutionEnded' se a tela de GameOver já assumiu.
+        // Mas geralmente, liberar o estado é seguro.
+        if (!flowControl.ShouldAbort)
         {
-            // Lógica de feedback de meta (Vitória/Derrota)
-            runData.WeeklyGoalTarget = result.NextGoal;
-            runData.CurrentWeeklyScore = 0;
-
-            _events.Progression.TriggerWeeklyGoalEvaluated(result.IsSuccess, runData.CurrentLives);
-            yield return new WaitForSeconds(2.0f);
+            _events.Time.TriggerResolutionEnded();
+            Debug.Log("=== Resolução do Dia Concluída ===");
         }
-        yield return null;
-    }
-}
 
-// Pequeno Helper para rodar métodos simples como passos
-public class LambdaStep : IFlowStep
-{
-    private readonly System.Func<IEnumerator> _action;
-    public LambdaStep(System.Func<IEnumerator> action) => _action = action;
-    public IEnumerator Execute() => _action();
+        _isProcessing = false;
+    }
 }

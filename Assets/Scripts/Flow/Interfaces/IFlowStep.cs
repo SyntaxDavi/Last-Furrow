@@ -2,7 +2,7 @@ using System.Collections;
 
 public interface IFlowStep
 {
-    // Executa a lógica do passo.
-    // Retorna IEnumerator para permitir animações, fades e esperas.
-    IEnumerator Execute();
+    // Agora recebe o "Controle Remoto" do pipeline
+    //Nenhum Step deve assumir que sempre rodará até o fim.
+    IEnumerator Execute(FlowControl control);
 }

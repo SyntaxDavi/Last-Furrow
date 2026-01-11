@@ -70,7 +70,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
             _artRenderer.sprite = Data.Icon;
         }
 
-        _randomSeed = UnityEngine.Random.Range(0f, 200f);
+        _randomSeed = UnityEngine.Random.Range(0f, 225f);
 
 #if UNITY_EDITOR
         // Lógica de Debug apenas no editor para não poluir build

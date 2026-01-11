@@ -12,7 +12,7 @@ public class ChangeStateStep : IFlowStep
         _enterWeekend = enterWeekend;
     }
 
-    public IEnumerator Execute()
+    public IEnumerator Execute(FlowControl control)
     {
         if (_enterWeekend)
         {

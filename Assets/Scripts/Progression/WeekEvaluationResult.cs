@@ -1,22 +1,23 @@
+public enum WeekResultType
+{
+    Success,      // >= 100%
+    PartialFail,  // 60% - 99%
+    CriticalFail  // < 60%
+}
 public struct WeekEvaluationResult
 {
-    public bool IsWeekEnd;      // Hoje foi dia de pagamento?
-    public bool IsSuccess;      // Passou na meta?
-    public int ScoreAchieved;   // Quantos pontos fez
-    public int TargetGoal;      // Qual era a meta
-    public int NextGoal;        // Qual a próxima meta
+    public bool IsWeekEnd;
+    public WeekResultType ResultType;
+    public int NextGoal; // Calculado aqui para evitar lógica espalhada
 
-    // Factory methods para clareza
     public static WeekEvaluationResult NotEndOfWeek()
         => new WeekEvaluationResult { IsWeekEnd = false };
 
-    public static WeekEvaluationResult Finished(bool success, int score, int target, int next)
+    public static WeekEvaluationResult Finished(WeekResultType type, int nextGoal)
         => new WeekEvaluationResult
         {
             IsWeekEnd = true,
-            IsSuccess = success,
-            ScoreAchieved = score,
-            TargetGoal = target,
-            NextGoal = next
+            ResultType = type,
+            NextGoal = nextGoal
         };
 }

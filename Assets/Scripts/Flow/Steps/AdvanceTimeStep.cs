@@ -12,7 +12,7 @@ public class AdvanceTimeStep : IFlowStep
         _saveManager = saveManager;
     }
 
-    public IEnumerator Execute()
+    public IEnumerator Execute(FlowControl control)
     {
         // 1. Avança o tempo (Dia 1 -> 2)
         _runManager.AdvanceDay();

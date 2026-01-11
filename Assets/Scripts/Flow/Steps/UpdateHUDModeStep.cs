@@ -11,7 +11,7 @@ public class UpdateHUDModeStep : IFlowStep
         _isWeekend = isWeekend;
     }
 
-    public IEnumerator Execute()
+    public IEnumerator Execute(FlowControl control)
     {
         if (_isWeekend)
         {

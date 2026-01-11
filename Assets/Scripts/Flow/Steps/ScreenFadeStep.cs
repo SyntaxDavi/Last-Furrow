@@ -12,7 +12,7 @@ public class ScreenFadeStep : IFlowStep
         _duration = duration;
     }
 
-    public IEnumerator Execute()
+    public IEnumerator Execute(FlowControl control)
     {
         // Se você tiver um sistema de Fade no AppCore, chame aqui.
         // yield return AppCore.Instance.ScreenFader.Fade(_fadeIn, _duration);

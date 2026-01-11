@@ -55,10 +55,19 @@ public class WeekendFlowController : MonoBehaviour
 
     private IEnumerator ExecutePipelineRoutine(List<IFlowStep> steps)
     {
+        var flowControl = new FlowControl(); 
+
         foreach (var step in steps)
         {
-            yield return step.Execute();
+            yield return step.Execute(flowControl); 
+
+            if (flowControl.ShouldAbort)
+            {
+                Debug.Log("[WeekendFlow] Pipeline abortado por um Step.");
+                break;
+            }
         }
+
         _activeFlowRoutine = null;
     }
 }

@@ -1813,10 +1813,10 @@ RectTransform:
   - {fileID: 888648030}
   - {fileID: 1802954188}
   - {fileID: 932979584}
-  - {fileID: 1976279577}
   - {fileID: 1630510863}
   - {fileID: 178773346}
   - {fileID: 896763415}
+  - {fileID: 1976279577}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -4755,6 +4755,7 @@ GameObject:
   - component: {fileID: 1976279578}
   - component: {fileID: 1976279581}
   - component: {fileID: 1976279580}
+  - component: {fileID: 1976279582}
   m_Layer: 5
   m_Name: PausePanel
   m_TagString: Untagged
@@ -4849,6 +4850,18 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!210 &1976279582
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1976279576}
+  m_Enabled: 1
+  m_SortingLayerID: 1046053907
+  m_SortingLayer: 8
+  m_SortingOrder: 300
+  m_SortAtRoot: 0
 --- !u!1 &1991846486
 GameObject:
   m_ObjectHideFlags: 0

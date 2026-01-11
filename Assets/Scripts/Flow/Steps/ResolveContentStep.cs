@@ -11,7 +11,7 @@ public class ResolveContentStep : IFlowStep
         _runData = runData;
     }
 
-    public IEnumerator Execute()
+    public IEnumerator Execute(FlowControl control)
     {
         // Aqui o resolver decide se abre a Loja Normal, Loja Especial, Evento, etc.
         _resolver.ResolveContent(_runData);
