@@ -10,6 +10,10 @@ public class PlayerInteraction : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private bool _debugMode = false;
 
+    [Header("Configuração de Interação")]
+    [Tooltip("Distância extra que o mouse pode se afastar antes de perder o hover (Evita tremedeira)")]
+    [SerializeField] private float _hoverExitThreshold = 0.5f;
+
     private InputManager _input;
 
     // Estado Geral
@@ -226,63 +230,75 @@ public class PlayerInteraction : MonoBehaviour
         _potentialDrag = null;
     }
 
-    // --- LÓGICA DE HOVER (Passivo/Mouse Over) ---
-
-    private void HandleHover(Vector2 worldPos)  
+    private void HandleHover(Vector2 worldPos)
     {
+        // 1. Quem estamos hoverando AGORA (Raycast físico)
         LayerMask targetMask = _draggableLayer;
-
-        if (AppCore.Instance.GameStateManager.CurrentState == GameState.Playing)
-        {
-            // Em jogo normal, queremos tudo
-            targetMask |= _dropLayer;
-        }
+        if (AppCore.Instance.GameStateManager.CurrentState == GameState.Playing) targetMask |= _dropLayer;
 
         Collider2D[] hitColliders = Physics2D.OverlapPointAll(worldPos, targetMask);
-        IInteractable bestCandidate = null;
-        int highestSortingOrder = int.MinValue;
+        IInteractable candidate = null;
+        int highestOrder = int.MinValue;
 
-        // 2. Filtra o "Vencedor" baseado na Ordem de Renderização (SortingGroup)
+        // Encontra o melhor candidato (Rei da Montanha por Sorting Order)
         foreach (var col in hitColliders)
         {
             var interactable = col.GetComponent<IInteractable>();
             if (interactable == null) continue;
 
-            // Tenta pegar o SortingGroup para ver quem está por cima
-            var sortingGroup = col.GetComponent<UnityEngine.Rendering.SortingGroup>();
+            // Ignora quem está sendo arrastado
+            if (interactable is IDraggable drag && IsObjectDragging(drag)) continue;
 
-            // Se tiver SortingGroup, usa a ordem dele. Se não (ex: Slot), usa prioridade baixa (0)
-            int currentOrder = (sortingGroup != null) ? sortingGroup.sortingOrder : 0;
+            var group = col.GetComponent<UnityEngine.Rendering.SortingGroup>();
+            int order = (group != null) ? group.sortingOrder : 0;
 
-            // Se a carta está sendo arrastada, ignoramos ela para Hover (ela já é activeDrag)
-            if (interactable is IDraggable draggable && IsObjectDragging(draggable)) continue;
-
-            // Lógica do Rei da Montanha: Quem tem maior Sorting Order ganha o Hover
-            if (currentOrder > highestSortingOrder)
+            if (order > highestOrder)
             {
-                highestSortingOrder = currentOrder;
-                bestCandidate = interactable;
+                highestOrder = order;
+                candidate = interactable;
             }
         }
+
+        // --- A CORREÇÃO MÁGICA (STICKY HOVER) ---
+
+        // Se já temos um hover ativo, damos prioridade para MANTER ele (Histerese)
+        // Isso evita que a carta "fuja" do mouse quando ela se move ou inclina.
+        if (_currentHover != null && candidate != _currentHover)
+        {
+            // O mouse saiu do collider do hover atual.
+            // Mas... será que saiu SÓ porque a carta se mexeu? Vamos checar a distância.
+
+            if (_currentHover is MonoBehaviour hoverMono && hoverMono != null)
+            {
+                Collider2D hoverCol = hoverMono.GetComponent<Collider2D>();
+                if (hoverCol != null)
+                {
+                    // Calcula o ponto do collider mais próximo do mouse
+                    Vector2 closestPoint = hoverCol.ClosestPoint(worldPos);
+                    float distance = Vector2.Distance(worldPos, closestPoint);
+
+                    // Se o mouse ainda está pertinho (ex: 0.5 unidades), NÃO troca.
+                    // Mantém o hover antigo.
+                    if (distance < _hoverExitThreshold)
+                    {
+                        candidate = _currentHover;
+                    }
+                }
+            }
+        }
+        // ----------------------------------------
 
         // 3. Aplica a Lógica de Troca (Entrada/Saída)
-        if (bestCandidate != _currentHover)
+        if (candidate != _currentHover)
         {
-            // Saiu do anterior
-            if (_currentHover != null && IsObjectAlive(_currentHover))
-            {
-                _currentHover.OnHoverExit();
-            }
+            if (_currentHover != null && IsObjectAlive(_currentHover)) _currentHover.OnHoverExit();
 
-            _currentHover = bestCandidate;
+            _currentHover = candidate;
 
-            // Entrou no novo
-            if (_currentHover != null)
-            {
-                _currentHover.OnHoverEnter();
-            }
+            if (_currentHover != null) _currentHover.OnHoverEnter();
         }
     }
+
 
     // --- UTILITÁRIOS ---
 

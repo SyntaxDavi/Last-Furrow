@@ -246,16 +246,6 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         target.Scale = Vector3.one * _config.SelectedScale;
         sortOrder = CardSortingConstants.HOVER_LAYER;
     }
-
-    private void ApplyDragModifiers(ref CardVisualTarget target)
-    {
-        // Tilt baseado no movimento horizontal (necessita comparar com posição atual real)
-        float deltaX = (target.Position.x - transform.position.x) * -2f; // -2f é magic number de sensibilidade
-        float tiltZ = Mathf.Clamp(deltaX * _config.DragTiltAmount, -_config.DragTiltAmount, _config.DragTiltAmount);
-
-        target.Rotation = Quaternion.Euler(0, 0, tiltZ);
-    }
-
     // --- API DE INPUT & CONTROLE ---
 
     public void OnDragStart()
