@@ -14,6 +14,8 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     [SerializeField] private CardMovementController _movement;
     [SerializeField] private SpriteRenderer _artRenderer;
     [SerializeField] private TextMeshPro _nameText;
+
+    private float _currentSquashVal = 0f;
     public bool IsHovered { get; private set; }
     // --- ESTADO (STATE MACHINE) ---
     // A propriedade pública é apenas para leitura. Mudanças passam por SetState.
@@ -163,6 +165,13 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
                 ApplyDragVisuals(ref target, ref sortOrder, interactionPoint);
                 break;
         }
+
+        // 1. Recuperação: Faz o valor voltar a zero suavemente a cada frame
+        _currentSquashVal = Mathf.Lerp(_currentSquashVal, 0f, Time.deltaTime * _config.ClickRecoverySpeed);
+
+        // 2. Aplicação: Soma esse valor à escala calculada anteriormente
+        // Se _currentSquashVal for -0.1, a escala (que era 1.1 do hover) vira 1.0 temporariamente
+        target.Scale += Vector3.one * _currentSquashVal;
     }
 
     // --- MODIFICADORES INTERNOS (Hardcoded comuns) ---
@@ -269,8 +278,18 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
 
     private void PerformClick()
     {
-        if (AppCore.Instance.GameStateManager.CurrentState != GameState.Playing) return;
+        var gameState = AppCore.Instance.GameStateManager.CurrentState;
+
+        // Permite clique se estiver Jogando OU na Loja
+        bool isInteractionAllowed = (gameState == GameState.Playing || gameState == GameState.Shopping);
+
+        if (!isInteractionAllowed) return;
+
+        // Bloqueia se estiver ocupada (Drag ou Consuming)
         if (CurrentState == CardVisualState.Dragging || CurrentState == CardVisualState.Consuming) return;
+
+        // Aplica o efeito visual de Squash (feedback de clique)
+        _currentSquashVal = -_config.ClickSquashAmount;
 
         OnClickEvent?.Invoke(this);
     }

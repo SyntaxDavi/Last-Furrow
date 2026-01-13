@@ -46,4 +46,12 @@ public class CardVisualConfig : ScriptableObject
 
     [Tooltip("Velocidade extra de rotação apenas para o efeito de tilt (opcional).")]
     public float TiltRotationSpeed = 20f;
+
+    [Header("Feeling: Click / Impact")]
+    [Tooltip("Quanto a escala diminui ao clicar (Ex: 0.1 faz reduzir 10%)")]
+    public float ClickSquashAmount = 0.15f;
+
+    [Tooltip("Quão rápido ela volta ao tamanho normal após o clique")]
+    public float ClickRecoverySpeed = 15f;
+
 }
