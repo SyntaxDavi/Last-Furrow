@@ -14,20 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   PositionSmoothTime: 0.1
   ScaleSmoothTime: 0.1
-  RotationSpeed: 12
+  RotationSpeed: 10
   IdleZ: 0
   HoverZ: -1.5
   SelectedZ: -3
   DragZ: -5
-  IdleFloatSpeed: 1.2
+  IdleFloatSpeed: 1.1
   IdleFloatAmount: 0.1
-  IdleRotationAmount: 0.8
-  PeekScale: 1.3
-  PeekYOffset: 0.3
+  IdleRotationAmount: 0.7
+  PeekScale: 1
+  PeekYOffset: 0.2
   SelectedYOffset: 1.2
   SelectedScale: 1.25
   LookRotationStrength: 1
   MagneticPullStrength: 0.1
   MaxInteractionDistance: 0.3
-  DragTiltAmount: 20
-  DragTiltSpeed: 10
+  DragTiltAmount: 18
+  DragTiltSpeed: 8

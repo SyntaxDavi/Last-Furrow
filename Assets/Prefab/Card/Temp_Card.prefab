@@ -451,6 +451,7 @@ GameObject:
   - component: {fileID: 9052139451716420992}
   - component: {fileID: 3582264577754978029}
   - component: {fileID: 6941554981388740021}
+  - component: {fileID: 6074425940253990869}
   m_Layer: 7
   m_Name: Temp_Card
   m_TagString: Untagged
@@ -547,10 +548,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50d678ecddc31ba479f0e3e0fa02ea1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _sortingGroup: {fileID: 3582264577754978029}
+  _movement: {fileID: 6074425940253990869}
   _artRenderer: {fileID: 1459893232433217688}
   _nameText: {fileID: 3333785428317760283}
-  _costText: {fileID: 0}
-  _moveSpeed: 15
-  _rotationSpeed: 10
-  _hoverScale: 1.2
+--- !u!114 &6074425940253990869
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5331121412969031514}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18ef42002c28faa468a3a3c95e028ea0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _sortingGroup: {fileID: 3582264577754978029}
