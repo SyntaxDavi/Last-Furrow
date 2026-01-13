@@ -37,6 +37,13 @@ public class CardVisualConfig : ScriptableObject
     public float DragTiltAmount = 30f;
     public float DragTiltSpeed = 10f;
 
-    [Tooltip("Quanto a carta inclina (3D fake) baseada na posição do mouse")]
-    public float HoverTiltStrength = 15.0f;
+    [Header("Feeling: 3D Tilt")]
+    [Tooltip("O ângulo máximo que a carta inclina.")]
+    public float TiltAngleMax = 20f;
+
+    [Tooltip("A distância do mouse (em unidades) onde o tilt atinge o máximo. Substitui o clamp de 1f.")]
+    public float TiltInfluenceRadius = 1.5f;
+
+    [Tooltip("Velocidade extra de rotação apenas para o efeito de tilt (opcional).")]
+    public float TiltRotationSpeed = 20f;
 }

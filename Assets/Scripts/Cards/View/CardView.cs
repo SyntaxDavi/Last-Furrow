@@ -120,69 +120,48 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
 
     private void CalculateVisualTarget(out CardVisualTarget target, out CardMovementProfile profile, out int sortOrder)
     {
-        // Passo 1: Definir a BASE (A Verdade)
-        // No Drag, a verdade é o Mouse. No Idle, a verdade é o Layout.
-        if (CurrentState == CardVisualState.Dragging)
+        // 1. INICIALIZAÇÃO (Base Layout)
+        target = CardVisualTarget.Create(_baseLayoutTarget.Position, _baseLayoutTarget.Rotation, 1f);
+
+        // Perfil Padrão
+        profile = new CardMovementProfile
         {
-            Vector3 mousePos = _inputManager.MouseWorldPosition;
-            // DragZ ganha de tudo
-            target = CardVisualTarget.Create(new Vector3(mousePos.x, mousePos.y, _config.DragZ), Quaternion.identity, 1f);
+            PositionSmoothTime = _config.PositionSmoothTime,
+            RotationSpeed = _config.RotationSpeed,
+            ScaleSmoothTime = _config.ScaleSmoothTime
+        };
+        sortOrder = _baseLayoutTarget.SortingOrder;
 
-            // Drag precisa ser rápido e responsivo
-            profile = new CardMovementProfile
-            {
-                PositionSmoothTime = 0.05f,
-                RotationSpeed = _config.DragTiltSpeed,
-                ScaleSmoothTime = 0.1f
-            };
-            sortOrder = CardSortingConstants.DRAG_LAYER;
-        }
-        else
-        {
-            // Default: Usa o Layout calculado pelo HandManager
-            target = CardVisualTarget.Create(_baseLayoutTarget.Position, _baseLayoutTarget.Rotation, 1f);
-
-            // Default Profile
-            profile = new CardMovementProfile
-            {
-                PositionSmoothTime = _config.PositionSmoothTime,
-                RotationSpeed = _config.RotationSpeed,
-                ScaleSmoothTime = _config.ScaleSmoothTime
-            };
-            sortOrder = _baseLayoutTarget.SortingOrder;
-        }
-
-        // Passo 2: Aplicar Modificadores Baseados em Estado
-        // (Aqui substituímos o antigo "Switch" gigante por chamadas semânticas)
-
+        // 2. DADOS DE ENTRADA (Input Injection)
+        // Aqui decidimos QUEM influencia a carta. Hoje é o mouse.
+        // Se fosse um replay, viria de um ReplayManager.
+        Vector3 interactionPoint = _inputManager.MouseWorldPosition;
         float time = Time.time + _randomSeed;
 
+        // 3. PIPELINE DE ESTADOS
         switch (CurrentState)
         {
             case CardVisualState.Idle:
-                ApplyIdleModifiers(ref target, time);
+                ApplyIdleFloat(ref target, time); // Apenas flutuação
 
-                // Hover é um sub-estado do Idle visualmente
                 if (IsHovered)
                 {
-                    ApplyHoverModifiers(ref target, ref sortOrder);
+                    ApplyHoverFeedback(ref target, ref sortOrder); // Apenas Scale/Z/Y
+                    ApplyDynamicTilt(ref target, interactionPoint); // Apenas Rotação 3D
+
+                    // Opcional: Perfil mais ágil para o tilt responder rápido
+                    profile.RotationSpeed = _config.TiltRotationSpeed;
                 }
                 break;
 
             case CardVisualState.Selected:
-                ApplySelectedModifiers(ref target, ref sortOrder);
+                ApplySelectedModifiers(ref target, ref sortOrder, interactionPoint);
                 break;
 
             case CardVisualState.Dragging:
-                ApplyDragModifiers(ref target); // Tilt effect
+                // Drag tem pipeline próprio no OnDragUpdate, mas se quiser centralizar:
+                ApplyDragVisuals(ref target, ref sortOrder, interactionPoint);
                 break;
-        }
-
-        // Passo 3: Aplicar Modificadores Genéricos (Ex: Buffs, Debuffs, Status Effects)
-        // Isso permite que sistemas externos afetem a carta sem sujar este switch
-        foreach (var modifier in _activeModifiers)
-        {
-            modifier.Apply(ref target, _config, time);
         }
     }
 
@@ -190,9 +169,8 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     // Em um futuro ideal, estes seriam classes ICardVisualModifier separadas,
     // mas mantê-los como métodos privados aqui é um bom balanço para agora.
 
-    private void ApplyIdleModifiers(ref CardVisualTarget target, float time)
+    private void ApplyIdleFloat(ref CardVisualTarget target, float time)
     {
-        // Float Effect
         float floatY = Mathf.Sin(time * _config.IdleFloatSpeed) * _config.IdleFloatAmount;
         float floatRot = Mathf.Cos(time * (_config.IdleFloatSpeed * 0.5f)) * _config.IdleRotationAmount;
 
@@ -200,27 +178,69 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         target.Rotation *= Quaternion.Euler(0, 0, floatRot);
         target.Position.z = _config.IdleZ;
     }
-
-    private void ApplyHoverModifiers(ref CardVisualTarget target, ref int sortOrder)
+    private void ApplyHoverFeedback(ref CardVisualTarget target, ref int sortOrder)
     {
         target.Position += Vector3.up * _config.PeekYOffset;
-        target.Position.z = _config.HoverZ;
+        target.Position.z = _config.HoverZ; // Traz para frente
         target.Scale = Vector3.one * _config.PeekScale;
         sortOrder = CardSortingConstants.HOVER_LAYER;
     }
+    private void ApplyDragVisuals(ref CardVisualTarget target, ref int sortOrder, Vector3 focusPoint)
+    {
+        // 1. A carta segue o foco (mouse)
+        target.Position = new Vector3(focusPoint.x, focusPoint.y, _config.DragZ);
 
-    private void ApplySelectedModifiers(ref CardVisualTarget target, ref int sortOrder)
+        // 2. Tilt Effect (Baseado na velocidade horizontal)
+        // Comparamos onde queremos ir (target) com onde estamos fisicamente (transform)
+        float deltaX = (target.Position.x - transform.position.x) * -2f;
+        float tiltZ = Mathf.Clamp(deltaX * _config.DragTiltAmount, -_config.DragTiltAmount, _config.DragTiltAmount);
+
+        target.Rotation = Quaternion.Euler(0, 0, tiltZ);
+
+        // 3. Layer Máximo
+        sortOrder = CardSortingConstants.DRAG_LAYER;
+    }
+    private void ApplyDynamicTilt(ref CardVisualTarget target, Vector3 focusPoint)
+    {
+        // 1. Cálculo Relativo (Sem Input Global)
+        // Usamos target.Position (onde a carta VAI estar) para estabilidade
+        float deltaX = focusPoint.x - target.Position.x;
+        float deltaY = focusPoint.y - target.Position.y;
+
+        // 2. Normalização (Sem Magic Numbers)
+        // Normaliza de -1 a 1 baseado no raio de influência configurado
+        float normalizedX = Mathf.Clamp(deltaX / _config.TiltInfluenceRadius, -1f, 1f);
+        float normalizedY = Mathf.Clamp(deltaY / _config.TiltInfluenceRadius, -1f, 1f);
+
+        // 3. Conversão para Ângulos
+        // Mouse na direita (X+) -> Gira eixo Y negativo (ou positivo dependendo da câmera)
+        float rotY = normalizedX * _config.TiltAngleMax;
+        // Mouse em cima (Y+) -> Gira eixo X para trás
+        float rotX = -normalizedY * _config.TiltAngleMax;
+
+        // 4. Composição de Rotação (Sem destruir Z)
+        // Criamos a rotação do tilt pura
+        Quaternion tiltRotation = Quaternion.Euler(rotX, rotY, 0);
+
+        // Multiplicamos pela rotação que JÁ existia no pipeline (Arco + Float)
+        // A ordem importa: (Tilt * Original) aplica o tilt NO EIXO da carta original
+        // (Original * Tilt) aplica o tilt NO EIXO DO MUNDO
+        // Geralmente para UI, (Original * Tilt) sente mais natural.
+        target.Rotation = target.Rotation * tiltRotation;
+    }
+
+    private void ApplySelectedModifiers(ref CardVisualTarget target, ref int sortOrder, Vector3 focusPoint)
     {
         Vector3 anchorPos = _baseLayoutTarget.Position + (Vector3.up * _config.SelectedYOffset);
-        Vector3 mousePos = _inputManager.MouseWorldPosition;
-        Vector3 dirToMouse = Vector3.ClampMagnitude(mousePos - anchorPos, _config.MaxInteractionDistance);
+
+        Vector3 dirToFocus = Vector3.ClampMagnitude(focusPoint - anchorPos, _config.MaxInteractionDistance);
 
         // Magnetismo
-        target.Position = anchorPos + (dirToMouse * _config.MagneticPullStrength);
+        target.Position = anchorPos + (dirToFocus * _config.MagneticPullStrength);
         target.Position.z = _config.SelectedZ;
 
-        // Olhar para o mouse
-        float lookZ = -dirToMouse.x * _config.LookRotationStrength;
+        // Olhar para o foco
+        float lookZ = -dirToFocus.x * _config.LookRotationStrength;
         target.Rotation = Quaternion.Euler(0, 0, lookZ);
 
         target.Scale = Vector3.one * _config.SelectedScale;

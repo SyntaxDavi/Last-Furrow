@@ -31,3 +31,6 @@ MonoBehaviour:
   MaxInteractionDistance: 0.3
   DragTiltAmount: 18
   DragTiltSpeed: 8
+  TiltAngleMax: 20
+  TiltInfluenceRadius: 1.5
+  TiltRotationSpeed: 20
