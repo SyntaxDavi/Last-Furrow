@@ -36,4 +36,7 @@ public class CardVisualConfig : ScriptableObject
     [Header("Interação: Drag")]
     public float DragTiltAmount = 30f;
     public float DragTiltSpeed = 10f;
+
+    [Tooltip("Quanto a carta inclina (3D fake) baseada na posição do mouse")]
+    public float HoverTiltStrength = 15.0f;
 }

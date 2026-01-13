@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
 using TMPro;
+using System.Collections.Generic;
 
 public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickHandler
 {
@@ -10,44 +11,40 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     private InputManager _inputManager;
 
     [Header("Componentes")]
-    [SerializeField] private CardMovementController _movement; 
+    [SerializeField] private CardMovementController _movement;
     [SerializeField] private SpriteRenderer _artRenderer;
     [SerializeField] private TextMeshPro _nameText;
-
-    // ESTADO
+    public bool IsHovered { get; private set; }
+    // --- ESTADO (STATE MACHINE) ---
+    // A propriedade pública é apenas para leitura. Mudanças passam por SetState.
     public CardVisualState CurrentState { get; private set; } = CardVisualState.Idle;
+
+    // --- DADOS ---
     public CardData Data { get; private set; }
     public CardInstance Instance { get; private set; }
-    public bool IsHovered { get; private set; }
 
-    // DADOS DE LAYOUT
-    private HandLayoutCalculator.CardTransformTarget _layoutTarget;
+    // Onde a carta "deveria" estar segundo o Layout Manager (A Verdade Estrutural)
+    private HandLayoutCalculator.CardTransformTarget _baseLayoutTarget;
 
-    // CONTROLE DE INPUT
-    private float _lastClickTime;
-    private const float CLICK_DEBOUNCE = 0.15f;
+    // Sementes para randomização visual (evita que todas as cartas flutuem em sincronia)
+    private float _randomSeed;
+
+    // Lista de modificadores ativos (Extensibilidade)
+    private List<ICardVisualModifier> _activeModifiers = new List<ICardVisualModifier>();
 
     // EVENTOS
     public event Action<CardView> OnDragStartEvent;
     public event Action<CardView> OnDragEndEvent;
     public event Action<CardView> OnClickEvent;
 
+    // --- INICIALIZAÇÃO ---
     public void Initialize(CardData data, CardInstance instance, CardVisualConfig config, InputManager inputManager)
     {
-        if (config == null || inputManager == null || _movement == null)
-        {
-            Debug.LogError($"[CardView] Dependências faltando em {gameObject.name}.");
-            enabled = false;
-            return;
-        }
-
         Data = data;
         Instance = instance;
         _config = config;
         _inputManager = inputManager;
-
-        // Inicializa o sub-sistema de física
-        _movement.Initialize(config);
+        _randomSeed = UnityEngine.Random.Range(0f, 100f);
 
         if (Data != null)
         {
@@ -55,87 +52,242 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
             _artRenderer.sprite = Data.Icon;
         }
 
-#if UNITY_EDITOR
-        name = $"Card_{Data?.Name}_{Instance.UniqueID.Substring(0, 4)}";
-#endif
+        // Força estado inicial limpo
+        _movement.ResetPhysicsState();
+        SetState(CardVisualState.Idle);
     }
 
+    // --- LOOP PRINCIPAL (FRAME-BASED) ---
     private void Update()
     {
-        // O CardView decide QUAL comportamento usar
-        // O MovementController decide COMO executar esse comportamento
+        // 1. Calcula o Target (Pipeline)
+        CalculateVisualTarget(out CardVisualTarget target, out CardMovementProfile profile, out int sortOrder);
 
-        switch (CurrentState)
+        // 2. Aplica ao Motor
+        _movement.SetSortingOrder(sortOrder);
+        _movement.MoveTo(target, profile);
+    }
+
+    // --- CORE: STATE MACHINE ---
+
+    private void SetState(CardVisualState newState)
+    {
+        if (CurrentState == newState) return;
+
+        // 1. Exit Logic (Limpeza)
+        OnExitState(CurrentState);
+
+        // 2. Troca
+        CurrentState = newState;
+
+        // 3. Enter Logic (Configuração)
+        OnEnterState(newState);
+    }
+
+    private void OnEnterState(CardVisualState state)
+    {
+        switch (state)
         {
-            case CardVisualState.Consuming:
+            case CardVisualState.Idle:
+                // Pode adicionar som, partículas de "poof", etc.
                 break;
 
             case CardVisualState.Dragging:
-                // Nota: O Drag agora é atualizado pelo OnDragUpdate (Input driven), 
-                // não passivamente no Update, mas se precisar de lógica extra, vai aqui.
+                // Reseta a física para garantir responsividade instantânea
+                _movement.ResetPhysicsState();
+                OnDragStartEvent?.Invoke(this);
                 break;
 
-            case CardVisualState.Idle:
-                // Passamos apenas os dados necessários
-                _movement.HandleIdle(_layoutTarget, IsHovered);
-                break;
-
-            case CardVisualState.Selected:
-                Vector3 focusPoint = GetInteractionPoint(_layoutTarget.Position);
-                _movement.HandleSelected(_layoutTarget, focusPoint);
+            case CardVisualState.Consuming:
+                // Exemplo do "Bug Futuro" resolvido:
+                // Toca animação, espera X segundos e se destrói.
+                // StartCoroutine(ConsumeSequence()); 
                 break;
         }
     }
 
-    // --- DRAG ---
+    private void OnExitState(CardVisualState state)
+    {
+        switch (state)
+        {
+            case CardVisualState.Dragging:
+                OnDragEndEvent?.Invoke(this);
+                break;
+        }
+    }
+
+    // --- CORE: PIPELINE DE VISUALIZAÇÃO ---
+
+    private void CalculateVisualTarget(out CardVisualTarget target, out CardMovementProfile profile, out int sortOrder)
+    {
+        // Passo 1: Definir a BASE (A Verdade)
+        // No Drag, a verdade é o Mouse. No Idle, a verdade é o Layout.
+        if (CurrentState == CardVisualState.Dragging)
+        {
+            Vector3 mousePos = _inputManager.MouseWorldPosition;
+            // DragZ ganha de tudo
+            target = CardVisualTarget.Create(new Vector3(mousePos.x, mousePos.y, _config.DragZ), Quaternion.identity, 1f);
+
+            // Drag precisa ser rápido e responsivo
+            profile = new CardMovementProfile
+            {
+                PositionSmoothTime = 0.05f,
+                RotationSpeed = _config.DragTiltSpeed,
+                ScaleSmoothTime = 0.1f
+            };
+            sortOrder = CardSortingConstants.DRAG_LAYER;
+        }
+        else
+        {
+            // Default: Usa o Layout calculado pelo HandManager
+            target = CardVisualTarget.Create(_baseLayoutTarget.Position, _baseLayoutTarget.Rotation, 1f);
+
+            // Default Profile
+            profile = new CardMovementProfile
+            {
+                PositionSmoothTime = _config.PositionSmoothTime,
+                RotationSpeed = _config.RotationSpeed,
+                ScaleSmoothTime = _config.ScaleSmoothTime
+            };
+            sortOrder = _baseLayoutTarget.SortingOrder;
+        }
+
+        // Passo 2: Aplicar Modificadores Baseados em Estado
+        // (Aqui substituímos o antigo "Switch" gigante por chamadas semânticas)
+
+        float time = Time.time + _randomSeed;
+
+        switch (CurrentState)
+        {
+            case CardVisualState.Idle:
+                ApplyIdleModifiers(ref target, time);
+
+                // Hover é um sub-estado do Idle visualmente
+                if (IsHovered)
+                {
+                    ApplyHoverModifiers(ref target, ref sortOrder);
+                }
+                break;
+
+            case CardVisualState.Selected:
+                ApplySelectedModifiers(ref target, ref sortOrder);
+                break;
+
+            case CardVisualState.Dragging:
+                ApplyDragModifiers(ref target); // Tilt effect
+                break;
+        }
+
+        // Passo 3: Aplicar Modificadores Genéricos (Ex: Buffs, Debuffs, Status Effects)
+        // Isso permite que sistemas externos afetem a carta sem sujar este switch
+        foreach (var modifier in _activeModifiers)
+        {
+            modifier.Apply(ref target, _config, time);
+        }
+    }
+
+    // --- MODIFICADORES INTERNOS (Hardcoded comuns) ---
+    // Em um futuro ideal, estes seriam classes ICardVisualModifier separadas,
+    // mas mantê-los como métodos privados aqui é um bom balanço para agora.
+
+    private void ApplyIdleModifiers(ref CardVisualTarget target, float time)
+    {
+        // Float Effect
+        float floatY = Mathf.Sin(time * _config.IdleFloatSpeed) * _config.IdleFloatAmount;
+        float floatRot = Mathf.Cos(time * (_config.IdleFloatSpeed * 0.5f)) * _config.IdleRotationAmount;
+
+        target.Position += Vector3.up * floatY;
+        target.Rotation *= Quaternion.Euler(0, 0, floatRot);
+        target.Position.z = _config.IdleZ;
+    }
+
+    private void ApplyHoverModifiers(ref CardVisualTarget target, ref int sortOrder)
+    {
+        target.Position += Vector3.up * _config.PeekYOffset;
+        target.Position.z = _config.HoverZ;
+        target.Scale = Vector3.one * _config.PeekScale;
+        sortOrder = CardSortingConstants.HOVER_LAYER;
+    }
+
+    private void ApplySelectedModifiers(ref CardVisualTarget target, ref int sortOrder)
+    {
+        Vector3 anchorPos = _baseLayoutTarget.Position + (Vector3.up * _config.SelectedYOffset);
+        Vector3 mousePos = _inputManager.MouseWorldPosition;
+        Vector3 dirToMouse = Vector3.ClampMagnitude(mousePos - anchorPos, _config.MaxInteractionDistance);
+
+        // Magnetismo
+        target.Position = anchorPos + (dirToMouse * _config.MagneticPullStrength);
+        target.Position.z = _config.SelectedZ;
+
+        // Olhar para o mouse
+        float lookZ = -dirToMouse.x * _config.LookRotationStrength;
+        target.Rotation = Quaternion.Euler(0, 0, lookZ);
+
+        target.Scale = Vector3.one * _config.SelectedScale;
+        sortOrder = CardSortingConstants.HOVER_LAYER;
+    }
+
+    private void ApplyDragModifiers(ref CardVisualTarget target)
+    {
+        // Tilt baseado no movimento horizontal (necessita comparar com posição atual real)
+        float deltaX = (target.Position.x - transform.position.x) * -2f; // -2f é magic number de sensibilidade
+        float tiltZ = Mathf.Clamp(deltaX * _config.DragTiltAmount, -_config.DragTiltAmount, _config.DragTiltAmount);
+
+        target.Rotation = Quaternion.Euler(0, 0, tiltZ);
+    }
+
+    // --- API DE INPUT & CONTROLE ---
 
     public void OnDragStart()
     {
-        if (AppCore.Instance.GameStateManager.CurrentState != GameState.Playing) return;
-        CurrentState = CardVisualState.Dragging;
-        IsHovered = false;
-        OnDragStartEvent?.Invoke(this);
+        if (CanChangeState()) SetState(CardVisualState.Dragging);
     }
 
     public void OnDragUpdate(Vector2 worldPos)
     {
-        // Delega diretamente para a física
-        _movement.HandleDrag(worldPos);
+        // O Update() já cuida de ler o InputManager e posicionar no mouse se o estado for Dragging.
+        // Nenhuma lógica necessária aqui, o PlayerInteraction apenas garante que chama.
     }
 
     public void OnDragEnd()
     {
-        CurrentState = CardVisualState.Idle;
-        OnDragEndEvent?.Invoke(this);
-    }
-
-    // --- AUXILIARES E INPUT ---
-
-    private Vector3 GetInteractionPoint(Vector3 fallback)
-    {
-        return _inputManager != null ? _inputManager.MouseWorldPosition : fallback;
-    }
-
-    private void PerformClick()
-    {
-        var app = AppCore.Instance;
-        if (app != null && (app.GameStateManager.CurrentState == GameState.Paused || app.GameStateManager.CurrentState == GameState.GameOver)) return;
-
-        if (Time.time - _lastClickTime < CLICK_DEBOUNCE) return;
-        _lastClickTime = Time.time;
-
-        if (CurrentState == CardVisualState.Dragging || CurrentState == CardVisualState.Consuming) return;
-        OnClickEvent?.Invoke(this);
+        if (CurrentState == CardVisualState.Dragging) SetState(CardVisualState.Idle);
     }
 
     public void OnClick() => PerformClick();
     public void OnPointerClick(PointerEventData d) => PerformClick();
 
-    public void UpdateLayoutTarget(HandLayoutCalculator.CardTransformTarget target) => _layoutTarget = target;
+    private void PerformClick()
+    {
+        if (AppCore.Instance.GameStateManager.CurrentState != GameState.Playing) return;
+        if (CurrentState == CardVisualState.Dragging || CurrentState == CardVisualState.Consuming) return;
+
+        OnClickEvent?.Invoke(this);
+    }
+
     public void OnHoverEnter() => IsHovered = true;
     public void OnHoverExit() => IsHovered = false;
 
-    public void Select() { if (CanChangeState()) CurrentState = CardVisualState.Selected; }
-    public void Deselect() { if (CanChangeState()) CurrentState = CardVisualState.Idle; }
-    private bool CanChangeState() => CurrentState != CardVisualState.Dragging && CurrentState != CardVisualState.Consuming;
+    public void Select()
+    {
+        if (CanChangeState()) SetState(CardVisualState.Selected);
+    }
+
+    public void Deselect()
+    {
+        // Se estiver arrastando, não força Idle, espera o Drag acabar
+        if (CurrentState == CardVisualState.Selected) SetState(CardVisualState.Idle);
+    }
+
+    private bool CanChangeState()
+    {
+        // Regras de bloqueio de transição
+        return CurrentState != CardVisualState.Consuming;
+    }
+
+    // --- API DE DADOS ---
+    public void UpdateLayoutTarget(HandLayoutCalculator.CardTransformTarget target)
+    {
+        _baseLayoutTarget = target;
+    }
 }
