@@ -7,18 +7,18 @@ public class CardMovementController : MonoBehaviour
     [Header("Components")]
     [SerializeField] private SortingGroup _sortingGroup;
 
-    // Estado Interno de Física (Velocidades do SmoothDamp)
+    // Estado Interno de Física
     private Vector3 _currentVelocityPos;
-    private float _currentVelocityScale;
+    private Vector3 _currentVelocityScale; // Agora é Vector3 para suportar deformação
+    private float _currentVelocityRot;     // Agora é float (velocidade angular Z)
 
     // --- API PÚBLICA ---
 
-    /// <summary>
-    /// Teleporta imediatamente para o alvo e zera inércia.
-    /// Use ao iniciar Drag ou spawnar.
-    /// </summary>
     public void SnapTo(CardVisualTarget target)
     {
+        // Proteção contra escala zero
+        if (target.Scale.x == 0) target.Scale = Vector3.one * 0.01f;
+
         transform.position = target.Position;
         transform.rotation = target.Rotation;
         transform.localScale = target.Scale;
@@ -26,61 +26,81 @@ public class CardMovementController : MonoBehaviour
         ResetPhysicsState();
     }
 
-    /// <summary>
-    /// Move suavemente em direção ao alvo usando o perfil fornecido.
-    /// </summary>
-    public void MoveTo(CardVisualTarget target, CardMovementProfile profile)
+    // Agora aceita deltaTime explicitamente para física determinística
+    public void MoveTo(CardVisualTarget target, CardMovementProfile profile, float deltaTime)
     {
-        float dt = Time.deltaTime;
-        if (dt <= 0.0001f) return;
+        if (deltaTime <= 0.0001f) return;
 
         // 1. Posição (SmoothDamp)
         transform.position = Vector3.SmoothDamp(
             transform.position,
             target.Position,
             ref _currentVelocityPos,
-            profile.PositionSmoothTime
+            profile.PositionSmoothTime,
+            Mathf.Infinity,
+            deltaTime
         );
 
-        // 2. Escala (SmoothDamp)
-        float newScale = Mathf.SmoothDamp(
-            transform.localScale.x,
-            target.Scale.x,
-            ref _currentVelocityScale,
-            profile.ScaleSmoothTime
+        // 2. Rotação (SmoothDampAngle)
+        // Substitui o Slerp antigo por algo que tem inércia real
+        float currentZ = transform.eulerAngles.z;
+        float targetZ = target.Rotation.eulerAngles.z;
+
+        float newZ = Mathf.SmoothDampAngle(
+            currentZ,
+            targetZ,
+            ref _currentVelocityRot,
+            profile.RotationSmoothTime,
+            Mathf.Infinity,
+            deltaTime
         );
 
-        // Proteção contra NaN (muito comum em escalas 0)
-        if (!float.IsNaN(newScale))
+        transform.rotation = Quaternion.Euler(0, 0, newZ);
+
+        // 3. Escala + Stretch (Juice)
+        Vector3 finalTargetScale = target.Scale;
+
+        // Efeito de Esticar baseado na velocidade atual
+        if (profile.MovementStretchAmount > 0)
         {
-            transform.localScale = Vector3.one * newScale;
+            float speed = _currentVelocityPos.magnitude;
+            // Estica levemente (Clamp para não exagerar)
+            float stretchFactor = Mathf.Clamp(speed * profile.MovementStretchAmount, 0f, 0.2f);
+
+            // Soma à escala original (Efeito Gelatina)
+            finalTargetScale += Vector3.one * stretchFactor;
         }
 
-        // 3. Rotação (Slerp - Melhor para rotações contínuas)
-        transform.rotation = Quaternion.Slerp(
-            transform.rotation,
-            target.Rotation,
-            dt * profile.RotationSpeed
+        // SmoothDamp na Escala
+        transform.localScale = Vector3.SmoothDamp(
+            transform.localScale,
+            finalTargetScale,
+            ref _currentVelocityScale,
+            profile.ScaleSmoothTime,
+            Mathf.Infinity,
+            deltaTime
         );
+
+        ValidateTransform();
     }
 
-    /// <summary>
-    /// Define a ordem de renderização separadamente do movimento.
-    /// </summary>
     public void SetSortingOrder(int order)
     {
         if (_sortingGroup.sortingOrder != order)
-        {
             _sortingGroup.sortingOrder = order;
-        }
     }
 
-    /// <summary>
-    /// Zera as velocidades internas para evitar "efeito estilingue" ao trocar de estados.
-    /// </summary>
     public void ResetPhysicsState()
     {
         _currentVelocityPos = Vector3.zero;
-        _currentVelocityScale = 0f;
+        _currentVelocityScale = Vector3.zero;
+        _currentVelocityRot = 0f;
+    }
+
+    // Segurança contra NaN (Erros de matemática que fazem o objeto sumir)
+    private void ValidateTransform()
+    {
+        if (float.IsNaN(transform.position.x)) transform.position = Vector3.zero;
+        if (float.IsNaN(transform.localScale.x)) transform.localScale = Vector3.one;
     }
 }

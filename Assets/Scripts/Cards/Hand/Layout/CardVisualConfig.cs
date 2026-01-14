@@ -3,55 +3,34 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "CardVisualConfig", menuName = "Last Furrow/Card Visual Config")]
 public class CardVisualConfig : ScriptableObject
 {
-    [Header("Suavização (SmoothDamp)")]
+    [Header("1. Física & Suavização")]
     public float PositionSmoothTime = 0.1f;
     public float ScaleSmoothTime = 0.1f;
-    public float RotationSpeed = 15f;
+    public float RotationSpeed = 15f; 
 
-    [Header("Z-Depth (Camadas de Profundidade)")]
+    [Header("2. Profundidade (Z-Depth)")]
     public float IdleZ = 0f;
     public float HoverZ = -1.5f;
-    public float SelectedZ = -3.0f; // Carta inspecionada fica bem na frente
-    public float DragZ = -5.0f;     // Drag ganha de tudo
+    public float DragZ = -5.0f;
 
-    [Header("Feeling: Idle")]
+    [Header("3. Comportamento Idle")]
     public float IdleFloatSpeed = 2.0f;
     public float IdleFloatAmount = 0.1f;
     public float IdleRotationAmount = 1.0f;
 
-    [Header("Feeling: Mouse Over")]
+    [Header("4. Comportamento Hover (Mouse Over)")]
     public float PeekScale = 1.1f;
     public float PeekYOffset = 0.2f;
 
-    [Header("Interação: Selecionado (Magnético)")]
-    public float SelectedYOffset = 1.5f;       // Quanto sobe
-    public float SelectedScale = 1.25f;
-    [Tooltip("Quanto a carta gira olhando para o mouse")]
-    public float LookRotationStrength = 20.0f;
-    [Tooltip("Quanto a carta se move levemente na direção do mouse")]
-    public float MagneticPullStrength = 0.2f;
-    [Tooltip("Raio máximo de influência do mouse")]
-    public float MaxInteractionDistance = 4.0f;
-
-    [Header("Interação: Drag")]
-    public float DragTiltAmount = 30f;
-    public float DragTiltSpeed = 10f;
-
-    [Header("Feeling: 3D Tilt")]
-    [Tooltip("O ângulo máximo que a carta inclina.")]
+    [Header("5. Comportamento Tilt 3D")]
     public float TiltAngleMax = 20f;
-
-    [Tooltip("A distância do mouse (em unidades) onde o tilt atinge o máximo. Substitui o clamp de 1f.")]
     public float TiltInfluenceRadius = 1.5f;
-
-    [Tooltip("Velocidade extra de rotação apenas para o efeito de tilt (opcional).")]
     public float TiltRotationSpeed = 20f;
 
-    [Header("Feeling: Click / Impact")]
-    [Tooltip("Quanto a escala diminui ao clicar (Ex: 0.1 faz reduzir 10%)")]
+    [Header("6. Comportamento Drag")]
+    public float DragTiltAmount = 30f;
+
+    [Header("7. Feedback de Clique (Juice)")]
     public float ClickSquashAmount = 0.15f;
-
-    [Tooltip("Quão rápido ela volta ao tamanho normal após o clique")]
     public float ClickRecoverySpeed = 15f;
-
 }
