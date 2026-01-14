@@ -267,35 +267,4 @@ public class HandManager : MonoBehaviour
     {
         return _handOrganizer;
     }
-
-    /// <summary>
-    /// Reordena uma carta de um slot para outro (única forma correta de reordenar)
-    /// Isso mantém a lista interna consistente e dispara _isLayoutDirty
-    /// </summary>
-    public void ReorderCard(int fromIndex, int toIndex)
-    {
-        // Validação
-        if (fromIndex < 0 || fromIndex >= _activeCards.Count ||
-            toIndex < 0 || toIndex >= _activeCards.Count ||
-            fromIndex == toIndex)
-        {
-            return;
-        }
-
-        // Pega a carta
-        var card = _activeCards[fromIndex];
-
-        // Remove de posição original
-        _activeCards.RemoveAt(fromIndex);
-
-        // Insere na nova posição
-        if (toIndex > fromIndex)
-            toIndex--;
-        _activeCards.Insert(toIndex, card);
-
-        // Recalcula targets de TODAS as cartas
-        _isLayoutDirty = true;
-
-        Debug.Log($"[HandManager] Carta reordenada: {fromIndex} → {toIndex}");
-    }
 }

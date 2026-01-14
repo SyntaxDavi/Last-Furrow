@@ -3105,7 +3105,7 @@ MonoBehaviour:
     m_Bits: 256
   _dragThresholdPx: 5
   _debugMode: 1
-  _hoverExitThreshold: 0.5
+  _hoverExitThreshold: 0.2
 --- !u!1 &1336574324
 GameObject:
   m_ObjectHideFlags: 0

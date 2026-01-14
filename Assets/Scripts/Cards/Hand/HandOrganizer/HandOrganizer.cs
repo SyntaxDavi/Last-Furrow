@@ -1,10 +1,10 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 
 /// <summary>
-/// Reorganiza as cartas da mão de acordo com diferentes estratégias.
-/// Funciona em conjunto com HandManager para animar as cartas para novas posições.
+/// Reorganiza as cartas da mão de acordo com diferentes critérios.
+/// Delega a lógica de sorting para CardSortingStrategy.
+/// Responsabilidade única: coordenar reorganização + animar para novas posições.
 /// </summary>
 public class HandOrganizer : MonoBehaviour
 {
@@ -12,7 +12,6 @@ public class HandOrganizer : MonoBehaviour
     [SerializeField] private HandLayoutConfig _layoutConfig;
 
     private HandManager _handManager;
-    private List<CardView> _activeCards;
 
     // ==============================================================================================
     // INICIALIZAÇÃO
@@ -37,14 +36,16 @@ public class HandOrganizer : MonoBehaviour
     /// </summary>
     public void OrganizeByType()
     {
-        if (!TryGetCards(out _activeCards)) return;
+        var cards = GetValidCards();
+        if (cards == null) return;
 
-        var sorted = _activeCards
-            .OrderBy(c => c.Data.Type)
-            .ThenBy(c => c.Data.Name)
-            .ToList();
+        var strategy = new CardSortingStrategy(
+            new CardTypeCriteria(),
+            new CardNameCriteria()
+        );
+        strategy.Sort(cards);
 
-        ApplyNewOrder(sorted);
+        ApplyNewOrder(cards);
     }
 
     /// <summary>
@@ -52,14 +53,16 @@ public class HandOrganizer : MonoBehaviour
     /// </summary>
     public void OrganizeByValue()
     {
-        if (!TryGetCards(out _activeCards)) return;
+        var cards = GetValidCards();
+        if (cards == null) return;
 
-        var sorted = _activeCards
-            .OrderByDescending(c => c.Data.BaseSellValue)
-            .ThenBy(c => c.Data.Name)
-            .ToList();
+        var strategy = new CardSortingStrategy(
+            new CardValueCriteria(),
+            new CardNameCriteria()
+        );
+        strategy.Sort(cards);
 
-        ApplyNewOrder(sorted);
+        ApplyNewOrder(cards);
     }
 
     /// <summary>
@@ -67,15 +70,17 @@ public class HandOrganizer : MonoBehaviour
     /// </summary>
     public void OrganizeByGrowthPower()
     {
-        if (!TryGetCards(out _activeCards)) return;
+        var cards = GetValidCards();
+        if (cards == null) return;
 
-        var sorted = _activeCards
-            .OrderByDescending(c => c.Data.GrowthAcceleration)
-            .ThenByDescending(c => c.Data.ValueMultiplier)
-            .ThenBy(c => c.Data.Name)
-            .ToList();
+        var strategy = new CardSortingStrategy(
+            new CardGrowthAccelerationCriteria(),
+            new CardValueMultiplierCriteria(),
+            new CardNameCriteria()
+        );
+        strategy.Sort(cards);
 
-        ApplyNewOrder(sorted);
+        ApplyNewOrder(cards);
     }
 
     /// <summary>
@@ -83,59 +88,59 @@ public class HandOrganizer : MonoBehaviour
     /// </summary>
     public void OrganizeByName()
     {
-        if (!TryGetCards(out _activeCards)) return;
+        var cards = GetValidCards();
+        if (cards == null) return;
 
-        var sorted = _activeCards
-            .OrderBy(c => c.Data.Name)
-            .ToList();
+        var strategy = new CardSortingStrategy(
+            new CardNameCriteria()
+        );
+        strategy.Sort(cards);
 
-        ApplyNewOrder(sorted);
+        ApplyNewOrder(cards);
     }
 
     /// <summary>
-    /// Reorganiza as cartas customizadamente
+    /// Reorganiza as cartas com estratégia customizada.
+    /// A estratégia deve implementar ICardSortingCriteria para máxima flexibilidade.
     /// </summary>
-    public void OrganizeWith(ICardOrganizationStrategy strategy)
+    public void OrganizeWith(CardSortingStrategy strategy)
     {
-        if (!TryGetCards(out _activeCards)) return;
+        var cards = GetValidCards();
+        if (cards == null) return;
 
-        var sorted = strategy.Sort(_activeCards);
-        ApplyNewOrder(sorted);
+        strategy.Sort(cards);
+        ApplyNewOrder(cards);
     }
 
     /// <summary>
-    /// Embaralha as cartas
+    /// Embaralha as cartas usando Fisher-Yates shuffle.
+    /// Evita alocação de LINQ e garante distribuição uniforme.
     /// </summary>
     public void Shuffle()
     {
-        if (!TryGetCards(out _activeCards)) return;
+        var cards = GetValidCards();
+        if (cards == null) return;
 
-        var shuffled = _activeCards
-            .OrderBy(_ => Random.value)
-            .ToList();
-
-        ApplyNewOrder(shuffled);
+        FisherYatesShuffle(cards);
+        ApplyNewOrder(cards);
     }
 
     // ==============================================================================================
     // LÓGICA INTERNA
     // ==============================================================================================
 
-    private void ApplyNewOrder(List<CardView> newOrder)
+    private void ApplyNewOrder(List<CardView> orderedCards)
     {
-        if (newOrder == null || newOrder.Count == 0) return;
+        if (orderedCards == null || orderedCards.Count == 0) return;
 
-        // Reposiciona cada carta para o novo índice
-        for (int i = 0; i < newOrder.Count; i++)
+        for (int i = 0; i < orderedCards.Count; i++)
         {
-            var card = newOrder[i];
-            RepositionCard(card, i, newOrder.Count);
+            RepositionCard(orderedCards[i], i, orderedCards.Count);
         }
     }
 
     private void RepositionCard(CardView card, int newIndex, int totalCards)
     {
-        // Usa o HandLayoutCalculator existente para calcular o novo target
         var target = HandLayoutCalculator.CalculateSlot(
             newIndex,
             totalCards,
@@ -143,58 +148,39 @@ public class HandOrganizer : MonoBehaviour
             _handManager.GetHandCenterPosition()
         );
 
-        // Atualiza o target da carta (ela animará para lá automaticamente via CardMovementController)
         card.UpdateLayoutTarget(target);
     }
 
-    private bool TryGetCards(out List<CardView> cards)
+    /// <summary>
+    /// Obtém lista válida de cartas ativas.
+    /// Retorna null se não houver cartas para não misturar logs com lógica.
+    /// </summary>
+    private List<CardView> GetValidCards()
     {
-        cards = _handManager?.GetActiveCards();
+        var cards = _handManager?.GetActiveCards();
 
         if (cards == null || cards.Count == 0)
         {
-            Debug.LogWarning("[HandOrganizer] Nenhuma carta ativa na mão.");
-            return false;
+            return null;
         }
 
-        return true;
+        return cards;
     }
-}
 
-/// <summary>
-/// Interface para estratégias customizadas de organização
-/// Permite que o usuário implemente sua própria lógica
-/// </summary>
-public interface ICardOrganizationStrategy
-{
-    List<CardView> Sort(List<CardView> cards);
-}
-
-/// <summary>
-/// Exemplo de estratégia customizada: Ordena apenas tipos Plant
-/// </summary>
-public class PlantFirstStrategy : ICardOrganizationStrategy
-{
-    public List<CardView> Sort(List<CardView> cards)
+    /// <summary>
+    /// Fisher-Yates shuffle - distribuição uniforme sem alocação LINQ.
+    /// </summary>
+    private void FisherYatesShuffle(List<CardView> cards)
     {
-        return cards
-            .OrderByDescending(c => c.Data.Type == CardType.Plant)
-            .ThenBy(c => c.Data.Name)
-            .ToList();
+        for (int i = cards.Count - 1; i > 0; i--)
+        {
+            int randomIndex = Random.Range(0, i + 1);
+
+            // Swap
+            var temp = cards[i];
+            cards[i] = cards[randomIndex];
+            cards[randomIndex] = temp;
+        }
     }
 }
 
-/// <summary>
-/// Exemplo de estratégia customizada: Modificadores primeiro (maior efeito)
-/// </summary>
-public class ModifierFirstStrategy : ICardOrganizationStrategy
-{
-    public List<CardView> Sort(List<CardView> cards)
-    {
-        return cards
-            .Where(c => c.Data.Type == CardType.Modify)
-            .OrderByDescending(c => c.Data.GrowthAcceleration + c.Data.ValueMultiplier)
-            .Concat(cards.Where(c => c.Data.Type != CardType.Modify))
-            .ToList();
-    }
-}
