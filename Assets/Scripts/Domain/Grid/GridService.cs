@@ -67,7 +67,7 @@ public class GridService : IGridService
         if (!strategy.CanInteract(slot, card)) return InteractionResult.Fail("Interação inválida neste slot.");
 
         // 4. Execução
-        var result = strategy.Execute(slot, card, _library);
+        var result = strategy.Execute(slot, card);
 
         if (result.IsSuccess)
         {

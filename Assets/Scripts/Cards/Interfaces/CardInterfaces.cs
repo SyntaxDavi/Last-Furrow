@@ -10,12 +10,15 @@ public interface ICardReceiver
 }
 
 /// <summary>
-/// Interface para estratégias de interação de cartas
+/// Interface para estratégias de interação de cartas.
+/// 
+/// Cada estratégia recebe RunContext via injeção (no construtor).
+/// Execute NÃO precisa de parâmetros adicionais - tem tudo via contexto.
 /// </summary>
 public interface ICardInteractionStrategy
 {
     bool CanInteract(CropState slot, CardData card);
-    InteractionResult Execute(CropState slot, CardData card, IGameLibrary library);
+    InteractionResult Execute(CropState slot, CardData card);
 }
 
 /// <summary>
@@ -25,3 +28,4 @@ public interface ICardSourceStrategy
 {
     List<CardID> GetNextCardIDs(int amount, RunData currentRun);
 }
+

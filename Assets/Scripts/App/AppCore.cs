@@ -1,4 +1,4 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic; 
 
@@ -6,7 +6,7 @@ public class AppCore : MonoBehaviour
 {
     public static AppCore Instance { get; private set; }
 
-    // ServiÁos Globais
+    // Servi√ßos Globais
     public IGameLibrary GameLibrary { get; private set; }
     public GameEvents Events { get; private set; }
     public IEconomyService EconomyService { get; private set; }
@@ -20,7 +20,7 @@ public class AppCore : MonoBehaviour
     [Header("Game Design Configs")]
     [SerializeField] private ProgressionSettingsSO _progressionSettings;
 
-    [Header("ConfiguraÁ„o de Loja (Para o Flow)")]
+    [Header("Configura√ß√£o de Loja (Para o Flow)")]
     [SerializeField] private ShopProfileSO _defaultShop;
     [SerializeField] private List<ShopProfileSO> _specialShops;
 
@@ -38,7 +38,7 @@ public class AppCore : MonoBehaviour
 
     private IGridService _gridService; // Privado
 
-    [Header("ConfiguraÁ„o")]
+    [Header("Configura√ß√£o")]
     [SerializeField] private string _firstSceneName = "Game";
 
     private void Awake()
@@ -58,7 +58,7 @@ public class AppCore : MonoBehaviour
 
     private void InitializeGlobalServices()
     {
-        // 1. MonoBehaviours B·sicos (Sem dependÍncias complexas)
+        // 1. MonoBehaviours B√°sicos (Sem depend√™ncias complexas)
         if (GameStateManager == null) GameStateManager = GetComponent<GameStateManager>() ?? gameObject.AddComponent<GameStateManager>();
         InputManager.Initialize();
         AudioManager.Initialize();
@@ -70,26 +70,49 @@ public class AppCore : MonoBehaviour
             Debug.Log("[AppCore] GameLibrary Inicializada.");
         }
 
-        // 2. Inicializa DomÌnio    
+        // 2. Inicializa Dom√≠nio    
         RunManager.Initialize(SaveManager);
 
-        // --- MUDAN«A AQUI: CRIAR SERVI«OS PUROS PRIMEIRO ---
-        // Eles precisam existir antes que o DailyResolutionSystem tente acess·-los.
+        // --- MUDAN√áA AQUI: CRIAR SERVI√áOS PUROS PRIMEIRO ---
+        // Eles precisam existir antes que o DailyResolutionSystem tente acess√°-los.
 
         EconomyService = new EconomyService(RunManager, SaveManager);
         DailyHandSystem = new DailyHandSystem(GameLibrary, EconomyService, new SeasonalCardStrategy(), Events.Player);
         WeeklyGoalSystem = new WeeklyGoalSystem(GameLibrary, Events.Progression, _progressionSettings);
         ShopService = new ShopService(EconomyService, SaveManager, GameLibrary, Events);
 
+        // Injeta RunIdentityContext (imut√°vel) em TODAS as estrat√©gias
+        // Grid ser√° adicionado depois (via SetGridService)
+        // Ningu√©m mais acessa AppCore para pegar EconomyService nas estrat√©gias
+        // Tudo vem via inje√ß√£o expl√≠cita
+        try
+        {
+            CardInteractionBootstrapper.Initialize(
+                RunManager,
+                SaveManager,
+                EconomyService,
+                GameLibrary,
+                Events.Player,
+                Events,
+                null // GridService ser√° definido quando a scene carregar
+            );
+            Debug.Log("[AppCore] ‚úì CardInteractionBootstrapper inicializado com sucesso!");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[AppCore] ERRO cr√≠tico ao inicializar CardInteractionBootstrapper: {ex.Message}");
+            throw;
+        }
+
         // ----------------------------------------------------
 
-        // 3. Inicializa Sistemas de Regra (QUE DEPENDEM DOS SERVI«OS ACIMA)
-        // Agora, quando Initialize() rodar, o WeeklyGoalSystem j· existe!
+        // 3. Inicializa Sistemas de Regra (QUE DEPENDEM DOS SERVI√áOS ACIMA)
+        // Agora, quando Initialize() rodar, o WeeklyGoalSystem j√° existe!
         DailyResolutionSystem.Initialize();
 
         GameStateManager.Initialize();
 
-        // 4. InjeÁ„o de DependÍncia do Flow (Mantido igual)
+        // 4. Inje√ß√£o de Depend√™ncia do Flow (Mantido igual)
         if (WeekendFlowController != null)
         {
             var weekendStateFlow = new WeekendStateFlow(GameStateManager);
@@ -106,7 +129,7 @@ public class AppCore : MonoBehaviour
         }
         else
         {
-            Debug.LogError("[AppCore] WeekendFlowController n„o atribuÌdo!");
+            Debug.LogError("[AppCore] WeekendFlowController n√£o atribu√≠do!");
         }
         // -----------------------------------------------
 
@@ -120,6 +143,18 @@ public class AppCore : MonoBehaviour
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
         if (InputManager != null) InputManager.OnAnyInputDetected -= Events.Player.TriggerAnyInput;
+        
+        // ‚ú® CLEANUP DO CARD INTERACTION BOOTSTRAPPER
+        // Garante que todas as depend√™ncias injetadas sejam limpas
+        try
+        {
+            CardInteractionBootstrapper.Cleanup();
+            Debug.Log("[AppCore] ‚úì CardInteractionBootstrapper limpeza conclu√≠da.");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[AppCore] Erro ao fazer cleanup do CardInteractionBootstrapper: {ex.Message}");
+        }
     }
 
     public void ReturnToMainMenu()
@@ -135,13 +170,13 @@ public class AppCore : MonoBehaviour
         if (activeCamera != null) InputManager.SetCamera(activeCamera);
     }
 
-    // --- REGISTRO DE SERVI«OS DE CENA ---
+    // --- REGISTRO DE SERVI√áOS DE CENA ---
 
     public IGridService GetGridLogic()
     {
         if (_gridService == null)
         {
-            Debug.LogError("FATAL: GridService n„o encontrado!");
+            Debug.LogError("FATAL: GridService n√£o encontrado!");
             return null;
         }
         return _gridService;
@@ -150,6 +185,20 @@ public class AppCore : MonoBehaviour
     public void RegisterGridService(IGridService service)
     {
         _gridService = service;
+        
+        // Sem re-inicializa√ß√£o de nada - muito mais seguro
+        if (CardInteractionBootstrapper.IsInitialized)
+        {
+            try
+            {
+                CardInteractionBootstrapper.SetGridService(service);
+                Debug.Log("[AppCore] ‚úì GridService injetado no RunRuntimeContext!");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[AppCore] Erro ao injetar GridService: {ex.Message}");
+            }
+        }
     }
 
     public void UnregisterGridService()

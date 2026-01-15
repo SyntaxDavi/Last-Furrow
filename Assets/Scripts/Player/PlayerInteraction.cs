@@ -265,8 +265,6 @@ public class PlayerInteraction : MonoBehaviour
         // Isso evita que a carta "fuja" do mouse quando ela se move ou inclina.
         if (_currentHover != null && candidate != _currentHover)
         {
-            // O mouse saiu do collider do hover atual.
-            // Mas... será que saiu SÓ porque a carta se mexeu? Vamos checar a distância.
 
             if (_currentHover is MonoBehaviour hoverMono && hoverMono != null)
             {
