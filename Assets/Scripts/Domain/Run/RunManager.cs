@@ -134,11 +134,13 @@ public class RunManager : MonoBehaviour, IRunManager
         // 2. Atualiza Dado
         _currentPhase = RunPhase.Production;
 
+
         // 3. Dispara Fato
         // O WeekendFlowController (no ExitPipeline) ou um ProductionFlowController vai pegar isso
         OnProductionStarted?.Invoke(run);
 
         // Eventos legados de tempo
+        AppCore.Instance.DailyHandSystem.ProcessDailyDraw(run);
         AppCore.Instance.Events.Time.TriggerWeekChanged(run.CurrentWeek);
         AppCore.Instance.Events.Time.TriggerDayChanged(1);
     }

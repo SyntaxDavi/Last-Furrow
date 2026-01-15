@@ -63,7 +63,7 @@ public class RunData
             CardsDrawPerDay = 3,
 
             CurrentWeeklyScore = 0,
-            WeeklyGoalTarget = startingGoal, // Meta da Semana 1
+            WeeklyGoalTarget = startingGoal, 
             CurrentLives = 3,
             MaxLives = 3
         };
