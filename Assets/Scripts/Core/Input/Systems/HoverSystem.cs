@@ -83,7 +83,15 @@ public class HoverSystem
 
     private IInteractable FindBestCandidate(Vector2 worldPos, LayerMask mask, IDraggable currentlyDragging)
     {
-        int hitCount = Physics2D.OverlapPointNonAlloc(worldPos, _hitsBuffer, mask);
+        // Substitui o uso do método obsoleto OverlapPointNonAlloc
+        int hitCount = 0;
+        Collider2D[] found = Physics2D.OverlapPointAll(worldPos, mask);
+        hitCount = Mathf.Min(found.Length, MAX_HITS);
+        for (int i = 0; i < hitCount; i++)
+        {
+            _hitsBuffer[i] = found[i];
+        }
+
         IInteractable best = null;
         int highestPriority = int.MinValue;
 
@@ -91,15 +99,15 @@ public class HoverSystem
         {
             var col = _hitsBuffer[i];
             var interactable = GetCachedInteractable(col);
-            
+
             if (interactable == null) continue;
-            
+
             // Ignora quem está sendo arrastado
             if (currentlyDragging != null && interactable is IDraggable drag && drag == currentlyDragging)
                 continue;
 
             int priority = interactable.InteractionPriority;
-            
+
             if (priority > highestPriority)
             {
                 highestPriority = priority;
