@@ -14,6 +14,9 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     [SerializeField] private SpriteRenderer _artRenderer;
     [SerializeField] private TextMeshPro _nameText;
 
+    [Header("Interação")]
+    [SerializeField] private int _interactionPriority = 100; // Cartas = 100 (acima do grid)
+
     private CardVisualConfig _config;
     private InputManager _inputManager;
 
@@ -24,6 +27,9 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     public CardData Data { get; private set; }
     public CardInstance Instance { get; private set; }
     public bool IsHovered { get; private set; }
+    
+    // IInteractable
+    public int InteractionPriority => _interactionPriority;
 
     // ==============================================================================================
     // 3. ESTADO INTERNO (Runtime)

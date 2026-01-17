@@ -1,34 +1,45 @@
 using UnityEngine;
 
+/// <summary>
+/// Orquestrador de interações do jogador.
+/// 
+/// Responsabilidade: Coordenar os sistemas de input (Hover, Drag, Click).
+/// NÃO contém lógica de negócio - delega para sistemas especializados.
+/// 
+/// Arquitetura:
+/// - InteractionPolicy: Decide O QUE pode ser feito (regras de estado)
+/// - HoverSystem: Gerencia hover com prioridade e histerese
+/// - DragDropSystem: Gerencia arrastar e soltar
+/// - ClickSystem: Gerencia cliques simples
+/// </summary>
 public class PlayerInteraction : MonoBehaviour
 {
     [Header("Configuração de Física")]
     [SerializeField] private LayerMask _draggableLayer;
     [SerializeField] private LayerMask _dropLayer;
+    [SerializeField] private LayerMask _clickableLayer;
     [SerializeField] private float _dragThresholdPx = 10f;
 
     [Header("Debug")]
     [SerializeField] private bool _debugMode = false;
 
-    [Header("Configuração de Interação")]
-    [Tooltip("Distância extra que o mouse pode se afastar antes de perder o hover (Evita tremedeira)")]
+    [Header("Configuração de Hover")]
+    [Tooltip("Distância extra que o mouse pode se afastar antes de perder o hover")]
     [SerializeField] private float _hoverExitThreshold = 0.5f;
+    [Tooltip("Executa hover check a cada N frames")]
+    [SerializeField] private int _hoverCheckInterval = 2;
 
+    // Dependências
     private InputManager _input;
-
-    // Estado Geral
-    private IInteractable _currentHover;
-
-    // Estado de Drag & Drop
-    private IDraggable _potentialDrag;
-    private IDraggable _activeDrag;
-    private IInteractable _currentDropHover; 
-    private Vector2 _dragStartScreenPos;
-    private bool _isDragging = false;
+    
+    // Sistemas
+    private InteractionPolicy _policy;
+    private HoverSystem _hoverSystem;
+    private DragDropSystem _dragSystem;
+    private ClickSystem _clickSystem;
 
     // --- INICIALIZAÇÃO ---
 
-    // Padrão Dependency Injection: Permite configurar sem depender do Singleton (bom para testes)
     public void Initialize(InputManager inputManager)
     {
         _input = inputManager;
@@ -37,7 +48,7 @@ public class PlayerInteraction : MonoBehaviour
 
     private void Start()
     {
-        // Fallback: Se não foi inicializado manualmente, tenta buscar no AppCore
+        // Fallback para AppCore
         if (_input == null && AppCore.Instance != null)
         {
             _input = AppCore.Instance.InputManager;
@@ -46,272 +57,169 @@ public class PlayerInteraction : MonoBehaviour
         if (_input == null)
         {
             Debug.LogError("[PlayerInteraction] InputManager não encontrado! O script será desabilitado.");
-            this.enabled = false;
+            enabled = false;
+            return;
         }
+
+        // Inicializa sistemas
+        InitializeSystems();
+    }
+
+    private void InitializeSystems()
+    {
+        var gameState = AppCore.Instance.GameStateManager;
+        
+        _policy = new InteractionPolicy(gameState);
+        _hoverSystem = new HoverSystem(_hoverExitThreshold, _hoverCheckInterval);
+        _dragSystem = new DragDropSystem(_dragThresholdPx, _dropLayer);
+        
+        // ClickableLayer inclui draggables + qualquer coisa clicável
+        LayerMask fullClickLayer = _draggableLayer | _clickableLayer;
+        _clickSystem = new ClickSystem(fullClickLayer);
+        
+        Log("Sistemas inicializados.");
     }
 
     // --- LOOP PRINCIPAL ---
 
     private void Update()
     {
-        if (_input == null) return;
+        if (_input == null || _policy == null) return;
 
-        // 1. Contexto Atual
-        var currentState = AppCore.Instance.GameStateManager.CurrentState;
-
-        // Regra de Ouro:
-        // - Drag: Só permitido em Playing (Produção)
-        // - Click/Hover: Permitido em Playing E Shopping (para vender cartas)
-        // - Pausa: Bloqueia tudo
-
-        bool inputAllowed = (currentState == GameState.Playing || currentState == GameState.Shopping);
-        bool dragAllowed = (currentState == GameState.Playing);
-
-        if (!inputAllowed) return; // Bloqueio total (Pause / Game Over)
-
-        Vector2 mouseScreenPos = _input.MouseScreenPosition;
-        Vector2 mouseWorldPos = _input.MouseWorldPosition;
-
-        if (_isDragging && _activeDrag != null)
+        // Early-out: Nada permitido (pause, game over, etc)
+        if (!_policy.IsInputAllowed())
         {
-            HandleActiveDrag(mouseWorldPos);
+            // Se estava arrastando, cancela
+            if (_dragSystem.IsDragging)
+            {
+                _dragSystem.CancelDrag();
+                Log("[Drag] Cancelado - estado do jogo mudou.");
+            }
+            return;
+        }
+
+        Vector2 screenPos = _input.MouseScreenPosition;
+        Vector2 worldPos = _input.MouseWorldPosition;
+
+        if (_dragSystem.IsDragging)
+        {
+            ProcessActiveDrag(worldPos);
         }
         else
         {
-            HandleHover(mouseWorldPos);
-            // Passamos o 'dragAllowed' para dentro do HandleInput
-            HandleInput(mouseScreenPos, mouseWorldPos, dragAllowed);
+            ProcessHover(worldPos);
+            ProcessInput(screenPos, worldPos);
         }
     }
 
-    // --- LÓGICA DE INPUT (Clique e Início de Drag) ---
+    // --- PROCESSAMENTO ---
 
-    private void HandleInput(Vector2 screenPos, Vector2 worldPos, bool dragAllowed)
+    private void ProcessHover(Vector2 worldPos)
     {
-        // 1. Mouse Down: Identificar
+        if (!_policy.CanHover()) return;
+        
+        // Monta a máscara baseada no estado
+        LayerMask hoverMask = _draggableLayer | _clickableLayer;
+        if (_policy.ShouldIncludeDropLayerInHover())
+        {
+            hoverMask |= _dropLayer;
+        }
+        
+        _hoverSystem.Update(worldPos, hoverMask, _dragSystem.ActiveDrag);
+    }
+
+    private void ProcessInput(Vector2 screenPos, Vector2 worldPos)
+    {
+        // Mouse Down
         if (_input.IsPrimaryButtonDown)
         {
-            Collider2D col = Physics2D.OverlapPoint(worldPos, _draggableLayer);
-            if (col != null)
-            {
-                var draggable = col.GetComponent<IDraggable>();
-                if (draggable != null)
-                {
-                    _potentialDrag = draggable;
-                    _dragStartScreenPos = screenPos;
-                }
-            }
+            HandleMouseDown(worldPos, screenPos);
         }
 
-        // 2. Mouse Hold: Drag (SOMENTE SE PERMITIDO)
-        if (dragAllowed && _potentialDrag != null && _input.IsPrimaryButtonHeld)
+        // Mouse Hold (tentativa de drag)
+        if (_input.IsPrimaryButtonHeld && _policy.CanDrag())
         {
-            if (!_isDragging)
+            if (_dragSystem.ShouldStartDrag(screenPos))
             {
-                float dist = Vector2.Distance(screenPos, _dragStartScreenPos);
-                if (dist > _dragThresholdPx)
-                {
-                    StartDrag();
-                }
+                StartDrag();
             }
         }
 
-        // 3. Mouse Up: Clique (SEMPRE PERMITIDO SE INPUTALLOWED = TRUE)
+        // Mouse Up
         if (_input.IsPrimaryButtonUp)
         {
-            if (_potentialDrag != null && !_isDragging)
-            {
-                // É um clique simples (Serve para selecionar no grid ou VENDER na loja)
-                if (_potentialDrag is IInteractable interactable)
-                {
-                    interactable.OnClick();
-                }
-            }
-            _potentialDrag = null;
+            HandleMouseUp(worldPos);
         }
     }
 
-    // --- LÓGICA DE DRAG & DROP ---
+    private void HandleMouseDown(Vector2 worldPos, Vector2 screenPos)
+    {
+        // Registra potencial drag
+        Collider2D col = Physics2D.OverlapPoint(worldPos, _draggableLayer);
+        if (col != null)
+        {
+            var draggable = col.GetComponent<IDraggable>();
+            if (draggable != null)
+            {
+                _dragSystem.RegisterPotentialDrag(draggable, screenPos);
+            }
+        }
+        
+        // Registra potencial click
+        if (_policy.CanClick())
+        {
+            _clickSystem.RegisterClickTarget(worldPos);
+        }
+    }
+
+    private void HandleMouseUp(Vector2 worldPos)
+    {
+        // Se não arrastou, tenta clicar
+        if (!_dragSystem.IsDragging && _policy.CanClick())
+        {
+            if (_clickSystem.TryExecuteClick(worldPos))
+            {
+                Log("[Click] Executado.");
+            }
+        }
+        
+        _dragSystem.ClearPotentialDrag();
+        _clickSystem.Clear();
+    }
 
     private void StartDrag()
     {
-        _isDragging = true;
-        _activeDrag = _potentialDrag;
-
-        // Limpa hover antigo para evitar que fique "preso" visualmente enquanto arrasta
-        if (_currentHover != null)
-        {
-            _currentHover.OnHoverExit();
-            _currentHover = null;
-        }
-
-        _activeDrag.OnDragStart();
+        // Limpa hover antes de arrastar
+        _hoverSystem.ClearHover();
+        _clickSystem.Clear();
+        
+        _dragSystem.StartDrag();
         Log("[Drag] Iniciado.");
     }
 
-    private void HandleActiveDrag(Vector2 worldPos)
+    private void ProcessActiveDrag(Vector2 worldPos)
     {
-        // Atualiza posição visual do objeto
-        _activeDrag.OnDragUpdate(worldPos);
-
-        // Verifica o que está embaixo para feedback visual (Ex: Slot brilhando)
-        HandleDropZoneHover(worldPos);
+        _dragSystem.UpdateDrag(worldPos);
 
         if (_input.IsPrimaryButtonUp)
         {
-            FinishDrag(worldPos);
+            var result = _dragSystem.FinishDrag(worldPos);
+            Log(result.Success ? "[Drop] Sucesso." : "[Drop] Cancelado.");
         }
     }
 
-    private void HandleDropZoneHover(Vector2 worldPos)
+    // --- API PÚBLICA ---
+
+    /// <summary>
+    /// Limpa todos os caches. Chamar quando objetos são destruídos em massa.
+    /// </summary>
+    public void ClearCaches()
     {
-        Collider2D col = Physics2D.OverlapPoint(worldPos, _dropLayer);
-        IInteractable newDropHover = null;
-
-        if (col != null)
-        {
-            // O Slot implementa tanto IDropTarget quanto IInteractable
-            newDropHover = col.GetComponent<IInteractable>();
-        }
-
-        // Troca de estado de Hover da DropZone
-        if (newDropHover != _currentDropHover)
-        {
-            // Saiu do anterior
-            if (_currentDropHover != null && IsObjectAlive(_currentDropHover))
-            {
-                _currentDropHover.OnHoverExit();
-            }
-
-            _currentDropHover = newDropHover;
-
-            // Entrou no novo
-            if (_currentDropHover != null)
-            {
-                _currentDropHover.OnHoverEnter();
-            }
-        }
+        _hoverSystem?.ClearCache();
+        Log("[Cache] Limpo.");
     }
-
-    private void FinishDrag(Vector2 worldPos)
-    {
-        Collider2D col = Physics2D.OverlapPoint(worldPos, _dropLayer);
-        IDropTarget target = null;
-
-        if (col != null)
-        {
-            target = col.GetComponent<IDropTarget>();
-        }
-
-        // PERGUNTA CRUCIAL: O alvo aceita esse objeto?
-        // Na nova arquitetura, o GridSlotView vai perguntar para o GridService via delegate
-        if (target != null && target.CanReceive(_activeDrag))
-        {
-            Log($"[Drop] Sucesso em {col.name}");
-            target.OnReceive(_activeDrag);
-        }
-        else
-        {
-            Log("[Drop] Cancelado ou alvo inválido.");
-            // Opcional: Tocar som de "erro" ou voltar carta para a mão com animação
-        }
-
-        _activeDrag.OnDragEnd();
-
-        // Limpeza final
-        if (_currentDropHover != null && IsObjectAlive(_currentDropHover))
-        {
-            _currentDropHover.OnHoverExit();
-            _currentDropHover = null;
-        }
-
-        _isDragging = false;
-        _activeDrag = null;
-        _potentialDrag = null;
-    }
-
-    private void HandleHover(Vector2 worldPos)
-    {
-        // 1. Quem estamos hoverando AGORA (Raycast físico)
-        LayerMask targetMask = _draggableLayer;
-        if (AppCore.Instance.GameStateManager.CurrentState == GameState.Playing) targetMask |= _dropLayer;
-
-        Collider2D[] hitColliders = Physics2D.OverlapPointAll(worldPos, targetMask);
-        IInteractable candidate = null;
-        int highestOrder = int.MinValue;
-
-        // Encontra o melhor candidato (Rei da Montanha por Sorting Order)
-        foreach (var col in hitColliders)
-        {
-            var interactable = col.GetComponent<IInteractable>();
-            if (interactable == null) continue;
-
-            // Ignora quem está sendo arrastado
-            if (interactable is IDraggable drag && IsObjectDragging(drag)) continue;
-
-            var group = col.GetComponent<UnityEngine.Rendering.SortingGroup>();
-            int order = (group != null) ? group.sortingOrder : 0;
-
-            if (order > highestOrder)
-            {
-                highestOrder = order;
-                candidate = interactable;
-            }
-        }
-
-        // --- A CORREÇÃO MÁGICA (STICKY HOVER) ---
-
-        // Se já temos um hover ativo, damos prioridade para MANTER ele (Histerese)
-        // Isso evita que a carta "fuja" do mouse quando ela se move ou inclina.
-        if (_currentHover != null && candidate != _currentHover)
-        {
-
-            if (_currentHover is MonoBehaviour hoverMono && hoverMono != null)
-            {
-                Collider2D hoverCol = hoverMono.GetComponent<Collider2D>();
-                if (hoverCol != null)
-                {
-                    // Calcula o ponto do collider mais próximo do mouse
-                    Vector2 closestPoint = hoverCol.ClosestPoint(worldPos);
-                    float distance = Vector2.Distance(worldPos, closestPoint);
-
-                    // Se o mouse ainda está pertinho (ex: 0.5 unidades), NÃO troca.
-                    // Mantém o hover antigo.
-                    if (distance < _hoverExitThreshold)
-                    {
-                        candidate = _currentHover;
-                    }
-                }
-            }
-        }
-        // ----------------------------------------
-
-        // 3. Aplica a Lógica de Troca (Entrada/Saída)
-        if (candidate != _currentHover)
-        {
-            if (_currentHover != null && IsObjectAlive(_currentHover)) _currentHover.OnHoverExit();
-
-            _currentHover = candidate;
-
-            if (_currentHover != null) _currentHover.OnHoverEnter();
-        }
-    }
-
 
     // --- UTILITÁRIOS ---
-
-    // Helper para checar se interface Unity ainda existe (lidar com Destroy())
-
-    private bool IsObjectDragging(IDraggable draggable)
-    {
-        return _isDragging && _activeDrag == draggable;
-    }
-
-    // Helper de segurança para Unity (checa se foi destruído)
-    private bool IsObjectAlive(object obj)
-    {
-        return obj != null && !((obj is UnityEngine.Object unityObj) && unityObj == null);
-    }
 
     private void Log(string msg)
     {

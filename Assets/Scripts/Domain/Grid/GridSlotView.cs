@@ -16,9 +16,15 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     [Header("Cores de Highlight")]
     [SerializeField] private Color _highlightColor = new Color(1f, 1f, 1f, 0.4f); // Branco transparente
 
+    [Header("Interação")]
+    [SerializeField] private int _interactionPriority = 0; // Grid = 0 (base)
+
     private GridManager _gridManager;
     private int _index;
     public int SlotIndex => _index;
+    
+    // IInteractable
+    public int InteractionPriority => _interactionPriority;
 
     // O Controller assina isso para executar "Soltei aqui!"
     public event Action<int, CardView> OnDropInteraction;
