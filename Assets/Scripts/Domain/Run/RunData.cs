@@ -14,8 +14,10 @@ public class RunData
     public int CurrentDay;
     public List<string> DeckIDs;
     public CropState[] GridSlots;
+    public GridSlotState[] SlotStates;
 
     public List<CardInstance> Hand = new List<CardInstance>();
+
 
     public int MaxHandSize = 10;
     public int CardsDrawPerDay = 3;
@@ -28,8 +30,12 @@ public class RunData
     public RunData()
     {
         DeckIDs = new List<string>();
-        GridSlots = new CropState[9];
+        // Inicializa zerado ou com mínimo para evitar nulls imediatos, 
+        // mas o tamanho real será corrigido pelo GridService.
+        GridSlots = new CropState[0]; 
+        SlotStates = new GridSlotState[0];
     }
+
 
     // FACTORY METHOD (A Regra de Negócio mora aqui)
     // É aqui que definimos como uma Run começa de verdade.
@@ -50,20 +56,25 @@ public class RunData
         // Nota: Não disparamos evento aqui porque RunData é apenas DADOS.
         // Quem chama (Service ou Item) dispara o evento.
     }
-    public static RunData CreateNewRun(int startingGoal = 150)
+    public static RunData CreateNewRun(GridConfiguration config)
     {
+        int initialGoal = 150; // Valor padrão se não houver settings
+        
+        int slotCount = config != null ? config.TotalSlots : 25;
+
         var run = new RunData
         {
             CurrentWeek = 1,
             CurrentDay = 1,
-            GridSlots = new CropState[9],
+            GridSlots = new CropState[slotCount],
+            SlotStates = new GridSlotState[slotCount],
             Hand = new List<CardInstance>(),
 
             MaxHandSize = 10,
             CardsDrawPerDay = 3,
 
             CurrentWeeklyScore = 0,
-            WeeklyGoalTarget = startingGoal, 
+            WeeklyGoalTarget = initialGoal, 
             CurrentLives = 3,
             MaxLives = 3
         };

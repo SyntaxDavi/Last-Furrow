@@ -37,10 +37,17 @@ public class RunManager : MonoBehaviour, IRunManager
 
     public void StartNewRun()
     {
-        int initialGoal = _progressionSettings != null ? _progressionSettings.GetGoalForWeek(1) : 150;
-
+        // Obtém config do AppCore
+        var gridConfig = AppCore.Instance.GridConfiguration;
+        
         // 1. Criação Pura de Dados (Domain)
-        RunData newRun = RunData.CreateNewRun(initialGoal);
+        RunData newRun = RunData.CreateNewRun(gridConfig);
+        
+        // Ajusta meta inicial se settings existirem
+        if (_progressionSettings != null)
+        {
+             newRun.WeeklyGoalTarget = _progressionSettings.GetGoalForWeek(1);
+        }
 
         // 2. Persistência
         _saveManager.Data.CurrentRun = newRun;

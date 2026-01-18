@@ -22,16 +22,19 @@ public class PlantInteraction : ICardInteractionStrategy
         _context = context;
     }
 
-    public bool CanInteract(CropState slot, CardData card)
+    public bool CanInteract(int index, IGridService grid, CardData card)
     {
+        var slot = grid.GetSlotReadOnly(index);
         if (slot == null || card == null)
             return false;
 
         return slot.IsEmpty;
     }
 
-    public InteractionResult Execute(CropState slot, CardData card)
+    public InteractionResult Execute(int index, IGridService grid, CardData card)
     {
+        var slot = grid.GetSlot(index);
+
         // Validações defensivas
         if (slot == null)
             return InteractionResult.Fail("[ERRO] CropState é null!");
@@ -73,5 +76,6 @@ public class PlantInteraction : ICardInteractionStrategy
         );
     }
 }
+
 
 

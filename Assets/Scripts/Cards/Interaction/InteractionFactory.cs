@@ -4,9 +4,9 @@ using UnityEngine;
 // Estratégia de Segurança (Null Object)
 public class NullInteractionStrategy : ICardInteractionStrategy
 {
-    public bool CanInteract(CropState slot, CardData card) => false;
+    public bool CanInteract(int index, IGridService grid, CardData card) => false;
 
-    public InteractionResult Execute(CropState slot, CardData card)
+    public InteractionResult Execute(int index, IGridService grid, CardData card)
     {
         return InteractionResult.Fail($"Nenhuma estratégia definida para o tipo: {card.Type}");
     }
@@ -52,6 +52,7 @@ public static class InteractionFactory
             _strategies[CardType.Care] = new WaterInteractionStrategy(identityContext, runtimeContext);
             _strategies[CardType.Harvest] = new HarvestInteractionStrategy(identityContext);
             _strategies[CardType.Clear] = new ClearInteractionStrategy(identityContext);
+            _strategies[CardType.Expansion] = new UnlockInteractionStrategy(identityContext);
 
             _initialized = true;
             Debug.Log("[InteractionFactory] ? Inicializado com sucesso! 5 estratégias injetadas.");

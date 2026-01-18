@@ -11,6 +11,7 @@ public class SeasonalCardStrategy : ICardSourceStrategy
         (CardID)"card_water",
         (CardID)"card_shovel",
         (CardID)"card_harvest",
+        (CardID)"card_expansion",
     };
 
     public List<CardID> GetNextCardIDs(int amount, RunData currentRun)

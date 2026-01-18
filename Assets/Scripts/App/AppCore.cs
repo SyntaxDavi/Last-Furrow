@@ -16,9 +16,12 @@ public class AppCore : MonoBehaviour
 
     [Header("Data")]
     [SerializeField] private GameDatabaseSO _gameDatabase;
+    [SerializeField] private GridConfiguration _gridConfiguration;
 
     [Header("Game Design Configs")]
     [SerializeField] private ProgressionSettingsSO _progressionSettings;
+
+    public GridConfiguration GridConfiguration => _gridConfiguration;
 
     [Header("Configuração de Loja (Para o Flow)")]
     [SerializeField] private ShopProfileSO _defaultShop;

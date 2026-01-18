@@ -17,9 +17,10 @@ public interface ICardReceiver
 /// </summary>
 public interface ICardInteractionStrategy
 {
-    bool CanInteract(CropState slot, CardData card);
-    InteractionResult Execute(CropState slot, CardData card);
+    bool CanInteract(int index, IGridService gridService, CardData card);
+    InteractionResult Execute(int index, IGridService gridService, CardData card);
 }
+
 
 /// <summary>
 /// Interface para estratégias de origem de cartas

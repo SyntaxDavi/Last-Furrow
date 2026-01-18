@@ -7,7 +7,8 @@ public enum CardType
     Modify,     // Modificador (água, fertilizante)
     Harvest,    // Colheita
     Clear,      // Limpeza
-    Care        // Cuidado
+    Care,       // Cuidado
+    Expansion   // Desbloqueio de Grid
 }
 
 /// <summary>

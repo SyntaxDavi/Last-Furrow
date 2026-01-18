@@ -9,21 +9,16 @@ public class GameplayBootstrapper : MonoBehaviour
     [SerializeField] private GridFeedbackController _feedbackController;
     [SerializeField] private HandManager _handManager;
 
-    [Header("Level Data")]
-    [SerializeField] private float _levelGridWidth = 5f;
-    [SerializeField] private float _levelGridHeight = 7f;
+    // Campos antigos removidos em favor de GridConfiguration SO
+    // [Header("Level Data")] 
+    // private float _levelGridWidth = 5f; 
+    // private float _levelGridHeight = 7f;
 
     private IGridService _gridService;
 
     private void Awake()
     {
         if (AppCore.Instance == null) return;
-
-        if (_gameCamera != null)
-        {
-            _gameCamera.Configure(_levelGridWidth, _levelGridHeight);
-            AppCore.Instance.InputManager.SetCamera(_gameCamera.GetComponent<Camera>());
-        }
 
         var runData = AppCore.Instance.SaveManager.Data.CurrentRun;
         if (runData == null)
@@ -48,7 +43,8 @@ public class GameplayBootstrapper : MonoBehaviour
         _gridService = new GridService(
            runData,
            library,
-           AppCore.Instance.GameStateManager
+           AppCore.Instance.GameStateManager,
+           AppCore.Instance.GridConfiguration // Injeção da Config
        );
 
         // 2. Registra no Global (para DailyResolution, CheatManager, etc)
@@ -71,6 +67,14 @@ public class GameplayBootstrapper : MonoBehaviour
         if (_handManager != null)
         {
             _handManager.Configure(runData, library);
+        }
+
+        // 5. Configura Câmera Dinâmica (Se o GridManager conseguir informar o tamanho)
+        if (_gameCamera != null && _gridManager != null)
+        {
+            Vector2 gridSize = _gridManager.GetGridWorldSize();
+            _gameCamera.Configure(gridSize.x, gridSize.y);
+            AppCore.Instance.InputManager.SetCamera(_gameCamera.GetComponent<Camera>());
         }
 
         AppCore.Instance.Events.Time.OnDayChanged += HandleDayChanged;

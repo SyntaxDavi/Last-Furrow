@@ -13,9 +13,23 @@ public interface IGridService
 
     event Action OnDataDirty;
 
+    GridSlotState GetSlotStateReadOnly(int index);
+    
+    // Acesso mutável para strategies (Idealmente seria internal, mas interfaces são publicas)
+    CropState GetSlot(int index);
+    
+    // Acesso somente leitura
+    int SlotCount { get; }
+    GridConfiguration Config { get; }
     IReadOnlyCropState GetSlotReadOnly(int index);
 
+    bool IsSlotUnlocked(int index);
+    bool CanUnlockSlot(int index);
+    bool TryUnlockSlot(int index);
+
+
     void ProcessNightCycleForSlot(int slotIndex);
+
     bool CanReceiveCard(int index, CardData card);
     float GetGridContaminationPercentage();
     InteractionResult ApplyCard(int index, CardData card);

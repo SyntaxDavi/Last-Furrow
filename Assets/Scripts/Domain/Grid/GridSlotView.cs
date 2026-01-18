@@ -15,6 +15,8 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 
     [Header("Cores de Highlight")]
     [SerializeField] private Color _highlightColor = new Color(1f, 1f, 1f, 0.4f); // Branco transparente
+    [SerializeField] private Color _lockedColor = new Color(0.2f, 0.2f, 0.2f, 1f); // Escuro para bloqueado
+    [SerializeField] private Color _unlockableHighlightColor = new Color(0f, 1f, 0f, 0.3f); // Verde quando pode desbloquear
 
     [Header("Interação")]
     [SerializeField] private int _interactionPriority = 0; // Grid = 0 (base)
@@ -30,6 +32,8 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     public event Action<int, CardView> OnDropInteraction;
     private void Awake() => ConfigureRenderers();
 
+    private bool _isLocked;
+
     public void Initialize(int index)
     {
         _index = index;
@@ -38,12 +42,26 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _plantRenderer.enabled = false;
         _highlightRenderer.enabled = false;
         _baseRenderer.color = _dryColor;
+        _isLocked = false;
+    }
+
+    public void SetLockedState(bool isLocked)
+    {
+        _isLocked = isLocked;
+        if (_isLocked)
+        {
+            _baseRenderer.color = _lockedColor;
+            _plantRenderer.enabled = false;
+        }
+        // Se desbloqueado, a cor será setada pelo SetVisualState ou default dry
     }
 
     // --- MÉTODO VISUAL (CHAMADO PELO CONTROLLER) ---
 
     public void SetVisualState(Sprite plantSprite, bool isWatered)
     {
+        if (_isLocked) return; // Não mostra planta nem água se bloqueado
+
         // 1. Atualiza Planta
         if (plantSprite != null)
         {
@@ -67,7 +85,12 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     {
         // Apenas liga o overlay de brilho. Não mexe na cor do chão.
         if (_highlightRenderer != null)
+        {
             _highlightRenderer.enabled = true;
+            
+            // Se bloqueado, mostra vermelho se não puder interagir?
+            // Deixa o hover padrão. O feedback de "pode desbloquear" virá do drag.
+        }
     }
 
     public void OnHoverExit()

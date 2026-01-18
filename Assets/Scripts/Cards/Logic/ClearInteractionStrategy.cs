@@ -22,21 +22,23 @@ public class ClearInteractionStrategy : ICardInteractionStrategy
         _context = context;
     }
 
-    public bool CanInteract(CropState slot, CardData card)
+    public bool CanInteract(int index, IGridService grid, CardData card)
     {
+        var slot = grid.GetSlotReadOnly(index);
+        
         if (slot == null || card == null)
             return false;
 
         // Regra: Pá serve para remover coisas mortas
-        return !slot.IsEmpty && slot.IsWithered;
+        return slot.IsWithered || (!slot.IsEmpty && card.Type == CardType.Clear);
     }
 
-    public InteractionResult Execute(CropState slot, CardData card)
+    public InteractionResult Execute(int index, IGridService grid, CardData card)
     {
-        // Validações defensivas
-        if (slot == null)
-            return InteractionResult.Fail("[ERRO] CropState é null!");
+        var slot = grid.GetSlot(index);
+        if (slot == null) return InteractionResult.Fail("Slot inválido!");
 
+        // Validações defensivas
         if (card == null)
             return InteractionResult.Fail("[ERRO] CardData é null!");
 
@@ -64,4 +66,5 @@ public class ClearInteractionStrategy : ICardInteractionStrategy
         }
     }
 }
+
 

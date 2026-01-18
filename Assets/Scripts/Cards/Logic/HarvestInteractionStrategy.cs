@@ -29,8 +29,10 @@ public class HarvestInteractionStrategy : ICardInteractionStrategy
         _context = context;
     }
 
-    public bool CanInteract(CropState slot, CardData card)
+    public bool CanInteract(int index, IGridService grid, CardData card)
     {
+        var slot = grid.GetSlotReadOnly(index);
+
         // Null checks robustos
         if (slot == null || card == null)
             return false;
@@ -45,11 +47,13 @@ public class HarvestInteractionStrategy : ICardInteractionStrategy
         return slot.DaysMature >= 0 && slot.CurrentGrowth > 0;
     }
 
-    public InteractionResult Execute(CropState slot, CardData card)
+    public InteractionResult Execute(int index, IGridService grid, CardData card)
     {
+        var slot = grid.GetSlot(index);
+
         // Validações defensivas
         if (slot == null)
-            return InteractionResult.Fail("[ERRO] CropState é null!");
+             return InteractionResult.Fail("[ERRO] CropState não encontrado!");
 
         if (card == null)
             return InteractionResult.Fail("[ERRO] CardData é null!");

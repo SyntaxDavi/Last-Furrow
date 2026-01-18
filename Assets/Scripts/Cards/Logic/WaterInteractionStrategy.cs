@@ -24,22 +24,30 @@ public class WaterInteractionStrategy : ICardInteractionStrategy
         _runtimeContext = runtimeContext;
     }
 
-    public bool CanInteract(CropState slot, CardData card)
+    public bool CanInteract(int index, IGridService grid, CardData card)
     {
+        var slot = grid.GetSlotReadOnly(index);
+        
         if (slot == null || card == null)
             return false;
 
-        return !slot.IsEmpty && !slot.IsWithered && !slot.IsWatered;
+        // Se no h planta, a maioria dos modificadores no funciona
+        if (slot.IsEmpty)
+            return false;
+
+        return !slot.IsWithered;
     }
 
-    public InteractionResult Execute(CropState slot, CardData card)
+    public InteractionResult Execute(int index, IGridService grid, CardData card)
     {
-        // Validações defensivas
+        var slot = grid.GetSlot(index);
+        
+        // Validaes defensivas
         if (slot == null)
-            return InteractionResult.Fail("[ERRO] CropState é null!");
+            return InteractionResult.Fail("[ERRO] CropState  null!");
 
         if (card == null)
-            return InteractionResult.Fail("[ERRO] CardData é null!");
+            return InteractionResult.Fail("[ERRO] CardData  null!");
 
         if (slot.IsEmpty)
             return InteractionResult.Fail("Não há planta aqui para regar.");
@@ -99,4 +107,5 @@ public class WaterInteractionStrategy : ICardInteractionStrategy
         return InteractionResult.Success(msg, finalEvent, consume: true);
     }
 }
+
 

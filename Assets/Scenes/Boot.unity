@@ -127,6 +127,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4417873784406869959, guid: 2de54dac0c3d6ba438c9ee852f20ac3a, type: 3}
+      propertyPath: orthographic size
+      value: 15
+      objectReference: {fileID: 0}
     - target: {fileID: 5737600013906646829, guid: 2de54dac0c3d6ba438c9ee852f20ac3a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -236,6 +240,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: AppCore
       objectReference: {fileID: 0}
+    - target: {fileID: 7086375328797191102, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
+      propertyPath: _gridConfiguration
+      value: 
+      objectReference: {fileID: 11400000, guid: 449f559565c270944a7aba4dcdc0bd96, type: 2}
     - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
       propertyPath: _progressionSettings
       value: 

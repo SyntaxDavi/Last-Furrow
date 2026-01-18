@@ -32,6 +32,21 @@ public class GridManager : MonoBehaviour
             Debug.LogWarning("[GridManager] Aguardando configuração via Bootstrapper...");
     }
 
+    public Vector2 GetGridWorldSize()
+    {
+        if (_gridService == null || _gridService.Config == null) 
+            return new Vector2(5f, 5f); // Fallback
+
+        int cols = _gridService.Config.Columns;
+        int rows = _gridService.Config.Rows;
+
+        // Adiciona uma margem de segurança (ex: 1 slot extra de borda)
+        float width = cols * _spacing.x + 1f;
+        float height = rows * _spacing.y + 1f;
+
+        return new Vector2(width, height);
+    }
+
     private void OnDestroy()
     {
         if (_gridService != null)
@@ -57,19 +72,47 @@ public class GridManager : MonoBehaviour
         foreach (Transform child in _gridContainer)
             Destroy(child.gameObject);
 
-
-        for (int i = 0; i < 9; i++)
+        if (_gridService == null)
         {
-            int row = i / 3;
-            int col = i % 3;
+            Debug.LogError("[GridManager] GridService nulo! Não é possível gerar grid.");
+            return;
+        }
+
+        int totalSlots = _gridService.SlotCount;
+        var config = _gridService.Config;
+        
+        int cols = config != null ? config.Columns : (int)Mathf.Sqrt(totalSlots);
+        int rows = config != null ? config.Rows : cols; // Fallback quadrado
+
+        // Cálculo de centralização
+        // Se cols=5, centerIndex=2 (0,1,2,3,4). xOffset = -2 * spacing.
+        // Fórmula geral: (index - (count-1)/2.0f) * spacing
+        float xOffset = -(cols - 1) / 2.0f * _spacing.x;
+        float yOffset = (rows - 1) / 2.0f * _spacing.y; // Y cresce pra cima no Unity World, mas grid index costuma ser top-down ou bottom-up?
+        // No loop original: yPos = (center - row) * _spacing.y; 
+        // Vamos manter a lógica visual consistente: row 0 é o topo?
+        // Original: row = i / width. yPos = (1 - row) * spacing.y (assumindo 3x3, center=1). 
+        // Se row=0 -> y=spacing. Row=1 -> y=0. Row=2 -> y=-spacing.
+        // Isso confirma que Row 0 é o TOPO.
+        
+        // Novo cálculo para Row 0 ser Topo e Center ser (0,0) local:
+        // Topo deve ser positivo. Base negativo.
+        
+        float startX = -(cols - 1) * _spacing.x / 2f;
+        float startY = (rows - 1) * _spacing.y / 2f;
+
+        for (int i = 0; i < totalSlots; i++)
+        {
+            int row = i / cols;
+            int col = i % cols;
 
             var newSlot = Instantiate(_slotPrefab, _gridContainer);
 
-            float xPos = (col - 1) * _spacing.x;
-            float yPos = (1 - row) * _spacing.y;
+            float xPos = startX + (col * _spacing.x);
+            float yPos = startY - (row * _spacing.y);
 
             newSlot.transform.localPosition = new Vector2(xPos, yPos);
-            newSlot.name = $"Slot_{i}";
+            newSlot.name = $"Slot_{i}_[{col},{row}]";
 
             newSlot.Initialize(i);
             newSlot.Configure(this, i);
@@ -136,6 +179,11 @@ public class GridManager : MonoBehaviour
 
         IReadOnlyCropState state = _gridService.GetSlotReadOnly(index);
         var view = _spawnedSlots[index];
+
+        // Atualiza Bloqueio
+        bool isUnlocked = _gridService.IsSlotUnlocked(index);
+        view.SetLockedState(!isUnlocked);
+        if (!isUnlocked) return; 
 
         Sprite spriteToRender = null;
         bool isWatered = false;
