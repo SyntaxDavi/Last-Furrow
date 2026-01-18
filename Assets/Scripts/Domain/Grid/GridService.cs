@@ -12,6 +12,9 @@ public class GridService : IGridService
     public event Action OnDataDirty;
     public event Action<int, GridEventType> OnSlotUpdated;
 
+    // ⭐ NOVO: Evento composto (substitui os 3 acima gradualmente)
+    public event System.Action<GridChangeEvent> OnGridChanged;
+
     public int SlotCount => _runData?.GridSlots?.Length ?? 0;
     public GridConfiguration Config => _config;
 
@@ -26,10 +29,10 @@ public class GridService : IGridService
         if (_config == null)
         {
             Debug.LogError("[GridService] Configuração de Grid é NULA! Usando fallback perigoso.");
-            // Criamos uma config dummy em runtime se necessário, ou lançamos exceção
         }
 
-        EnsureGridInitialized();
+        // ⭐ NOVA ARQUITETURA: Delega inicialização para GridInitializer
+        GridInitializer.Initialize(_runData, _config);
     }
 
 
@@ -96,10 +99,17 @@ public class GridService : IGridService
 
         if (result.IsSuccess)
         {
-            OnSlotStateChanged?.Invoke(index);
-
-            OnSlotUpdated?.Invoke(index, result.EventType);
-            OnDataDirty?.Invoke();
+            // ⭐ NOVO: Usa sistema de eventos composto
+            EmitGridChangeEvent(
+                index,
+                result.EventType,
+                new GridChangeImpact
+                {
+                    RequiresVisualUpdate = true,
+                    RequiresSave = true,
+                    AffectsScore = false // TODO: Determinar quando afeta score
+                }
+            );
         }
 
         return result;
@@ -241,78 +251,43 @@ public class GridService : IGridService
         return false;
     }
 
-    private void EnsureGridInitialized()
-    {
-        if (_config == null) return;
-
-        int targetSize = _config.TotalSlots;
-
-        // 1. Migração de Tamanho
-        if (_runData.GridSlots == null || _runData.GridSlots.Length != targetSize)
-        {
-            Debug.Log($"[GridService] Ajustando Grid para {targetSize} slots ({_config.Columns}x{_config.Rows})...");
-            var oldSlots = _runData.GridSlots ?? new CropState[0];
-            _runData.GridSlots = new CropState[targetSize];
-            
-            for(int i=0; i<_runData.GridSlots.Length; i++)
-            {
-                if (i < oldSlots.Length) 
-                    _runData.GridSlots[i] = oldSlots[i];
-                else 
-                    _runData.GridSlots[i] = new CropState();
-            }
-        }
-
-        // 2. Migração de SlotStates
-        if (_runData.SlotStates == null || _runData.SlotStates.Length != targetSize)
-        {
-             var oldStates = _runData.SlotStates ?? new GridSlotState[0];
-             _runData.SlotStates = new GridSlotState[targetSize];
-
-             for(int i=0; i<_runData.SlotStates.Length; i++)
-             {
-                 if (i < oldStates.Length)
-                     _runData.SlotStates[i] = oldStates[i];
-                 else
-                     _runData.SlotStates[i] = new GridSlotState(false);
-             }
-        }
-
-        // 3. Inicialização de Gameplay (Desbloqueio Inicial)
-        // Só roda se NENHUM slot estiver desbloqueado (Run nova ou zerada)
-        bool hasAnyUnlocked = false;
-        foreach(var s in _runData.SlotStates) if (s != null && s.IsUnlocked) hasAnyUnlocked = true;
-
-        if (!hasAnyUnlocked && _config.DefaultUnlockedCoordinates != null)
-        {
-            foreach(var coord in _config.DefaultUnlockedCoordinates)
-            {
-                // Coords do ScriptableObject são X,Y (Col, Row). Convertemos para Index.
-                // Mas cuidado: SO usa 1-based ou 0-based? O arquivo que criei parecia usar 1-based nos comentários mas valores 1,2,3 para 5x5 center.
-                // Vamos assumir 0-based no código interno para facilitar (0..4).
-                // Revisando o arquivo criado: "3x3 center... indices 1,2,3". Isso é 1-based relative to 0? Or 0-based indices 1,2,3 corresponds do 2nd, 3rd, 4th col. 
-                // Se Columns=5, indices são 0,1,2,3,4. Center 3x3 é 1,2,3. Isso bate.
-                
-                int c = coord.x;
-                int r = coord.y;
-                
-                if (c >= 0 && c < _config.Columns && r >= 0 && r < _config.Rows)
-                {
-                    int index = r * _config.Columns + c;
-                    if (IsValidIndex(index))
-                    {
-                        _runData.SlotStates[index].IsUnlocked = true;
-                    }
-                }
-            }
-        }
-    }
-
     private ICardInteractionStrategy GetStrategyForCard(CardData card)
 
     {
         if (card == null) return null;
         return InteractionFactory.GetStrategy(card.Type);
+    }
+
+    /// <summary>
+    /// ⭐ NOVO: Emite evento composto + eventos legados (transição gradual).
+    /// 
+    /// MIGRAÇÃO:
+    /// - Mantém eventos antigos para compatibilidade
+    /// - Adiciona evento novo (OnGridChanged)
+    /// - Futuramente, remover eventos antigos e manter só OnGridChanged
+    /// </summary>
+    private void EmitGridChangeEvent(int index, GridEventType eventType, GridChangeImpact impact)
+    {
+        // 1. Evento novo (composto)
+        var gridEvent = GridChangeEvent.Create(
+            index,
+            eventType,
+            impact,
+            GridSlotSnapshot.FromCropState(GetSlot(index))
+        );
+        OnGridChanged?.Invoke(gridEvent);
+
+        // 2. Eventos legados (compatibilidade)
+        if (impact.RequiresVisualUpdate)
+        {
+            OnSlotStateChanged?.Invoke(index);
+            OnSlotUpdated?.Invoke(index, eventType);
+        }
+
+        if (impact.RequiresSave)
+        {
+            OnDataDirty?.Invoke();
+        }
     }
 
     // --- HELPER UNIFICADO ---

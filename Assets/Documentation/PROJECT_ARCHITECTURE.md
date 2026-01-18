@@ -142,6 +142,51 @@ Night Cycle Processes: 9 slots (36% of total)
 Night Cycle Skips: 16 slots (64% of total)
 ```
 
+#### Unlock Pattern System (Initial Grid Setup):
+**ARCHITECTURE**: Extensible pattern-based unlock using Strategy Pattern + Factory.
+
+**Core Components:**
+1. **IUnlockPattern** (Interface):
+   - Defines contract for generating unlock coordinates
+   - Each pattern implements `Generate(width, height, slotCount, rng)`
+   - Open/Closed Principle: Add new patterns without modifying existing code
+
+2. **8 Built-in Patterns:**
+   - `CrossPattern`: Cruz (+) centralizada
+   - `LinePattern`: Linha horizontal ou vertical
+   - `DiagonalXPattern`: X diagonal
+   - `LShapePattern`: L em um dos 4 cantos
+   - `TShapePattern`: T com 4 rotações possíveis
+   - `ClusterPattern`: Crescimento orgânico conectado
+   - `CornerPattern`: Bloco compacto em canto
+   - `ScatterPattern`: Ilhas dispersas (não conectadas)
+
+3. **PatternWeightConfig** (ScriptableObject):
+   - Configura probabilidades de cada padrão
+   - Customizável no Inspector (sem recompilar)
+   - Pode criar múltiplas configs (Easy/Normal/Hard)
+
+4. **UnlockPatternGenerator** (Factory):
+   - Seleciona padrão baseado em pesos
+   - Usa seed para determinismo (reproduzibilidade)
+   - Encapsula lógica de criação
+
+**Design Decisions:**
+- **5 slots iniciais** (não mais 9) para maior desafio
+- **Seed-based randomness** ? Runs podem ser reproduzidas com mesmo seed
+- **Weighted probabilities** ? Padrões "legais" (Cruz, Linha) têm 15% cada, Cluster tem 25%
+- **Extensibilidade** ? Adicionar novo padrão:
+  1. Criar classe que implementa `IUnlockPattern`
+  2. Adicionar enum em `PatternWeightConfig.PatternType`
+  3. Adicionar case no `UnlockPatternGenerator.CreatePattern()`
+  4. Configurar peso no Inspector
+
+**Example:**
+```
+New Run ? Seed: 12345678 ? Generator selects "Cross" ? 5 slots unlocked in + shape
+New Run ? Seed: 87654321 ? Generator selects "Cluster" ? 5 slots form organic blob
+```
+
 #### Camera System (Pixel Art - SOLID):
 **ARCHITECTURE**: Strategy Pattern for flexible, testable camera framing.
 
@@ -198,4 +243,10 @@ Orthographic Size: 5.25
 | **`CameraFramingConfig.cs`** | Defines camera padding and pixel perfect settings. Customizable per-axis for art composition. |
 | **`ICameraFitStrategy.cs`** | Strategy Pattern for camera framing. Calculates required bounds without coupling to camera implementation. |
 | **`GameCameraController.cs`** | Controls camera positioning and pixel-perfect sizing. Uses Strategy Pattern, no zoom, snap to multiple of 4 (PPU=32). |
+| **`IUnlockPattern.cs`** | Interface for grid unlock patterns. Extensible system for different unlock layouts (Cross, Line, X, L, T, Cluster, Corner, Scatter). |
+| **`UnlockPatternGenerator.cs`** | Factory for creating unlock patterns. Uses weighted random selection with seed support for determinism. |
+| **`PatternWeightConfig.cs`** | ScriptableObject to configure pattern probabilities without code changes. Customizable per level/difficulty. |
+| **`IUnlockPattern.cs`** | Interface for grid unlock patterns. Extensible system for different unlock layouts (Cross, Line, X, L, T, Cluster, Corner, Scatter). |
+| **`UnlockPatternGenerator.cs`** | Factory for creating unlock patterns. Uses weighted random selection with seed support for determinism. |
+| **`PatternWeightConfig.cs`** | ScriptableObject to configure pattern probabilities without code changes. Customizable per level/difficulty. |
 

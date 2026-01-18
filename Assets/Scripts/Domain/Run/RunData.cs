@@ -9,6 +9,16 @@ public class RunData
     [Tooltip("Hash da GridConfiguration usada ao criar esta run. Usado para validar compatibilidade ao carregar saves.")]
     public int GridConfigVersion;
 
+    [Header("Grid Unlock State")]
+    [Tooltip("? AUTORIDADE: Seed usado para gerar padrão inicial de desbloqueamento.")]
+    public int UnlockPatternSeed;
+
+    [Tooltip("? CONTRATO EXPLÍCITO: Flag que indica se grid foi inicializado. Previne reinicializações acidentais.")]
+    public bool IsGridInitialized;
+
+    [Tooltip("Cache do padrão gerado (pode ser regenerado a partir do Seed se necessário).")]
+    public GridUnlockState UnlockState;
+
     [Header("Progressão Semanal")]
     public int CurrentWeeklyScore;
     public int WeeklyGoalTarget;
