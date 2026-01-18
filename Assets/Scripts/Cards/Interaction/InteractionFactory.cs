@@ -1,25 +1,25 @@
-using System.Collections.Generic;
+Ôªøusing System.Collections.Generic;
 using UnityEngine;
 
-// EstratÈgia de SeguranÁa (Null Object)
+// Estrat√©gia de Seguran√ßa (Null Object)
 public class NullInteractionStrategy : ICardInteractionStrategy
 {
     public bool CanInteract(int index, IGridService grid, CardData card) => false;
 
     public InteractionResult Execute(int index, IGridService grid, CardData card)
     {
-        return InteractionResult.Fail($"Nenhuma estratÈgia definida para o tipo: {card.Type}");
+        return InteractionResult.Fail($"Nenhuma estrat√©gia definida para o tipo: {card.Type}");
     }
 }
 
 /// <summary>
-/// Factory para estratÈgias de interaÁ„o de cartas.
+/// Factory para estrat√©gias de intera√ß√£o de cartas.
 /// 
 /// Recebe DOIS contextos:
-/// - RunIdentityContext (imut·vel, sem Grid)
-/// - RunRuntimeContext (mut·vel, com Grid)
+/// - RunIdentityContext (imut√°vel, sem Grid)
+/// - RunRuntimeContext (mut√°vel, com Grid)
 /// 
-/// EstratÈgias injetam ambos conforme necess·rio.
+/// Estrat√©gias injetam ambos conforme necess√°rio.
 /// </summary>
 public static class InteractionFactory
 {
@@ -29,24 +29,17 @@ public static class InteractionFactory
     private static readonly NullInteractionStrategy _nullStrategy = new NullInteractionStrategy();
     
     private static bool _initialized = false;
-
-    /// <summary>
-    /// Inicializa com ambos contextos.
-    /// Protegido contra m˙ltiplas inicializaÁıes.
-    /// </summary>
     public static void Initialize(RunIdentityContext identityContext, RunRuntimeContext runtimeContext)
     {
         if (_initialized)
         {
-            Debug.LogWarning("[InteractionFactory] J· foi inicializado! Ignorando chamada duplicada.");
+            Debug.LogWarning("[InteractionFactory] J√° foi inicializado! Ignorando chamada duplicada.");
             return;
         }
 
         try
         {
-            _strategies.Clear();
-
-            // Cria estratÈgias COM INJE«√O DE AMBOS CONTEXTOS
+            // Cria estrat√©gias COM INJE√á√ÉO DE AMBOS CONTEXTOS
             _strategies[CardType.Plant] = new PlantInteraction(identityContext);
             _strategies[CardType.Modify] = new WaterInteractionStrategy(identityContext, runtimeContext);
             _strategies[CardType.Care] = new WaterInteractionStrategy(identityContext, runtimeContext);
@@ -55,7 +48,7 @@ public static class InteractionFactory
             _strategies[CardType.Expansion] = new UnlockInteractionStrategy(identityContext);
 
             _initialized = true;
-            Debug.Log("[InteractionFactory] ? Inicializado com sucesso! 5 estratÈgias injetadas.");
+            Debug.Log("[InteractionFactory] ‚úì Inicializado com sucesso! 6 estrat√©gias injetadas.");
         }
         catch (System.Exception ex)
         {
@@ -65,7 +58,7 @@ public static class InteractionFactory
     }
 
     /// <summary>
-    /// Fornece uma estratÈgia para um tipo de carta.
+    /// Fornece uma estrat√©gia para um tipo de carta.
     /// SEGURO: Nunca retorna null.
     /// </summary>
     public static ICardInteractionStrategy GetStrategy(CardType type)
@@ -73,7 +66,7 @@ public static class InteractionFactory
         if (!_initialized)
         {
             Debug.LogError(
-                "[InteractionFactory] ERRO: Factory n„o foi inicializado! " +
+                "[InteractionFactory] ERRO: Factory n√£o foi inicializado! " +
                 "Certifique-se de chamar CardInteractionBootstrapper.Initialize() antes de usar cartas."
             );
             return _nullStrategy;
@@ -83,7 +76,7 @@ public static class InteractionFactory
         {
             if (strategy == null)
             {
-                Debug.LogWarning($"[InteractionFactory] Strategy para {type} È null! Usando NullStrategy.");
+                Debug.LogWarning($"[InteractionFactory] Strategy para {type} √© null! Usando NullStrategy.");
                 return _nullStrategy;
             }
             return strategy;
@@ -100,11 +93,11 @@ public static class InteractionFactory
     {
         _strategies.Clear();
         _initialized = false;
-        Debug.Log("[InteractionFactory] Limpeza concluÌda.");
+        Debug.Log("[InteractionFactory] Limpeza conclu√≠da.");
     }
 
     /// <summary>
-    /// Query: Verifica se factory est· pronto.
+    /// Query: Verifica se factory est√° pronto.
     /// </summary>
     public static bool IsInitialized => _initialized;
 }

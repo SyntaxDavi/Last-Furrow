@@ -110,16 +110,98 @@ public static class CardInteractionBootstrapper
     /// <summary>
     /// Atualiza GridService quando cena carrega (sem re-inicializar tudo).
     /// Chamado por AppCore.RegisterGridService().
+    /// 
+    /// ? EARLY FAIL: Valida explicitamente que tudo está pronto.
+    /// Se algo estiver errado, FALHA IMEDIATAMENTE com erro claro.
     /// </summary>
     public static void SetGridService(IGridService gridService)
     {
+        // 1. Validação de Estado
         if (!_initialized)
         {
-            Debug.LogError("[CardInteractionBootstrapper] Contextos não inicializados! Não pode set GridService.");
-            return;
+            throw new InvalidOperationException(
+                "[CardInteractionBootstrapper] ERRO CRÍTICO: Contextos não inicializados!\n" +
+                "Certifique-se de chamar Initialize() antes de SetGridService().\n" +
+                "Ordem correta: AppCore.Initialize() ? Bootstrapper.Initialize() ? Scene Load ? SetGridService()"
+            );
         }
 
+        // 2. Validação de Parâmetro
+        if (gridService == null)
+        {
+            throw new ArgumentNullException(
+                nameof(gridService),
+                "[CardInteractionBootstrapper] ERRO CRÍTICO: GridService não pode ser null!\n" +
+                "O sistema de interações depende do GridService para validar cartas no grid."
+            );
+        }
+
+        // 3. Atualiza Runtime Context
         _runtimeContext.SetGridService(gridService);
+
+        // 4. ? VALIDAÇÃO EXPLÍCITA: Testa se as estratégias conseguem ser criadas
+        try
+        {
+            ValidateStrategiesReady();
+            Debug.Log("[CardInteractionBootstrapper] ? GridService injetado e estratégias validadas com sucesso!");
+        }
+        catch (Exception ex)
+        {
+            // Se a validação falhar, LIMPA tudo para evitar estado corrompido
+            _runtimeContext.Cleanup();
+            throw new InvalidOperationException(
+                $"[CardInteractionBootstrapper] FALHA na validação de estratégias após injetar GridService:\n{ex.Message}",
+                ex
+            );
+        }
+    }
+
+    /// <summary>
+    /// Valida que todas as estratégias críticas podem ser resolvidas.
+    /// 
+    /// ? EARLY FAIL: Se alguma estratégia não puder ser criada,
+    /// é melhor falhar AQUI (bootstrap) do que durante gameplay.
+    /// </summary>
+    private static void ValidateStrategiesReady()
+    {
+        if (!InteractionFactory.IsInitialized)
+        {
+            throw new InvalidOperationException(
+                "[CardInteractionBootstrapper] InteractionFactory não está inicializado!"
+            );
+        }
+
+        // Testa estratégias críticas
+        var testCases = new[]
+        {
+            CardType.Plant,
+            CardType.Modify,
+            CardType.Harvest,
+            CardType.Expansion
+        };
+
+        foreach (var cardType in testCases)
+        {
+            var strategy = InteractionFactory.GetStrategy(cardType);
+            
+            if (strategy == null)
+            {
+                throw new InvalidOperationException(
+                    $"[CardInteractionBootstrapper] Estratégia para {cardType} retornou NULL!"
+                );
+            }
+
+            // Se retornou NullInteractionStrategy, algo está errado
+            if (strategy is NullInteractionStrategy)
+            {
+                throw new InvalidOperationException(
+                    $"[CardInteractionBootstrapper] Estratégia para {cardType} não foi registrada no Factory!\n" +
+                    $"Verifique se InteractionFactory.Initialize() está criando todas as estratégias necessárias."
+                );
+            }
+        }
+
+        Debug.Log("[CardInteractionBootstrapper] ? Todas as estratégias críticas foram validadas.");
     }
 
     /// <summary>

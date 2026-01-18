@@ -5,6 +5,10 @@ using UnityEngine;
 [Serializable]
 public class RunData
 {
+    [Header("Versionamento")]
+    [Tooltip("Hash da GridConfiguration usada ao criar esta run. Usado para validar compatibilidade ao carregar saves.")]
+    public int GridConfigVersion;
+
     [Header("Progressão Semanal")]
     public int CurrentWeeklyScore;
     public int WeeklyGoalTarget;
@@ -58,12 +62,20 @@ public class RunData
     }
     public static RunData CreateNewRun(GridConfiguration config)
     {
+        if (config == null)
+        {
+            throw new System.ArgumentNullException(nameof(config), 
+                "[RunData] GridConfiguration não pode ser null ao criar nova run!");
+        }
+
         int initialGoal = 150; // Valor padrão se não houver settings
-        
-        int slotCount = config != null ? config.TotalSlots : 25;
+        int slotCount = config.TotalSlots;
 
         var run = new RunData
         {
+            // ? VERSIONAMENTO: Armazena hash da config
+            GridConfigVersion = config.GetVersionHash(),
+
             CurrentWeek = 1,
             CurrentDay = 1,
             GridSlots = new CropState[slotCount],
@@ -92,12 +104,68 @@ public class RunData
         return run;
     }
 
-    // Helper para facilitar a criação (pode ficar dentro do RunData mesmo)
+    /// <summary>
+    /// Helper para adicionar carta inicial na run.
+    /// 
+    /// ? VALIDAÇÃO: Garante que o CardID não é vazio.
+    /// Se o ID for inválido, loga erro mas não quebra a criação da run.
+    /// 
+    /// ARQUITETURA: Idealmente, isso deveria vir de uma config (StartingDeckSO),
+    /// mas por simplicidade inicial, está hardcoded aqui.
+    /// </summary>
     private static void AddStartingCard(RunData run, string cardIDString)
     {
-        // Converte string -> CardID -> CardInstance
+        // Validação básica
+        if (string.IsNullOrEmpty(cardIDString))
+        {
+            Debug.LogError("[RunData] Tentativa de adicionar carta inicial com ID vazio!");
+            return;
+        }
+
+        // Conversão explícita (segura para Value Objects)
         CardID id = (CardID)cardIDString;
+
+        // Validação extra do Value Object
+        if (!id.IsValid)
+        {
+            Debug.LogError($"[RunData] CardID inválido ao criar run: '{cardIDString}'");
+            return;
+        }
+
+        // Cria instância e adiciona na mão
         CardInstance instance = new CardInstance(id);
         run.Hand.Add(instance);
+    }
+
+    /// <summary>
+    /// Valida se esta RunData é compatível com uma GridConfiguration.
+    /// 
+    /// POLÍTICA: Se os hashes não baterem, o save é INCOMPATÍVEL.
+    /// Não há migração - o jogador deve iniciar uma nova run.
+    /// 
+    /// Isso previne corrupção de dados quando o mundo muda estruturalmente.
+    /// </summary>
+    public bool IsCompatibleWith(GridConfiguration config)
+    {
+        if (config == null)
+        {
+            Debug.LogError("[RunData] GridConfiguration null ao validar compatibilidade!");
+            return false;
+        }
+
+        int currentConfigHash = config.GetVersionHash();
+        bool isCompatible = GridConfigVersion == currentConfigHash;
+
+        if (!isCompatible)
+        {
+            Debug.LogWarning(
+                $"[RunData] Save incompatível detectado!\n" +
+                $"Save Version: {GridConfigVersion}\n" +
+                $"Config Atual: {currentConfigHash}\n" +
+                $"Diferença: Grid foi alterado desde a criação deste save."
+            );
+        }
+
+        return isCompatible;
     }
 }

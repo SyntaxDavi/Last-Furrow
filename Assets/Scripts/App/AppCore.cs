@@ -65,7 +65,17 @@ public class AppCore : MonoBehaviour
         if (GameStateManager == null) GameStateManager = GetComponent<GameStateManager>() ?? gameObject.AddComponent<GameStateManager>();
         InputManager.Initialize();
         AudioManager.Initialize();
-        SaveManager.Initialize();
+        
+        // ⭐ INJEÇÃO: SaveManager recebe GridConfiguration explicitamente
+        if (_gridConfiguration != null)
+        {
+            SaveManager.Initialize(_gridConfiguration);
+        }
+        else
+        {
+            Debug.LogError("[AppCore] GridConfiguration não atribuída! SaveManager não poderá validar compatibilidade.");
+            SaveManager.Initialize(); // Fallback (legacy)
+        }
 
         if (_gameDatabase != null)
         {
@@ -147,7 +157,6 @@ public class AppCore : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
         if (InputManager != null) InputManager.OnAnyInputDetected -= Events.Player.TriggerAnyInput;
         
-        // ✨ CLEANUP DO CARD INTERACTION BOOTSTRAPPER
         // Garante que todas as dependências injetadas sejam limpas
         try
         {
