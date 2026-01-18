@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System;
 
 public class GridService : IGridService
@@ -22,11 +22,11 @@ public class GridService : IGridService
         _gameStateManager = gameStateManager;
         _config = config;
 
-        // Validação vital
+        // ValidaÃ§Ã£o vital
         if (_config == null)
         {
-            Debug.LogError("[GridService] Configuração de Grid é NULA! Usando fallback perigoso.");
-            // Criamos uma config dummy em runtime se necessário, ou lançamos exceção
+            Debug.LogError("[GridService] ConfiguraÃ§Ã£o de Grid Ã© NULA! Usando fallback perigoso.");
+            // Criamos uma config dummy em runtime se necessÃ¡rio, ou lanÃ§amos exceÃ§Ã£o
         }
 
         EnsureGridInitialized();
@@ -56,7 +56,7 @@ public class GridService : IGridService
     }
 
 
-    // --- CORREÇÃO 1: Usando o nome correto e a lógica correta ---
+    // --- CORREÃ‡ÃƒO 1: Usando o nome correto e a lÃ³gica correta ---
     public bool CanReceiveCard(int index, CardData card)
     {
         if (!IsValidIndex(index)) return false;
@@ -65,7 +65,7 @@ public class GridService : IGridService
         // Regra de Bloqueio
         bool isUnlocked = IsSlotUnlocked(index);
         
-        // Se bloqueado, só carta de Expansion pode interagir (para desbloquear)
+        // Se bloqueado, sÃ³ carta de Expansion pode interagir (para desbloquear)
         if (!isUnlocked && card.Type != CardType.Expansion) return false;
 
         var strategy = InteractionFactory.GetStrategy(card.Type);
@@ -76,22 +76,22 @@ public class GridService : IGridService
 
     public InteractionResult ApplyCard(int index, CardData card)
     {
-        // 1. PROTEÇÃO DE ESTADO
+        // 1. PROTEÃ‡ÃƒO DE ESTADO
         if (_gameStateManager.CurrentState != GameState.Playing)
         {
-            return InteractionResult.Fail("Ação bloqueada: O jogo não está em fase de produção.");
+            return InteractionResult.Fail("AÃ§Ã£o bloqueada: O jogo nÃ£o estÃ¡ em fase de produÃ§Ã£o.");
         }
 
-        // 2. Validações Padrão
-        if (!IsValidIndex(index)) return InteractionResult.Fail("Slot inválido.");
+        // 2. ValidaÃ§Ãµes PadrÃ£o
+        if (!IsValidIndex(index)) return InteractionResult.Fail("Slot invÃ¡lido.");
 
-        // 3. Estratégia de Interação
+        // 3. EstratÃ©gia de InteraÃ§Ã£o
         ICardInteractionStrategy strategy = GetStrategyForCard(card);
         if (strategy == null) return InteractionResult.Fail("Carta sem efeito definido.");
 
-        if (!strategy.CanInteract(index, this, card)) return InteractionResult.Fail("Interação inválida neste slot.");
+        if (!strategy.CanInteract(index, this, card)) return InteractionResult.Fail("InteraÃ§Ã£o invÃ¡lida neste slot.");
 
-        // 4. Execução
+        // 4. ExecuÃ§Ã£o
         var result = strategy.Execute(index, this, card);
 
         if (result.IsSuccess)
@@ -113,7 +113,7 @@ public class GridService : IGridService
 
         foreach (var slot in _runData.GridSlots)
         {
-            // Contaminação = Planta Morta (Futuro: + Pragas)
+            // ContaminaÃ§Ã£o = Planta Morta (Futuro: + Pragas)
             if (slot.IsWithered)
             {
                 contaminatedSlots++;
@@ -125,8 +125,15 @@ public class GridService : IGridService
 
     public void ProcessNightCycleForSlot(int index)
     {
-        // --- CORREÇÃO 3: Adicionado '!' (NOT) ---
         if (!IsValidIndex(index)) return;
+
+        // â­ EARLY EXIT: Slots bloqueados nÃ£o sÃ£o processados
+        // RAZÃƒO: 
+        // - Bloqueados nÃ£o participam da meta/score
+        // - Bloqueados nunca tÃªm plantas (estado garantido vazio)
+        // - Bloqueados nÃ£o podem ser molhados (sem estado residual)
+        // - Evita processamento desnecessÃ¡rio e eventos invÃ¡lidos
+        if (!IsSlotUnlocked(index)) return;
 
         var slot = _runData.GridSlots[index];
         bool wasWatered = slot.IsWatered;
@@ -208,10 +215,10 @@ public class GridService : IGridService
         int width = _config.Columns;
         int height = _config.Rows;
         
-        // Verifica consistência
+        // Verifica consistÃªncia
         if (width * height != SlotCount) 
         {
-             // Fallback para grid quadrado se a config não bater com dados (ex: migração incompleta)
+             // Fallback para grid quadrado se a config nÃ£o bater com dados (ex: migraÃ§Ã£o incompleta)
              width = (int)Mathf.Sqrt(SlotCount);
         }
 
@@ -240,7 +247,7 @@ public class GridService : IGridService
 
         int targetSize = _config.TotalSlots;
 
-        // 1. Migração de Tamanho
+        // 1. MigraÃ§Ã£o de Tamanho
         if (_runData.GridSlots == null || _runData.GridSlots.Length != targetSize)
         {
             Debug.Log($"[GridService] Ajustando Grid para {targetSize} slots ({_config.Columns}x{_config.Rows})...");
@@ -256,7 +263,7 @@ public class GridService : IGridService
             }
         }
 
-        // 2. Migração de SlotStates
+        // 2. MigraÃ§Ã£o de SlotStates
         if (_runData.SlotStates == null || _runData.SlotStates.Length != targetSize)
         {
              var oldStates = _runData.SlotStates ?? new GridSlotState[0];
@@ -271,8 +278,8 @@ public class GridService : IGridService
              }
         }
 
-        // 3. Inicialização de Gameplay (Desbloqueio Inicial)
-        // Só roda se NENHUM slot estiver desbloqueado (Run nova ou zerada)
+        // 3. InicializaÃ§Ã£o de Gameplay (Desbloqueio Inicial)
+        // SÃ³ roda se NENHUM slot estiver desbloqueado (Run nova ou zerada)
         bool hasAnyUnlocked = false;
         foreach(var s in _runData.SlotStates) if (s != null && s.IsUnlocked) hasAnyUnlocked = true;
 
@@ -280,11 +287,11 @@ public class GridService : IGridService
         {
             foreach(var coord in _config.DefaultUnlockedCoordinates)
             {
-                // Coords do ScriptableObject são X,Y (Col, Row). Convertemos para Index.
-                // Mas cuidado: SO usa 1-based ou 0-based? O arquivo que criei parecia usar 1-based nos comentários mas valores 1,2,3 para 5x5 center.
-                // Vamos assumir 0-based no código interno para facilitar (0..4).
-                // Revisando o arquivo criado: "3x3 center... indices 1,2,3". Isso é 1-based relative to 0? Or 0-based indices 1,2,3 corresponds do 2nd, 3rd, 4th col. 
-                // Se Columns=5, indices são 0,1,2,3,4. Center 3x3 é 1,2,3. Isso bate.
+                // Coords do ScriptableObject sÃ£o X,Y (Col, Row). Convertemos para Index.
+                // Mas cuidado: SO usa 1-based ou 0-based? O arquivo que criei parecia usar 1-based nos comentÃ¡rios mas valores 1,2,3 para 5x5 center.
+                // Vamos assumir 0-based no cÃ³digo interno para facilitar (0..4).
+                // Revisando o arquivo criado: "3x3 center... indices 1,2,3". Isso Ã© 1-based relative to 0? Or 0-based indices 1,2,3 corresponds do 2nd, 3rd, 4th col. 
+                // Se Columns=5, indices sÃ£o 0,1,2,3,4. Center 3x3 Ã© 1,2,3. Isso bate.
                 
                 int c = coord.x;
                 int r = coord.y;
@@ -309,6 +316,6 @@ public class GridService : IGridService
     }
 
     // --- HELPER UNIFICADO ---
-    // Retorna TRUE se o índice for BOM.
+    // Retorna TRUE se o Ã­ndice for BOM.
     private bool IsValidIndex(int index) => index >= 0 && index < _runData.GridSlots.Length;
 }

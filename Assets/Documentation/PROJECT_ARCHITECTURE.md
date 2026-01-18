@@ -13,7 +13,7 @@ This project uses a layered architecture separating **Data/Domain Logic** from *
 *   *Rules of the game, independent of visuals.*
 *   **`RunManager.cs`**: Manages the lifecycle of a "Run" (Production Week vs Weekend). It holds the `RunData`.
 *   **`EconomyService.cs`**: Handles money transactions (`Earn`, `Spend`) and tracks history.
-*   **`GridService.cs`**: Pure C# logic for the farming grid. Handles slot states (Empty, Planted, Watered). Grid size is configurable via `GridConfiguration`.
+*   **`GridService.cs`**: Pure C# logic for the farming grid. Handles slot states (Empty, Planted, Watered). Grid size is configurable via `GridConfiguration`. **Only processes unlocked slots** during night cycle (locked slots don't participate in scoring/goals).
 *   **`DailyHandSystem.cs`**: Logic for drawing cards each day. Handles "Overflow" (selling cards if hand is full).
 
 ### C. Data (State)
@@ -117,6 +117,30 @@ Each `IInteractable` defines its own priority. Higher = "on top".
    - Validates all strategies can be resolved
    - If validation fails, throws exception BEFORE gameplay starts
    - Prevents NullReferenceException during player actions
+
+#### Night Cycle Processing (End of Day):
+**POLICY**: Only **unlocked slots** are processed during night cycle.
+
+**Reasons:**
+1. **Scoring/Goals**: Locked slots don't contribute to meta/score calculation
+2. **State Guarantee**: Locked slots are always empty (no plants, no water)
+3. **Performance**: Avoids processing inactive slots
+4. **Visual Feedback**: Players only see analysis of active slots
+
+**Implementation:**
+- `GrowGridStep`: Skips locked slots in main loop (doesn't trigger events)
+- `GridService.ProcessNightCycleForSlot()`: Early exit if slot is locked (defense in depth)
+- Visual feedback (`TriggerAnalyzeSlot`) only fires for unlocked slots
+
+**Example:**
+```
+Grid 5x5 (25 slots total)
+9 unlocked (3x3 center)
+16 locked (border)
+
+Night Cycle Processes: 9 slots (36% of total)
+Night Cycle Skips: 16 slots (64% of total)
+```
 
 ## 4. Why these scripts exist?
 
