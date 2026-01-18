@@ -20,8 +20,6 @@ public class GrowGridStep : IFlowStep
     {
         for (int i = 0; i < _runData.GridSlots.Length; i++)
         {
-            // ? SKIP BLOQUEADOS: Slots bloqueados não participam da meta nem do ciclo noturno
-            // RAZÃO: Bloqueados não têm plantas, não são molhados, e não contribuem para score
             if (!_gridService.IsSlotUnlocked(i))
             {
                 continue; // Pula para próximo slot

@@ -1,126 +1,275 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 
+/// <summary>
+/// Controlador de câmera para jogos de pixel art.
+/// 
+/// ARQUITETURA:
+/// - Usa Strategy Pattern (ICameraFitStrategy) para calcular bounds
+/// - Respeita Pixel Perfect com snap múltiplo de 4 (PPU=32)
+/// - Sem zoom (simplificado conforme requisitos)
+/// 
+/// FILOSOFIA:
+/// - "Mundo é protagonista" ? Câmera enquadra o mundo, não a UI
+/// - "Grid é estrutura" ? Grid centralizado, protegido
+/// - "Espaço artístico" ? Padding generoso para ambientação
+/// </summary>
 [RequireComponent(typeof(Camera))]
 public class GameCameraController : MonoBehaviour
 {
-    [Header("Depend�ncias")]
+    [Header("Dependências")]
     [SerializeField] private PixelArtConfig _pixelConfig;
+    [SerializeField] private CameraFramingConfig _framingConfig;
 
     [Header("Movimento")]
     [SerializeField] private float _moveSmoothTime = 0.25f;
+    [SerializeField] private bool _snapPositionToPixels = true;
 
     private Camera _cam;
-    private float _baseOrthographicSize;
-    private int _currentZoomLevel = 1;
+    private ICameraFitStrategy _fitStrategy;
 
     // Estado interno
     private Vector3 _currentVelocity;
     private Coroutine _moveRoutine;
+    private bool _isConfigured = false;
 
-    // Cache da �ltima posi��o para notificar anchors apenas se moveu
-    private Vector3 _lastFramePosition;
+    // Cache configuração atual (para detectar mudanças)
+    private GridConfiguration _lastGridConfig;
+    private Vector2 _lastGridSpacing;
+
+    // Cache para debug/gizmos
+    private Bounds _lastGridBounds;
+    private Bounds _lastCameraBounds;
+
+    /// <summary>
+    /// ⭐ PIXEL PERFECT POSITION: Property setter com snap automático.
+    /// Garante que posição sempre alinha com pixel grid.
+    /// </summary>
+    private Vector3 CameraPosition
+    {
+        get => transform.position;
+        set
+        {
+            if (_snapPositionToPixels && _pixelConfig != null)
+            {
+                transform.position = _pixelConfig.SnapPosition(value);
+            }
+            else
+            {
+                transform.position = value;
+            }
+        }
+    }
 
     private void Awake()
     {
         _cam = GetComponent<Camera>();
+        _fitStrategy = new PaddedGridFitStrategy();
 
+        ValidateDependencies();
+    }
+
+    private void OnEnable()
+    {
+        // ⭐ RECÁLCULO AUTOMÁTICO: Registra eventos de mudança de grid
+        if (AppCore.Instance != null && AppCore.Instance.Events != null)
+        {
+            // Futuro: AppCore.Instance.Events.Grid.OnGridResized += HandleGridResized;
+            // Por enquanto, apenas validamos na configuração inicial
+        }
+    }
+
+    private void OnDisable()
+    {
+        // Limpa eventos
+        if (AppCore.Instance != null && AppCore.Instance.Events != null)
+        {
+            // AppCore.Instance.Events.Grid.OnGridResized -= HandleGridResized;
+        }
+    }
+
+    private void ValidateDependencies()
+    {
         if (_pixelConfig == null)
         {
-            Debug.LogError("[GameCamera] PixelConfig ausente! Atribua no Inspector.");
+            Debug.LogError("[GameCamera] ⚠️ PixelConfig AUSENTE! Atribua no Inspector ou câmera não funcionará corretamente.");
+        }
+
+        if (_framingConfig == null)
+        {
+            Debug.LogWarning("[GameCamera] ⚠️ CameraFramingConfig AUSENTE! Criando fallback temporário com padding padrão.");
+            Debug.LogWarning("[GameCamera] → AÇÃO NECESSÁRIA: Crie um CameraFramingConfig e atribua no Inspector!");
+            
+            // Fallback explícito com valores seguros
+            _framingConfig = ScriptableObject.CreateInstance<CameraFramingConfig>();
+            _framingConfig.PaddingLeft = 3f;
+            _framingConfig.PaddingRight = 3f;
+            _framingConfig.PaddingTop = 3.5f;
+            _framingConfig.PaddingBottom = 2f;
         }
     }
 
     /// <summary>
-    /// Configura a c�mera para enquadrar o Grid respeitando o PPU.
+    /// Configura câmera usando GridConfiguration diretamente (SOLID).
+    /// 
+    /// ⭐ NOVA ASSINATURA: Não depende de GridManager.GetGridWorldSize()
+    /// Recebe dados puros e usa Strategy para calcular.
+    /// 
+    /// ⭐ VALIDAÇÃO: Detecta se configuração mudou e avisa.
+    /// </summary>
+    public void ConfigureFromGrid(
+        GridConfiguration gridConfig,
+        Vector2 gridSpacing,
+        ICameraFitStrategy customStrategy = null)
+    {
+        // ⭐ FORCE INIT: Garante que Awake() rodou
+        if (_cam == null || _fitStrategy == null)
+        {
+            Debug.LogWarning("[GameCamera] ⚠️ Awake() não rodou ainda! Inicializando manualmente.");
+            _cam = GetComponent<Camera>();
+            _fitStrategy = new PaddedGridFitStrategy();
+        }
+
+        // ⭐ EARLY VALIDATION: Garante que dependências foram inicializadas
+        if (_framingConfig == null)
+        {
+            Debug.LogWarning("[GameCamera] ⚠️ Dependências não inicializadas. Chamando ValidateDependencies().");
+            ValidateDependencies();
+        }
+
+        if (gridConfig == null)
+        {
+            Debug.LogError("[GameCamera] ⚠️ GridConfiguration é null! Não é possível configurar câmera.");
+            return;
+        }
+
+        // ⭐ DETECÇÃO DE MUDANÇA: Avisa se grid foi reconfigurado
+        if (_isConfigured && (_lastGridConfig != gridConfig || _lastGridSpacing != gridSpacing))
+        {
+            Debug.LogWarning(
+                "[GameCamera] ⚠️ Grid foi RECONFIGURADO durante runtime!\n" +
+                $"Anterior: {_lastGridConfig?.Columns}×{_lastGridConfig?.Rows}, Spacing {_lastGridSpacing}\n" +
+                $"Novo: {gridConfig.Columns}×{gridConfig.Rows}, Spacing {gridSpacing}\n" +
+                "→ Recalculando câmera automaticamente."
+            );
+        }
+
+        // Armazena configuração atual
+        _lastGridConfig = gridConfig;
+        _lastGridSpacing = gridSpacing;
+        _isConfigured = true;
+
+        // Usa estratégia customizada ou padrão
+        var strategy = customStrategy ?? _fitStrategy;
+
+        // 1. Calcula bounds necessários
+        var (width, height) = strategy.CalculateRequiredBounds(
+            gridConfig, 
+            gridSpacing, 
+            _framingConfig
+        );
+
+        // 2. Armazena bounds para debug/gizmos
+        _lastGridBounds = new Bounds(
+            Vector3.zero,
+            new Vector3(
+                gridConfig.Columns * gridSpacing.x,
+                gridConfig.Rows * gridSpacing.y,
+                0
+            )
+        );
+
+        _lastCameraBounds = new Bounds(
+            Vector3.zero,
+            new Vector3(width, height, 0)
+        );
+
+        // 3. Posiciona câmera centralizada (⭐ USA PROPERTY COM SNAP)
+        CameraPosition = new Vector3(0, 0, -10f);
+
+        // 4. Aplica tamanho com pixel perfect
+        FitBounds(width, height);
+
+        Debug.Log($"[GameCamera] Configurada: Grid {gridConfig.Columns}×{gridConfig.Rows}, Bounds {width:F2}×{height:F2}");
+    }
+
+    /// <summary>
+    /// LEGACY: Mantém compatibilidade com código antigo.
+    /// ?? DEPRECATED: Use ConfigureFromGrid() em novo código.
     /// </summary>
     public void Configure(float gridWidth, float gridHeight)
     {
         transform.position = new Vector3(0, 0, -10f);
-
         if (_cam == null) _cam = GetComponent<Camera>();
-        FitGrid(gridWidth, gridHeight);
+        FitBounds(gridWidth, gridHeight);
     }
 
-    public void FitGrid(float gridWidth, float gridHeight)
+    /// <summary>
+    /// Ajusta orthographic size para enquadrar bounds com pixel perfect.
+    /// 
+    /// PIXEL PERFECT:
+    /// - Converte world units ? pixels
+    /// - Arredonda para múltiplo de 4 (PPU=32)
+    /// - Converte de volta ? orthographic size
+    /// </summary>
+    private void FitBounds(float width, float height)
     {
         if (_pixelConfig == null)
         {
-            Debug.LogError("[GameCamera] PixelConfig n�o atribu�do no Inspector!");
+            Debug.LogError("[GameCamera] PixelConfig não atribuído no Inspector!");
             return;
         }
 
         if (_cam == null)
         {
-            Debug.LogError("[GameCamera] Componente Camera n�o encontrado!");
+            Debug.LogError("[GameCamera] Componente Camera não encontrado!");
             return;
         }
 
 
-        // 1. Calcula o tamanho l�gico necess�rio em Units
-        float targetRatio = gridWidth / gridHeight;
+        // 1. Determina qual dimensão limita (aspect ratio)
+        float targetRatio = width / height;
         float cameraRatio = _cam.aspect;
         float requiredHeightInUnits;
 
         if (cameraRatio >= targetRatio)
-            requiredHeightInUnits = gridHeight; // Trava na altura
+        {
+            // Câmera é mais larga → altura limita
+            requiredHeightInUnits = height;
+        }
         else
-            requiredHeightInUnits = gridHeight * (targetRatio / cameraRatio); // Compensa largura
+        {
+            // Câmera é mais estreita → largura limita, compensa na altura
+            requiredHeightInUnits = width / cameraRatio;
+        }
 
-        // 2. Converte para Pixels e Arredonda (SNAP DE TAMANHO)
-        // Isso garante que o tamanho da c�mera case perfeitamente com o PPU
+        // 2. Converte para pixels
         float requiredHeightInPixels = requiredHeightInUnits * _pixelConfig.PPU;
 
-        // Arredonda para o par mais pr�ximo para manter centro alinhado (opcional, mas recomendado)
-        // ou Mathf.Ceil se n�o quiser cortar nada.
+        // 3. ⭐ SNAP MÚLTIPLO DE 4 (PPU=32)
+        // Garante alinhamento perfeito com pixel grid
+        // Arredonda para CIMA para não cortar nada
         float snappedHeightPixels = Mathf.Ceil(requiredHeightInPixels);
 
-        // Se for �mpar, soma 1 para garantir centro perfeito em PPU pares (comum)
-        if (snappedHeightPixels % 2 != 0) snappedHeightPixels += 1;
+        if (_framingConfig.SnapToMultipleOf4)
+        {
+            // Arredonda para próximo múltiplo de 4
+            float remainder = snappedHeightPixels % 4f;
+            if (remainder != 0)
+            {
+                snappedHeightPixels += (4f - remainder);
+            }
+        }
 
-        // 3. Converte de volta para Orthographic Size
-        // Size = Altura / 2
-        _baseOrthographicSize = (snappedHeightPixels / _pixelConfig.PPU) / 2f;
+        // 4. Converte de volta para Orthographic Size
+        // Orthographic Size = Metade da altura visível
+        float finalSize = (snappedHeightPixels / _pixelConfig.PPU) / 2f;
+        _cam.orthographicSize = finalSize;
 
-        ApplyZoom();
-    }
-
-    // --- ZOOM DISCRETO ---
-
-    /// <summary>
-    /// Define o zoom por n�veis inteiros (1x, 2x, 3x).
-    /// Zoom cont�nuo � proibido em Pixel Art estrito.
-    /// </summary>
-    public void SetZoomLevel(int level)
-    {
-        if (level < 1) level = 1;
-        _currentZoomLevel = level;
-        ApplyZoom();
-    }
-
-    private void ApplyZoom()
-    {
-        // Em pixel art, Zoom out = aumentar size. Zoom in = diminuir size.
-        // Aqui assumimos que Level 1 = Tamanho Base (Enquadra tudo)
-        // Level 2 = Metade do tamanho (Zoom In 2x)
-
-        // CUIDADO: Se voc� quer Zoom IN, voc� divide o Size.
-        // Se quer Zoom OUT, voc� multiplica.
-        // Vamos assumir Zoom In para focar em detalhes.
-
-        float zoomedSize = _baseOrthographicSize / _currentZoomLevel;
-
-        // RE-SNAP: O novo tamanho dividido tamb�m precisa cair no grid de pixels?
-        // Sim. Verificamos se gerou fra��o.
-        float zoomedPixels = (zoomedSize * 2f) * _pixelConfig.PPU;
-
-        // Se der n�mero quebrado, ajusta para o inteiro mais pr�ximo
-        zoomedPixels = Mathf.Round(zoomedPixels);
-
-        _cam.orthographicSize = (zoomedPixels / _pixelConfig.PPU) / 2f;
-
-        // Notifica sistema
-        NotifyUpdate();
+        Debug.Log(
+            $"[GameCamera] FitBounds: {width:F2}×{height:F2} units → " +
+            $"{snappedHeightPixels}px altura → Size {finalSize:F3}"
+        );
     }
 
     // --- MOVIMENTO ---
@@ -137,10 +286,10 @@ public class GameCameraController : MonoBehaviour
 
     private IEnumerator PanRoutine(Vector3 targetPos, float smoothTime)
     {
-        // Enquanto n�o estivermos "no pixel exato" do destino
+        // Enquanto não estivermos "no pixel exato" do destino
         while (Vector3.Distance(transform.position, targetPos) > (1f / _pixelConfig.PPU))
         {
-            // 1. Calcula posi��o l�gica (Float)
+            // 1. Calcula posição lógica (Float)
             Vector3 nextPos = Vector3.SmoothDamp(
                 transform.position,
                 targetPos,
@@ -148,8 +297,8 @@ public class GameCameraController : MonoBehaviour
                 smoothTime
             );
 
-            // 2. Aplica SNAP de Posi��o
-            transform.position = _pixelConfig.SnapPosition(nextPos);
+            // 2. ⭐ APLICA SNAP VIA PROPERTY
+            CameraPosition = nextPos;
 
             // 3. Notifica Anchors
             NotifyUpdate();
@@ -158,7 +307,7 @@ public class GameCameraController : MonoBehaviour
         }
 
         // Chegada Final
-        transform.position = _pixelConfig.SnapPosition(targetPos);
+        CameraPosition = targetPos; // ⭐ USA PROPERTY
         NotifyUpdate();
         _moveRoutine = null;
     }
@@ -167,5 +316,48 @@ public class GameCameraController : MonoBehaviour
     {
         if (AppCore.Instance != null)
             AppCore.Instance.Events.Camera.TriggerCameraUpdated();
+    }
+
+    /// <summary>
+    /// ⭐ BOUNDS REAIS: Calcula área visível REAL considerando aspect ratio.
+    /// 
+    /// USO:
+    /// - Debug visual (gizmos)
+    /// - Spawn de efeitos nas bordas
+    /// - Não é usado para clamp (câmera é estática)
+    /// </summary>
+    public Bounds GetVisibleWorldBounds()
+    {
+        if (_cam == null) return new Bounds();
+
+        float height = _cam.orthographicSize * 2f;
+        float width = height * _cam.aspect;
+
+        return new Bounds(
+            transform.position + Vector3.forward * 10f, // Ajusta Z para match
+            new Vector3(width, height, 0)
+        );
+    }
+
+    // --- DEBUG / GIZMOS ---
+
+    private void OnDrawGizmos()
+    {
+        if (_framingConfig == null || !_framingConfig.ShowDebugBounds) return;
+
+        // Desenha bounds do grid (verde)
+        if (_lastGridBounds.size.x > 0)
+        {
+            Gizmos.color = _framingConfig.GridBoundsColor;
+            Gizmos.DrawWireCube(_lastGridBounds.center, _lastGridBounds.size);
+        }
+
+        // ⭐ Desenha bounds REAIS da câmera (ciano)
+        var realBounds = GetVisibleWorldBounds();
+        if (realBounds.size.x > 0)
+        {
+            Gizmos.color = _framingConfig.CameraBoundsColor;
+            Gizmos.DrawWireCube(realBounds.center, realBounds.size);
+        }
     }
 }

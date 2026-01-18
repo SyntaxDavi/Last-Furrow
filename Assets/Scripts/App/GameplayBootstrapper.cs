@@ -69,11 +69,15 @@ public class GameplayBootstrapper : MonoBehaviour
             _handManager.Configure(runData, library);
         }
 
-        // 5. Configura Câmera Dinâmica (Se o GridManager conseguir informar o tamanho)
+        // 5. ? Configura Câmera Dinâmica (SOLID - Usa Strategy Pattern)
+        // NOVO: Não depende mais de GridManager.GetGridWorldSize()
+        // Câmera recebe dados puros e calcula bounds usando Strategy
         if (_gameCamera != null && _gridManager != null)
         {
-            Vector2 gridSize = _gridManager.GetGridWorldSize();
-            _gameCamera.Configure(gridSize.x, gridSize.y);
+            _gameCamera.ConfigureFromGrid(
+                AppCore.Instance.GridConfiguration,
+                _gridManager.Spacing
+            );
             AppCore.Instance.InputManager.SetCamera(_gameCamera.GetComponent<Camera>());
         }
 

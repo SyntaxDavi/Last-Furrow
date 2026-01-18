@@ -11,7 +11,10 @@ public class GridManager : MonoBehaviour
     private IGridService _gridService;
     private IGameLibrary _library;
     private List<GridSlotView> _spawnedSlots = new List<GridSlotView>();
+    
+    // Propriedades públicas
     public IGridService Service => _gridService;
+    public Vector2 Spacing => _spacing;
 
     public void Configure(IGridService service, IGameLibrary library)
     {
@@ -30,21 +33,6 @@ public class GridManager : MonoBehaviour
     {
         if (_gridService == null)
             Debug.LogWarning("[GridManager] Aguardando configuração via Bootstrapper...");
-    }
-
-    public Vector2 GetGridWorldSize()
-    {
-        if (_gridService == null || _gridService.Config == null) 
-            return new Vector2(5f, 5f); // Fallback
-
-        int cols = _gridService.Config.Columns;
-        int rows = _gridService.Config.Rows;
-
-        // Adiciona uma margem de segurança (ex: 1 slot extra de borda)
-        float width = cols * _spacing.x + 1f;
-        float height = rows * _spacing.y + 1f;
-
-        return new Vector2(width, height);
     }
 
     private void OnDestroy()

@@ -142,6 +142,47 @@ Night Cycle Processes: 9 slots (36% of total)
 Night Cycle Skips: 16 slots (64% of total)
 ```
 
+#### Camera System (Pixel Art - SOLID):
+**ARCHITECTURE**: Strategy Pattern for flexible, testable camera framing.
+
+**Core Components:**
+1. **CameraFramingConfig** (ScriptableObject):
+   - Customizable padding per-axis (art composition)
+   - Pixel perfect snap settings (multiple of 4 for PPU=32)
+   - Debug visualization (grid bounds + camera bounds)
+
+2. **ICameraFitStrategy** (Interface):
+   - Calculates required bounds from grid data
+   - Testable, extensible without modifying camera code
+   - Default implementation: `PaddedGridFitStrategy`
+
+3. **GameCameraController** (MonoBehaviour):
+   - Uses strategy to calculate bounds
+   - Applies pixel perfect sizing (snap to multiple of 4)
+   - No zoom system (simplified per requirements)
+   - Smooth panning with pixel snapping
+
+**Design Philosophy:**
+- **"World is protagonist"** ? Generous padding for background art/ambiance
+- **"Grid is structure"** ? Camera protects grid, doesn't compensate UI
+- **"Artistic space"** ? Padding is aesthetic decision, not technical residue
+- **"UI as inhabitant"** ? World space UI competes with objects, not treated as HUD
+
+**Pixel Perfect:**
+- Converts world units ? pixels
+- Rounds UP to next multiple of 4 (no clipping)
+- Converts back ? orthographic size
+- Ensures zero bleeding/artifacts with PPU=32
+
+**Example Configuration:**
+```
+Grid: 5×5 (7.5×5.5 world units)
+Padding: (3f, 2.5f) horizontal/vertical
+Total Bounds: 13.5×10.5 world units
+Pixels: 432×336 ? Snapped: 432×336 (already multiple of 4)
+Orthographic Size: 5.25
+```
+
 ## 4. Why these scripts exist?
 
 | Script | Purpose |
@@ -154,4 +195,7 @@ Night Cycle Skips: 16 slots (64% of total)
 | **`GridConfiguration.cs`** | Defines grid structure (dimensions, initial state). Changes invalidate old saves via hash versioning. |
 | **`RunRuntimeContext.cs`** | Holds scene-dependent services (GridService). Can be updated when scenes load. |
 | **`RunIdentityContext.cs`** | Holds immutable run-wide services (Economy, Library, SaveManager). Never changes during a run. |
+| **`CameraFramingConfig.cs`** | Defines camera padding and pixel perfect settings. Customizable per-axis for art composition. |
+| **`ICameraFitStrategy.cs`** | Strategy Pattern for camera framing. Calculates required bounds without coupling to camera implementation. |
+| **`GameCameraController.cs`** | Controls camera positioning and pixel-perfect sizing. Uses Strategy Pattern, no zoom, snap to multiple of 4 (PPU=32). |
 
