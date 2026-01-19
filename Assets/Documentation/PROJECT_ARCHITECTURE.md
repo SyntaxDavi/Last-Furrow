@@ -43,6 +43,16 @@ This project uses a layered architecture separating **Data/Domain Logic** from *
 *   **`DragDropSystem.cs`**: Gerencia arrastar e soltar com drop zones.
 *   **`ClickSystem.cs`**: Gerencia cliques simples em objetos interativos.
 
+### G. Debug Tools
+**CheatManager** (F1 para toggle):
+- **Economia**: Add Money (valor customizável)
+- **Vidas**: +1 Vida, -1 Vida
+- **Grid**: Desbloquear tudo, Limpar, Regar tudo, Amadurecer tudo
+- **Cartas**: Spawn específica, Comprar 3 cartas
+- **Save**: Deletar & Restart, Salvar agora
+- **Arquitetura**: Lateral esquerda, scrollview, apenas Development builds
+- **Integração**: Usa eventos para feedback visual automático
+
 ## 3. Key Concepts
 
 ### Dependency Injection

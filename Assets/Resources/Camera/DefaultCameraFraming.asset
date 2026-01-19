@@ -12,7 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98882c1e93eabaa4593aaa438894d2e0, type: 3}
   m_Name: DefaultCameraFraming
   m_EditorClassIdentifier: 
-  PaddingUnits: {x: 3, y: 2.5}
+  PaddingLeft: 3
+  PaddingRight: 3
+  PaddingTop: 3.8
+  PaddingBottom: 2.1
   SnapToMultipleOf4: 1
   ShowDebugBounds: 1
   GridBoundsColor: {r: 0, g: 1, b: 0, a: 1}

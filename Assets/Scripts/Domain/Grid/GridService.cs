@@ -7,6 +7,7 @@ public class GridService : IGridService
     private readonly IGameLibrary _library;
     private readonly GameStateManager _gameStateManager;
     private readonly GridConfiguration _config;
+    private readonly PatternWeightConfig _patternConfig;
 
     public event Action<int> OnSlotStateChanged;
     public event Action OnDataDirty;
@@ -18,12 +19,18 @@ public class GridService : IGridService
     public int SlotCount => _runData?.GridSlots?.Length ?? 0;
     public GridConfiguration Config => _config;
 
-    public GridService(RunData runData, IGameLibrary library, GameStateManager gameStateManager, GridConfiguration config)
+    public GridService(
+        RunData runData, 
+        IGameLibrary library, 
+        GameStateManager gameStateManager, 
+        GridConfiguration config,
+        PatternWeightConfig patternConfig = null)
     {
         _runData = runData;
         _library = library;
         _gameStateManager = gameStateManager;
         _config = config;
+        _patternConfig = patternConfig;
 
         // Validação vital
         if (_config == null)
@@ -32,7 +39,7 @@ public class GridService : IGridService
         }
 
         // ⭐ NOVA ARQUITETURA: Delega inicialização para GridInitializer
-        GridInitializer.Initialize(_runData, _config);
+        GridInitializer.Initialize(_runData, _config, 5, _patternConfig);
     }
 
 

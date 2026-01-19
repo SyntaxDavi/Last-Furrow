@@ -44,7 +44,8 @@ public class GameplayBootstrapper : MonoBehaviour
            runData,
            library,
            AppCore.Instance.GameStateManager,
-           AppCore.Instance.GridConfiguration // Injeção da Config
+           AppCore.Instance.GridConfiguration, // Injeção da Config
+           AppCore.Instance.PatternWeightConfig // ? NOVO: Injeção de pesos de padrões
        );
 
         // 2. Registra no Global (para DailyResolution, CheatManager, etc)

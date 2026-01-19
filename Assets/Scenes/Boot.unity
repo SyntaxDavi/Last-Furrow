@@ -248,10 +248,26 @@ PrefabInstance:
       propertyPath: _gridConfiguration
       value: 
       objectReference: {fileID: 11400000, guid: 449f559565c270944a7aba4dcdc0bd96, type: 2}
+    - target: {fileID: 7086375328797191102, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
+      propertyPath: _patternWeightConfig
+      value: 
+      objectReference: {fileID: 11400000, guid: bbc77d19213b45841bb0332bca68caf6, type: 2}
+    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
+      propertyPath: _uiY
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
       propertyPath: _progressionSettings
       value: 
       objectReference: {fileID: 11400000, guid: ec9251d361cfa6f4ab7879e6c9e8f50c, type: 2}
+    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
+      propertyPath: '_quickSpawnCardIDs.Array.data[2]'
+      value: card_expansion
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
