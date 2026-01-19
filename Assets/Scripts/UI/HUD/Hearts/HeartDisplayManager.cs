@@ -3,24 +3,27 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// Gerenciador do sistema de vidas visual (Controller).
+/// Gerenciador do sistema de vidas visual (Controller) - REFATORADO.
+/// 
+/// ?? RENOMEAR PARA HeartDisplayManager após deletar o antigo!
 /// 
 /// RESPONSABILIDADE:
 /// - Spawnar/gerenciar pool de HeartViews
 /// - Sincronizar com RunData.CurrentLives via eventos
-/// - Orquestrar animações em sequência
+/// - Orquestrar animações simultâneas com pop-up
 /// 
 /// ARQUITETURA:
-/// - Event-driven: Escuta ProgressionEvents.OnLivesChanged
+/// - Event-driven: Escuta ProgressionEvents.OnLivesChanged via UIContext
+/// - Dependency Injection: Recebe UIContext, não usa AppCore.Instance
 /// - Pooling básico: Reutiliza GameObjects
-/// - SOLID: Não acessa RunData diretamente, recebe via eventos
 /// 
-/// EXTENSIBILIDADE FUTURA:
-/// - MaxLives dinâmico (cartas que aumentam vida máxima)
-/// - Tipos diferentes de corações (shield, golden heart)
-/// - Animações customizadas por tipo de dano
+/// REFATORAÇÕES:
+/// - ? Injeção via UIContext (não mais AppCore.Instance)
+/// - ? Animação simultânea ao perder múltiplas vidas
+/// - ? Lógica de perda clarificada
+/// - ? ExpandMaxLives preparado para futuro
 /// </summary>
-public class HeartDisplayManager : MonoBehaviour
+public class HeartDisplayManagerRefactored : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private GameObject _heartPrefab;
@@ -33,6 +36,13 @@ public class HeartDisplayManager : MonoBehaviour
     [Tooltip("Delay entre spawn de cada coração no início")]
     [SerializeField] private float _spawnDelay = 0.5f;
 
+    [Header("Multi-Loss Animation")]
+    [Tooltip("Quando perde múltiplas vidas, animar simultaneamente?")]
+    [SerializeField] private bool _simultaneousLoss = true;
+
+    [Tooltip("Delay entre animações se não for simultâneo")]
+    [SerializeField] private float _lossAnimationDelay = 0.1f;
+
     [Header("Debug")]
     [SerializeField] private bool _showDebugLogs = false;
 
@@ -43,34 +53,23 @@ public class HeartDisplayManager : MonoBehaviour
     private int _currentLives = 0;
     private int _maxLives = 0;
 
+    // Contexto injetado
+    private UIContext _context;
     private bool _isInitialized = false;
 
-    private void Start()
+    /// <summary>
+    /// Inicialização via UIBootstrapper (injeção de dependências).
+    /// </summary>
+    public void Initialize(UIContext context)
     {
-        // Aguarda AppCore estar pronto
-        StartCoroutine(InitializeWhenReady());
-    }
-
-    private IEnumerator InitializeWhenReady()
-    {
-        // Espera AppCore estar disponível
-        while (AppCore.Instance == null)
+        if (_isInitialized)
         {
-            yield return null;
+            if (_showDebugLogs)
+                Debug.LogWarning("[HeartDisplayManager] Já foi inicializado!");
+            return;
         }
 
-        // Espera RunData estar disponível
-        while (AppCore.Instance.SaveManager?.Data?.CurrentRun == null)
-        {
-            yield return null;
-        }
-
-        Initialize();
-    }
-
-    private void Initialize()
-    {
-        if (_isInitialized) return;
+        _context = context ?? throw new System.ArgumentNullException(nameof(context));
 
         // Validações
         if (_heartPrefab == null)
@@ -85,10 +84,9 @@ public class HeartDisplayManager : MonoBehaviour
             _container = this.transform;
         }
 
-        // Lê estado inicial
-        var runData = AppCore.Instance.SaveManager.Data.CurrentRun;
-        _maxLives = runData.MaxLives;
-        _currentLives = runData.CurrentLives;
+        // Lê estado inicial via interface
+        _maxLives = _context.RunData.MaxLives;
+        _currentLives = _context.RunData.CurrentLives;
 
         // Cria pool inicial
         CreateHeartPool(_maxLives);
@@ -96,8 +94,8 @@ public class HeartDisplayManager : MonoBehaviour
         // Spawna com animação inicial
         StartCoroutine(SpawnInitialHearts());
 
-        // Escuta eventos
-        AppCore.Instance.Events.Progression.OnLivesChanged += HandleLivesChanged;
+        // Escuta eventos via contexto
+        _context.ProgressionEvents.OnLivesChanged += HandleLivesChanged;
 
         _isInitialized = true;
 
@@ -107,9 +105,9 @@ public class HeartDisplayManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (AppCore.Instance != null)
+        if (_context != null)
         {
-            AppCore.Instance.Events.Progression.OnLivesChanged -= HandleLivesChanged;
+            _context.ProgressionEvents.OnLivesChanged -= HandleLivesChanged;
         }
     }
 
@@ -190,21 +188,38 @@ public class HeartDisplayManager : MonoBehaviour
 
     /// <summary>
     /// Animação de perda: Da DIREITA para ESQUERDA.
+    /// CLARIFICADO: Lógica simplificada e documentada.
     /// </summary>
     private IEnumerator AnimateLoseHearts(int count)
     {
-        // Encontra corações cheios da direita para esquerda
-        for (int i = _heartPool.Count - 1; i >= 0 && count > 0; i--)
+        // Encontra índices dos corações a serem perdidos
+        // Ex: Se tinha 3 vidas e perdeu 2, anima índices 2 e 1 (direita ? esquerda)
+        List<int> heartsToLose = new List<int>();
+        
+        for (int i = 0; i < count; i++)
         {
-            // Verifica se é um coração cheio (índice dentro de currentLives antigo)
-            // Como acabamos de atualizar _currentLives, precisamos calcular
-            int indexToAnimate = _currentLives + (count - 1);
-            
-            if (indexToAnimate >= 0 && indexToAnimate < _heartPool.Count)
+            int heartIndex = (_currentLives + count - 1) - i; // Começa do mais à direita
+            if (heartIndex >= 0 && heartIndex < _heartPool.Count)
             {
-                _heartPool[indexToAnimate].AnimateLose();
-                count--;
-                yield return new WaitForSeconds(0.1f); // Pequeno delay entre perdas
+                heartsToLose.Add(heartIndex);
+            }
+        }
+
+        if (_simultaneousLoss)
+        {
+            // Animação simultânea (todos de uma vez)
+            foreach (int index in heartsToLose)
+            {
+                _heartPool[index].AnimateLose();
+            }
+        }
+        else
+        {
+            // Animação sequencial (um por vez)
+            foreach (int index in heartsToLose)
+            {
+                _heartPool[index].AnimateLose();
+                yield return new WaitForSeconds(_lossAnimationDelay);
             }
         }
     }
@@ -229,6 +244,7 @@ public class HeartDisplayManager : MonoBehaviour
 
     /// <summary>
     /// FUTURO: Expansão de MaxLives (cartas que aumentam vida máxima).
+    /// Por enquanto adiciona silenciosamente sem animação.
     /// </summary>
     public void ExpandMaxLives(int newMaxLives)
     {

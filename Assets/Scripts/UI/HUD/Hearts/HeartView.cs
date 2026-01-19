@@ -70,28 +70,37 @@ public class HeartView : MonoBehaviour
 
     /// <summary>
     /// Animação de spawn inicial (pop-up suave).
+    /// GUARDA: Apenas se não estiver cheio (previne duplicação).
     /// </summary>
     public void AnimateSpawn()
     {
+        if (_isFull) return; // Já está cheio, não anima
+
         StopCurrentAnimation();
         _currentAnimation = StartCoroutine(SpawnRoutine());
     }
 
     /// <summary>
     /// Animação de perda de vida (fica cinza, não desaparece).
+    /// GUARDA: Apenas se estiver cheio (previne animação inválida).
     /// Preparado para adicionar "quebrar" no futuro.
     /// </summary>
     public void AnimateLose()
     {
+        if (!_isFull) return; // Já está vazio, não anima
+
         StopCurrentAnimation();
         _currentAnimation = StartCoroutine(LoseRoutine());
     }
 
     /// <summary>
     /// Animação de cura (cinza ? vermelho com bounce).
+    /// GUARDA: Apenas se estiver vazio (previne cura em coração cheio).
     /// </summary>
     public void AnimateHeal()
     {
+        if (_isFull) return; // Já está cheio, não anima
+
         StopCurrentAnimation();
         _currentAnimation = StartCoroutine(HealRoutine());
     }
