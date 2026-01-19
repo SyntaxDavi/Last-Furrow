@@ -70,11 +70,12 @@ public class HeartView : MonoBehaviour
 
     /// <summary>
     /// Animação de spawn inicial (pop-up suave).
-    /// GUARDA: Apenas se não estiver cheio (previne duplicação).
+    /// NÃO TEM GUARDA: Sempre executa para garantir visibilidade.
     /// </summary>
     public void AnimateSpawn()
     {
-        if (_isFull) return; // Já está cheio, não anima
+        // REMOVIDA GUARDA: AnimateSpawn sempre deve executar
+        // Motivo: Após SetState(true), _isFull=true, mas precisamos animar
 
         StopCurrentAnimation();
         _currentAnimation = StartCoroutine(SpawnRoutine());

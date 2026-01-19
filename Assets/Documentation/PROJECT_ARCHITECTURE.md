@@ -35,6 +35,60 @@ This project uses a layered architecture separating **Data/Domain Logic** from *
 *   **`PlayerEvents.cs`**: A hub for events like "CardAdded", "MoneyChanged". UI listens to this.
 *   **`HandOrganizer.cs`**: Manages the visual positioning of cards in the player's hand.
 
+#### UI Architecture - Dependency Injection (REFACTORED)
+**? NEW**: Sistema de UI desacoplado usando injeção de dependências via UIContext.
+
+**Core Components:**
+- **`UIContext.cs`**: Centralizador de eventos e dados read-only para UI
+- **`UIBootstrapper.cs`**: Injeta UIContext em todos componentes UI
+- **`IRunDataProvider.cs`**: Interface para acesso read-only a RunData
+- **`ITimePolicy.cs`**: Centraliza regras de tempo/calendário
+
+**HUD Systems (Refactored):**
+
+**HeartDisplayManager + HeartView:**
+- **Antes**: Chamava `AppCore.Instance` diretamente
+- **Depois**: Recebe `UIContext` via `Initialize(UIContext)`
+- **Pooling**: Reutiliza 3 GameObjects (performance)
+- **Animações**: Spawn sequencial, perda simultânea, cura com bounce
+- **Guardas**: `_isFull` previne animações inválidas
+
+**DayWeekDisplay:**
+- **Antes**: Polling via `AppCore.Instance`
+- **Depois**: Event-driven via `UIContext.TimeEvents`
+- **Debounce**: Agrupa dia+semana em pulse único (0.1s)
+- **Formato**: Customizável no Inspector
+
+**SleepButtonController:**
+- **Antes**: UI decidia regras (`if (currentDay >= 6)`)
+- **Depois**: Delega para `ITimePolicy.CanSleep()`
+- **Validações**: GameState, Weekend, Resolution status
+- **Feedback**: Muda texto para "Sleeping..." durante processamento
+
+**Architecture Flow:**
+```
+UIBootstrapper (Start)
+    ? cria
+UIContext (imutável)
+    ?? ProgressionEvents
+    ?? TimeEvents
+    ?? GameStateEvents
+    ?? IRunDataProvider
+    ?? ITimePolicy
+    ? injeta em
+???????????????????????????
+? HeartDisplayManager     ?
+? DayWeekDisplay          ?
+? SleepButtonController   ?
+???????????????????????????
+```
+
+**Benefits:**
+- ? Testável (mock UIContext)
+- ? Desacoplado (zero `AppCore.Instance` direto)
+- ? Extensível (novos componentes = `Initialize(UIContext)`)
+- ? SOLID: Dependency Inversion, Single Responsibility
+
 ### F. Input Systems (Core/Input)
 *   *Sistema modular de input separado por responsabilidade.*
 *   **`PlayerInteraction.cs`**: Orquestrador magro que coordena os sistemas abaixo.
@@ -256,7 +310,5 @@ Orthographic Size: 5.25
 | **`IUnlockPattern.cs`** | Interface for grid unlock patterns. Extensible system for different unlock layouts (Cross, Line, X, L, T, Cluster, Corner, Scatter). |
 | **`UnlockPatternGenerator.cs`** | Factory for creating unlock patterns. Uses weighted random selection with seed support for determinism. |
 | **`PatternWeightConfig.cs`** | ScriptableObject to configure pattern probabilities without code changes. Customizable per level/difficulty. |
-| **`IUnlockPattern.cs`** | Interface for grid unlock patterns. Extensible system for different unlock layouts (Cross, Line, X, L, T, Cluster, Corner, Scatter). |
-| **`UnlockPatternGenerator.cs`** | Factory for creating unlock patterns. Uses weighted random selection with seed support for determinism. |
-| **`PatternWeightConfig.cs`** | ScriptableObject to configure pattern probabilities without code changes. Customizable per level/difficulty. |
+
 

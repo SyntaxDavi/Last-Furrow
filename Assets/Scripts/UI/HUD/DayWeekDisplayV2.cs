@@ -3,48 +3,31 @@ using TMPro;
 using System.Collections;
 
 /// <summary>
-/// Exibe e anima o texto de Dia/Semana - REFATORADO.
+/// Exibe e anima o texto de Dia/Semana V2 - ROBUSTO E DEFENSIVO.
 /// 
-/// ?? RENOMEAR PARA DayWeekDisplay após deletar o antigo!
+/// VERSÃO 2: Null checks completos + validações + logs verbosos
 /// 
-/// RESPONSABILIDADE:
-/// - Atualizar texto quando dia/semana mudam
-/// - Executar animação de pulse/bounce
-/// - Debounce para pulse único (agrupa mudanças de dia+semana)
-/// 
-/// ARQUITETURA:
-/// - Event-driven: Escuta TimeEvents via UIContext
-/// - Dependency Injection: Recebe UIContext, não usa AppCore.Instance
-/// - SOLID: Não acessa RunData diretamente
-/// 
-/// REFATORAÇÕES:
-/// - ? Injeção via UIContext
-/// - ? Debounce para pulse único
-/// - ? Removido AppCore.Instance
+/// INSTALAÇÃO:
+/// 1. Delete DayWeekDisplay antigo do GameObject
+/// 2. Add Component: DayWeekDisplayV2
+/// 3. Play e veja logs detalhados
 /// </summary>
 [RequireComponent(typeof(TextMeshProUGUI))]
-public class DayWeekDisplayRefactored : MonoBehaviour
+public class DayWeekDisplayV2 : MonoBehaviour
 {
     [Header("Animation Settings")]
-    [Tooltip("Duração da animação de pulse quando muda de dia")]
     [SerializeField] private float _pulseDuration = 0.4f;
-
-    [Tooltip("Escala máxima durante o pulse")]
     [SerializeField] private float _pulseScale = 1.2f;
-
-    [Tooltip("Curva de animação do pulse")]
     [SerializeField] private AnimationCurve _pulseCurve = AnimationCurve.EaseInOut(0, 1, 1, 1);
 
     [Header("Format Settings")]
-    [Tooltip("Formato do texto. Use {0} para dia e {1} para semana")]
     [SerializeField] private string _textFormat = "Dia {0} - Semana {1}";
 
     [Header("Debounce Settings")]
-    [Tooltip("Tempo de espera para agrupar mudanças de dia+semana (segundos)")]
     [SerializeField] private float _debounceTime = 0.1f;
 
     [Header("Debug")]
-    [SerializeField] private bool _showDebugLogs = false;
+    [SerializeField] private bool _showDebugLogs = true;
 
     private TextMeshProUGUI _text;
     private RectTransform _rectTransform;
@@ -55,7 +38,6 @@ public class DayWeekDisplayRefactored : MonoBehaviour
     private int _currentWeek = 1;
     private bool _pendingUpdate = false;
 
-    // Contexto injetado
     private UIContext _context;
     private bool _isInitialized = false;
 
@@ -63,78 +45,111 @@ public class DayWeekDisplayRefactored : MonoBehaviour
     {
         _text = GetComponent<TextMeshProUGUI>();
         _rectTransform = GetComponent<RectTransform>();
+
+        if (_text == null)
+        {
+            Debug.LogError("[DayWeekDisplayV2] ? CRITICAL: Componente TextMeshProUGUI não encontrado!");
+        }
+
+        if (_rectTransform == null)
+        {
+            Debug.LogError("[DayWeekDisplayV2] ? CRITICAL: RectTransform não encontrado!");
+        }
     }
 
-    /// <summary>
-    /// Inicialização via UIBootstrapper (injeção de dependências).
-    /// </summary>
     public void Initialize(UIContext context)
     {
         if (_isInitialized)
         {
-            if (_showDebugLogs)
-                Debug.LogWarning("[DayWeekDisplay] Já foi inicializado!");
+            Debug.LogWarning("[DayWeekDisplayV2] ? Já foi inicializado!");
             return;
         }
 
-        _context = context ?? throw new System.ArgumentNullException(nameof(context));
+        // === VALIDAÇÕES CRÍTICAS ===
+        if (context == null)
+        {
+            Debug.LogError("[DayWeekDisplayV2] ? CRITICAL: UIContext é NULL!");
+            return;
+        }
 
-        // Lê estado inicial via interface
+        if (context.RunData == null)
+        {
+            Debug.LogError("[DayWeekDisplayV2] ? CRITICAL: context.RunData é NULL!");
+            return;
+        }
+
+        if (context.TimeEvents == null)
+        {
+            Debug.LogError("[DayWeekDisplayV2] ? CRITICAL: context.TimeEvents é NULL!");
+            return;
+        }
+
+        if (_text == null)
+        {
+            Debug.LogError("[DayWeekDisplayV2] ? CRITICAL: TextMeshProUGUI null! Verifique componente.");
+            return;
+        }
+
+        _context = context;
+
+        // Lê estado inicial
         _currentDay = _context.RunData.CurrentDay;
         _currentWeek = _context.RunData.CurrentWeek;
 
-        // Atualiza texto inicial (sem animação)
+        Debug.Log($"[DayWeekDisplayV2] ? Estado inicial: Dia {_currentDay}, Semana {_currentWeek}");
+
+        // Atualiza texto inicial
         UpdateText(immediate: true);
 
-        // Escuta eventos via contexto
+        // Escuta eventos
         _context.TimeEvents.OnDayChanged += HandleDayChanged;
         _context.TimeEvents.OnWeekChanged += HandleWeekChanged;
 
         _isInitialized = true;
-
-        if (_showDebugLogs)
-            Debug.Log($"[DayWeekDisplay] ? Inicializado. Dia {_currentDay}, Semana {_currentWeek}");
+        Debug.Log("[DayWeekDisplayV2] ?? INICIALIZADO COM SUCESSO!");
     }
 
     private void OnDestroy()
     {
-        if (_context != null)
+        if (_context != null && _context.TimeEvents != null)
         {
             _context.TimeEvents.OnDayChanged -= HandleDayChanged;
             _context.TimeEvents.OnWeekChanged -= HandleWeekChanged;
         }
     }
 
-    /// <summary>
-    /// Handler de mudança de dia (com debounce).
-    /// </summary>
     private void HandleDayChanged(int newDay)
     {
+        if (!_isInitialized)
+        {
+            Debug.LogWarning("[DayWeekDisplayV2] ? HandleDayChanged chamado mas não inicializado!");
+            return;
+        }
+
         _currentDay = newDay;
         _pendingUpdate = true;
         StartDebounce();
 
         if (_showDebugLogs)
-            Debug.Log($"[DayWeekDisplay] Dia atualizado: {_currentDay}");
+            Debug.Log($"[DayWeekDisplayV2] ?? Dia atualizado: {_currentDay}");
     }
 
-    /// <summary>
-    /// Handler de mudança de semana (com debounce).
-    /// </summary>
     private void HandleWeekChanged(int newWeek)
     {
+        if (!_isInitialized)
+        {
+            Debug.LogWarning("[DayWeekDisplayV2] ? HandleWeekChanged chamado mas não inicializado!");
+            return;
+        }
+
         _currentWeek = newWeek;
         _pendingUpdate = true;
         StartDebounce();
 
         if (_showDebugLogs)
-            Debug.Log($"[DayWeekDisplay] Semana atualizada: {_currentWeek}");
+            Debug.Log($"[DayWeekDisplayV2] ?? Semana atualizada: {_currentWeek}");
     }
 
-    /// <summary>
-    /// Sistema de debounce: Aguarda pequeno intervalo antes de animar.
-    /// Isso agrupa mudanças de dia+semana em um único pulse.
-    /// </summary>
     private void StartDebounce()
     {
         if (_debounceCoroutine != null)
@@ -151,6 +166,7 @@ public class DayWeekDisplayRefactored : MonoBehaviour
 
         if (_pendingUpdate)
         {
+            Debug.Log($"[DayWeekDisplayV2] ? DEBOUNCE: Atualizando texto após {_debounceTime}s");
             UpdateText(immediate: false);
             _pendingUpdate = false;
         }
@@ -158,24 +174,25 @@ public class DayWeekDisplayRefactored : MonoBehaviour
         _debounceCoroutine = null;
     }
 
-    /// <summary>
-    /// Atualiza o texto exibido.
-    /// </summary>
     private void UpdateText(bool immediate)
     {
-        // Atualiza texto
+        if (_text == null)
+        {
+            Debug.LogError("[DayWeekDisplayV2] ? Texto null em UpdateText!");
+            return;
+        }
+
         _text.text = string.Format(_textFormat, _currentDay, _currentWeek);
 
-        // Anima se não for imediato
+        if (_showDebugLogs)
+            Debug.Log($"[DayWeekDisplayV2] ?? Texto atualizado: \"{_text.text}\" (immediate={immediate})");
+
         if (!immediate)
         {
             AnimatePulse();
         }
     }
 
-    /// <summary>
-    /// Executa animação de pulse/bounce.
-    /// </summary>
     private void AnimatePulse()
     {
         if (_currentAnimation != null)
@@ -188,6 +205,12 @@ public class DayWeekDisplayRefactored : MonoBehaviour
 
     private IEnumerator PulseRoutine()
     {
+        if (_rectTransform == null)
+        {
+            Debug.LogError("[DayWeekDisplayV2] ? RectTransform null em PulseRoutine!");
+            yield break;
+        }
+
         float elapsed = 0f;
 
         while (elapsed < _pulseDuration)
@@ -195,7 +218,6 @@ public class DayWeekDisplayRefactored : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / _pulseDuration;
 
-            // Pulse: 1 ? pulseScale ? 1
             float curveValue = _pulseCurve.Evaluate(t);
             float scale = Mathf.Lerp(1f, _pulseScale, Mathf.Sin(curveValue * Mathf.PI));
 

@@ -59,7 +59,7 @@ public class UIBootstrapper : MonoBehaviour
         var context = CreateUIContext();
 
         // 2. Injeta em HeartDisplayManagerRefactored
-        var heartManager = FindObjectOfType<HeartDisplayManagerRefactored>();
+        var heartManager = FindObjectOfType<HeartDisplayManagerV2>();
         if (heartManager != null)
         {
             heartManager.Initialize(context);
@@ -68,7 +68,7 @@ public class UIBootstrapper : MonoBehaviour
         }
 
         // 3. Injeta em DayWeekDisplayRefactored
-        var dayWeekDisplay = FindObjectOfType<DayWeekDisplayRefactored>();
+        var dayWeekDisplay = FindObjectOfType<DayWeekDisplayV2>();
         if (dayWeekDisplay != null)
         {
             dayWeekDisplay.Initialize(context);
@@ -77,7 +77,7 @@ public class UIBootstrapper : MonoBehaviour
         }
 
         // 4. Injeta em SleepButtonControllerRefactored
-        var sleepButton = FindObjectOfType<SleepButtonControllerRefactored>();
+        var sleepButton = FindObjectOfType<SleepButtonControllerV2>();
         if (sleepButton != null)
         {
             sleepButton.Initialize(context);

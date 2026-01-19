@@ -3149,7 +3149,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 976394030}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fbdac69ac7c1e724db8f6fa62f14ecb8, type: 3}
+  m_Script: {fileID: 11500000, guid: af06ccc439d685c4dae555b925996296, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _pulseDuration: 0.4
@@ -3167,6 +3167,15 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
+      time: 0.5125
+      value: 1.0038095
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
       time: 1
       value: 1
       inSlope: 0
@@ -3179,7 +3188,8 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   _textFormat: Dia {0} - Semana {1}
-  _showDebugLogs: 0
+  _debounceTime: 0.1
+  _showDebugLogs: 1
 --- !u!1 &996082408
 GameObject:
   m_ObjectHideFlags: 0
@@ -3547,7 +3557,7 @@ GameObject:
   - component: {fileID: 1269773720}
   - component: {fileID: 1269773719}
   - component: {fileID: 1269773718}
-  - component: {fileID: 1269773717}
+  - component: {fileID: 1269773721}
   m_Layer: 5
   m_Name: SleepButton
   m_TagString: Untagged
@@ -3575,23 +3585,6 @@ RectTransform:
   m_AnchoredPosition: {x: 100, y: -490}
   m_SizeDelta: {x: 150, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1269773717
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1269773715}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 00917c4f309d76846aa67455b434226d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _buttonText: {fileID: 1337321134}
-  _normalText: Sleep
-  _processingText: Sleeping...
-  _disableOnWeekend: 1
-  _showDebugLogs: 1
 --- !u!114 &1269773718
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3674,6 +3667,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1269773715}
   m_CullTransparentMesh: 1
+--- !u!114 &1269773721
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1269773715}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 876593500c3f50e4195c8bd39ea6f590, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _buttonText: {fileID: 1337321134}
+  _normalText: Sleep
+  _processingText: Sleeping...
+  _showDebugLogs: 1
 --- !u!1 &1282445935
 GameObject:
   m_ObjectHideFlags: 0
@@ -4520,6 +4529,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1528058629}
   - component: {fileID: 1528058630}
+  - component: {fileID: 1528058631}
   m_Layer: 5
   m_Name: HeartContainer
   m_TagString: Untagged
@@ -4555,16 +4565,29 @@ MonoBehaviour:
   m_GameObject: {fileID: 1528058628}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0ee5ef2672f7acc44a37483c862aa695, type: 3}
+  m_Script: {fileID: 11500000, guid: ff3526c6dca1c0149acaf8b4b23bf93c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _heartPrefab: {fileID: 3810702683717849246, guid: dfb7d9c85dc017e428505c0860960ea9, type: 3}
+  _heartPrefab: {fileID: 5372863199408162416, guid: dfb7d9c85dc017e428505c0860960ea9, type: 3}
   _container: {fileID: 1528058629}
   _spacing: 75
   _spawnDelay: 0.5
   _simultaneousLoss: 1
   _lossAnimationDelay: 0.1
   _showDebugLogs: 1
+--- !u!114 &1528058631
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1528058628}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf7b499bc40481d46b08527563fcd37b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _debugKey: 283
 --- !u!1 &1608780529
 GameObject:
   m_ObjectHideFlags: 0
@@ -5049,6 +5072,51 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!1 &1785937550
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1785937552}
+  - component: {fileID: 1785937551}
+  m_Layer: 0
+  m_Name: '[UI_BOOTSTRAPPER]'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1785937551
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1785937550}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7eef7a98385a2ed458afa91e57117a1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _showDebugLogs: 1
+--- !u!4 &1785937552
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1785937550}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.80049, y: 16.73743, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1792241743
 GameObject:
   m_ObjectHideFlags: 0
@@ -6275,6 +6343,7 @@ SceneRoots:
   - {fileID: 1842980145}
   - {fileID: 1919772009}
   - {fileID: 955808733}
+  - {fileID: 1785937552}
   - {fileID: 1282445936}
   - {fileID: 1345890250}
   - {fileID: 1512505978}
