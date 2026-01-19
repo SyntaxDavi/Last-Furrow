@@ -757,7 +757,6 @@ GameObject:
   - component: {fileID: 183937406}
   - component: {fileID: 183937405}
   - component: {fileID: 183937404}
-  - component: {fileID: 183937403}
   m_Layer: 5
   m_Name: 'GoalText '
   m_TagString: Untagged
@@ -784,22 +783,6 @@ RectTransform:
   m_AnchoredPosition: {x: 67, y: 68.89996}
   m_SizeDelta: {x: 365, y: 120}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &183937403
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 183937401}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2dd3a2599a70d0947ba113e56ef31490, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _startHidden: 1
-  _fadeDuration: 0.3
-  _goalText: {fileID: 183937405}
-  _format: '{0} / {1}'
 --- !u!225 &183937404
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -1163,7 +1146,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 827.18, y: 257.01}
+  m_AnchoredPosition: {x: 791, y: 257.01}
   m_SizeDelta: {x: 205.63, y: 84.62}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &430980905
@@ -2494,7 +2477,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 698.9, y: 257.01}
+  m_AnchoredPosition: {x: 709, y: 257.01}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &824601363
@@ -3250,7 +3233,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.764151, g: 0.2775454, b: 0.38476348, a: 1}
+  m_Color: {r: 0.6603774, g: 0.38937345, b: 0.44838238, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -4560,8 +4543,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -650, y: 402.5}
-  m_SizeDelta: {x: 450, y: 55}
+  m_AnchoredPosition: {x: -864, y: 449}
+  m_SizeDelta: {x: 105.2, y: 55}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1528058630
 MonoBehaviour:
@@ -4577,7 +4560,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _heartPrefab: {fileID: 3810702683717849246, guid: dfb7d9c85dc017e428505c0860960ea9, type: 3}
   _container: {fileID: 1528058629}
-  _spacing: 125
+  _spacing: 100
   _spawnDelay: 0.5
   _showDebugLogs: 1
 --- !u!1 &1608780529
