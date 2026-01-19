@@ -4529,7 +4529,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1528058629}
   - component: {fileID: 1528058630}
-  - component: {fileID: 1528058631}
   m_Layer: 5
   m_Name: HeartContainer
   m_TagString: Untagged
@@ -4570,24 +4569,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _heartPrefab: {fileID: 5372863199408162416, guid: dfb7d9c85dc017e428505c0860960ea9, type: 3}
   _container: {fileID: 1528058629}
-  _spacing: 75
-  _spawnDelay: 0.5
+  _spacing: 100
+  _spawnDelay: 0.4
   _simultaneousLoss: 1
   _lossAnimationDelay: 0.1
-  _showDebugLogs: 1
---- !u!114 &1528058631
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1528058628}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf7b499bc40481d46b08527563fcd37b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _debugKey: 283
+  _showDebugLogs: 0
 --- !u!1 &1608780529
 GameObject:
   m_ObjectHideFlags: 0
