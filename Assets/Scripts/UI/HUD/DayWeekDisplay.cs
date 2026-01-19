@@ -3,24 +3,27 @@ using TMPro;
 using System.Collections;
 
 /// <summary>
-/// Exibe e anima o texto de Dia/Semana (ex: "Dia 3 - Semana 1").
+/// Exibe e anima o texto de Dia/Semana - REFATORADO.
+/// 
+/// ?? RENOMEAR PARA DayWeekDisplay após deletar o antigo!
 /// 
 /// RESPONSABILIDADE:
 /// - Atualizar texto quando dia/semana mudam
 /// - Executar animação de pulse/bounce
+/// - Debounce para pulse único (agrupa mudanças de dia+semana)
 /// 
 /// ARQUITETURA:
-/// - Event-driven: Escuta TimeEvents.OnDayChanged
+/// - Event-driven: Escuta TimeEvents via UIContext
+/// - Dependency Injection: Recebe UIContext, não usa AppCore.Instance
 /// - SOLID: Não acessa RunData diretamente
-/// - Extensível: Adicionar efeitos visuais sem modificar código
 /// 
-/// FUTURO:
-/// - Cor especial no último dia da semana
-/// - Efeitos de partículas em transição de semana
-/// - Localization support
+/// REFATORAÇÕES:
+/// - ? Injeção via UIContext
+/// - ? Debounce para pulse único
+/// - ? Removido AppCore.Instance
 /// </summary>
 [RequireComponent(typeof(TextMeshProUGUI))]
-public class DayWeekDisplay : MonoBehaviour
+public class DayWeekDisplayRefactored : MonoBehaviour
 {
     [Header("Animation Settings")]
     [Tooltip("Duração da animação de pulse quando muda de dia")]
@@ -36,16 +39,24 @@ public class DayWeekDisplay : MonoBehaviour
     [Tooltip("Formato do texto. Use {0} para dia e {1} para semana")]
     [SerializeField] private string _textFormat = "Dia {0} - Semana {1}";
 
+    [Header("Debounce Settings")]
+    [Tooltip("Tempo de espera para agrupar mudanças de dia+semana (segundos)")]
+    [SerializeField] private float _debounceTime = 0.1f;
+
     [Header("Debug")]
     [SerializeField] private bool _showDebugLogs = false;
 
     private TextMeshProUGUI _text;
     private RectTransform _rectTransform;
     private Coroutine _currentAnimation;
+    private Coroutine _debounceCoroutine;
 
     private int _currentDay = 1;
     private int _currentWeek = 1;
+    private bool _pendingUpdate = false;
 
+    // Contexto injetado
+    private UIContext _context;
     private bool _isInitialized = false;
 
     private void Awake()
@@ -54,43 +65,30 @@ public class DayWeekDisplay : MonoBehaviour
         _rectTransform = GetComponent<RectTransform>();
     }
 
-    private void Start()
+    /// <summary>
+    /// Inicialização via UIBootstrapper (injeção de dependências).
+    /// </summary>
+    public void Initialize(UIContext context)
     {
-        StartCoroutine(InitializeWhenReady());
-    }
-
-    private IEnumerator InitializeWhenReady()
-    {
-        // Espera AppCore
-        while (AppCore.Instance == null)
+        if (_isInitialized)
         {
-            yield return null;
+            if (_showDebugLogs)
+                Debug.LogWarning("[DayWeekDisplay] Já foi inicializado!");
+            return;
         }
 
-        // Espera RunData
-        while (AppCore.Instance.SaveManager?.Data?.CurrentRun == null)
-        {
-            yield return null;
-        }
+        _context = context ?? throw new System.ArgumentNullException(nameof(context));
 
-        Initialize();
-    }
-
-    private void Initialize()
-    {
-        if (_isInitialized) return;
-
-        // Lê estado inicial
-        var runData = AppCore.Instance.SaveManager.Data.CurrentRun;
-        _currentDay = runData.CurrentDay;
-        _currentWeek = runData.CurrentWeek;
+        // Lê estado inicial via interface
+        _currentDay = _context.RunData.CurrentDay;
+        _currentWeek = _context.RunData.CurrentWeek;
 
         // Atualiza texto inicial (sem animação)
         UpdateText(immediate: true);
 
-        // Escuta eventos
-        AppCore.Instance.Events.Time.OnDayChanged += HandleDayChanged;
-        AppCore.Instance.Events.Time.OnWeekChanged += HandleWeekChanged;
+        // Escuta eventos via contexto
+        _context.TimeEvents.OnDayChanged += HandleDayChanged;
+        _context.TimeEvents.OnWeekChanged += HandleWeekChanged;
 
         _isInitialized = true;
 
@@ -100,31 +98,69 @@ public class DayWeekDisplay : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (AppCore.Instance != null)
+        if (_context != null)
         {
-            AppCore.Instance.Events.Time.OnDayChanged -= HandleDayChanged;
-            AppCore.Instance.Events.Time.OnWeekChanged -= HandleWeekChanged;
+            _context.TimeEvents.OnDayChanged -= HandleDayChanged;
+            _context.TimeEvents.OnWeekChanged -= HandleWeekChanged;
         }
     }
 
+    /// <summary>
+    /// Handler de mudança de dia (com debounce).
+    /// </summary>
     private void HandleDayChanged(int newDay)
     {
         _currentDay = newDay;
-        UpdateText(immediate: false);
+        _pendingUpdate = true;
+        StartDebounce();
 
         if (_showDebugLogs)
             Debug.Log($"[DayWeekDisplay] Dia atualizado: {_currentDay}");
     }
 
+    /// <summary>
+    /// Handler de mudança de semana (com debounce).
+    /// </summary>
     private void HandleWeekChanged(int newWeek)
     {
         _currentWeek = newWeek;
-        UpdateText(immediate: false);
+        _pendingUpdate = true;
+        StartDebounce();
 
         if (_showDebugLogs)
             Debug.Log($"[DayWeekDisplay] Semana atualizada: {_currentWeek}");
     }
 
+    /// <summary>
+    /// Sistema de debounce: Aguarda pequeno intervalo antes de animar.
+    /// Isso agrupa mudanças de dia+semana em um único pulse.
+    /// </summary>
+    private void StartDebounce()
+    {
+        if (_debounceCoroutine != null)
+        {
+            StopCoroutine(_debounceCoroutine);
+        }
+
+        _debounceCoroutine = StartCoroutine(DebounceRoutine());
+    }
+
+    private IEnumerator DebounceRoutine()
+    {
+        yield return new WaitForSeconds(_debounceTime);
+
+        if (_pendingUpdate)
+        {
+            UpdateText(immediate: false);
+            _pendingUpdate = false;
+        }
+
+        _debounceCoroutine = null;
+    }
+
+    /// <summary>
+    /// Atualiza o texto exibido.
+    /// </summary>
     private void UpdateText(bool immediate)
     {
         // Atualiza texto
@@ -137,6 +173,9 @@ public class DayWeekDisplay : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Executa animação de pulse/bounce.
+    /// </summary>
     private void AnimatePulse()
     {
         if (_currentAnimation != null)

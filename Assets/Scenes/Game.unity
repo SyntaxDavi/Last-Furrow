@@ -4555,13 +4555,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 1528058628}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5116caf84e3a274fae7380d8c06ee3e, type: 3}
+  m_Script: {fileID: 11500000, guid: 0ee5ef2672f7acc44a37483c862aa695, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _heartPrefab: {fileID: 3810702683717849246, guid: dfb7d9c85dc017e428505c0860960ea9, type: 3}
   _container: {fileID: 1528058629}
-  _spacing: 100
+  _spacing: 75
   _spawnDelay: 0.5
+  _simultaneousLoss: 1
+  _lossAnimationDelay: 0.1
   _showDebugLogs: 1
 --- !u!1 &1608780529
 GameObject:

@@ -67,11 +67,23 @@ public class UIBootstrapper : MonoBehaviour
                 Debug.Log("[UIBootstrapper] ? HeartDisplayManagerRefactored inicializado");
         }
 
-        // 3. TODO: Injeta em DayWeekDisplay (aguardando refatoração)
-        // var dayWeekDisplay = FindObjectOfType<DayWeekDisplay>();
+        // 3. Injeta em DayWeekDisplayRefactored
+        var dayWeekDisplay = FindObjectOfType<DayWeekDisplayRefactored>();
+        if (dayWeekDisplay != null)
+        {
+            dayWeekDisplay.Initialize(context);
+            if (_showDebugLogs)
+                Debug.Log("[UIBootstrapper] ? DayWeekDisplayRefactored inicializado");
+        }
 
-        // 4. TODO: Injeta em SleepButtonController (aguardando refatoração)
-        // var sleepButton = FindObjectOfType<SleepButtonController>();
+        // 4. Injeta em SleepButtonControllerRefactored
+        var sleepButton = FindObjectOfType<SleepButtonControllerRefactored>();
+        if (sleepButton != null)
+        {
+            sleepButton.Initialize(context);
+            if (_showDebugLogs)
+                Debug.Log("[UIBootstrapper] ? SleepButtonControllerRefactored inicializado");
+        }
 
         // TODO FUTURO: Auto-discover de componentes que implementam IUIComponent
         // var allUIComponents = FindObjectsOfType<MonoBehaviour>().OfType<IUIComponent>();

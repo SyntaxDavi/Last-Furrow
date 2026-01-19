@@ -3,26 +3,27 @@ using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// Controlador do botão "Sleep" (avançar dia).
+/// Controlador do botão "Sleep" (avançar dia) - REFATORADO.
+/// 
+/// ?? RENOMEAR PARA SleepButtonController após deletar o antigo!
 /// 
 /// RESPONSABILIDADE:
-/// - Validar se botão pode ser clicado (estado do jogo)
+/// - Validar se botão pode ser clicado (via ITimePolicy)
 /// - Chamar DailyResolutionSystem ao clicar
 /// - Feedback visual durante processamento
 /// 
 /// ARQUITETURA:
-/// - Event-driven: Escuta TimeEvents para atualizar estado
-/// - SOLID: Não acessa RunData diretamente
-/// - Desacoplado: Não conhece implementação do DailyResolutionSystem
+/// - Event-driven: Escuta TimeEvents e GameStateEvents via UIContext
+/// - Dependency Injection: Recebe UIContext, não usa AppCore.Instance
+/// - SOLID: UI pergunta para ITimePolicy, não decide
 /// 
-/// REGRAS:
-/// - Desabilitado durante Weekend (Dia 6-7)
-/// - Desabilitado durante menus (Shopping, Pause)
-/// - Desabilitado durante animações (Resolution)
-/// - Muda texto para "Sleeping..." durante processamento
+/// REFATORAÇÕES:
+/// - ? Injeção via UIContext
+/// - ? Validação delegada para ITimePolicy
+/// - ? Removido AppCore.Instance (exceto DailyResolutionSystem - TODO futuro)
 /// </summary>
 [RequireComponent(typeof(Button))]
-public class SleepButtonController : MonoBehaviour
+public class SleepButtonControllerRefactored : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private TextMeshProUGUI _buttonText;
@@ -31,15 +32,14 @@ public class SleepButtonController : MonoBehaviour
     [SerializeField] private string _normalText = "Sleep";
     [SerializeField] private string _processingText = "Sleeping...";
 
-    [Header("State Rules")]
-    [Tooltip("Desabilitar durante fim de semana (Dia 6-7)?")]
-    [SerializeField] private bool _disableOnWeekend = true;
-
     [Header("Debug")]
     [SerializeField] private bool _showDebugLogs = false;
 
     private Button _button;
     private bool _isProcessing = false;
+
+    // Contexto injetado
+    private UIContext _context;
     private bool _isInitialized = false;
 
     private void Awake()
@@ -52,34 +52,28 @@ public class SleepButtonController : MonoBehaviour
         }
     }
 
-    private void Start()
+    /// <summary>
+    /// Inicialização via UIBootstrapper (injeção de dependências).
+    /// </summary>
+    public void Initialize(UIContext context)
     {
-        StartCoroutine(InitializeWhenReadyCoroutine());
-    }
-
-    private System.Collections.IEnumerator InitializeWhenReadyCoroutine()
-    {
-        // Espera AppCore
-        while (AppCore.Instance == null)
+        if (_isInitialized)
         {
-            yield return null;
+            if (_showDebugLogs)
+                Debug.LogWarning("[SleepButtonController] Já foi inicializado!");
+            return;
         }
 
-        Initialize();
-    }
-
-    private void Initialize()
-    {
-        if (_isInitialized) return;
+        _context = context ?? throw new System.ArgumentNullException(nameof(context));
 
         // Conecta listener do botão
         _button.onClick.AddListener(OnSleepButtonClicked);
 
-        // Escuta eventos de estado
-        AppCore.Instance.Events.Time.OnResolutionStarted += HandleResolutionStarted;
-        AppCore.Instance.Events.Time.OnResolutionEnded += HandleResolutionEnded;
-        AppCore.Instance.Events.GameState.OnStateChanged += HandleGameStateChanged;
-        AppCore.Instance.Events.Time.OnDayChanged += HandleDayChanged;
+        // Escuta eventos de estado via contexto
+        _context.TimeEvents.OnResolutionStarted += HandleResolutionStarted;
+        _context.TimeEvents.OnResolutionEnded += HandleResolutionEnded;
+        _context.GameStateEvents.OnStateChanged += HandleGameStateChanged;
+        _context.TimeEvents.OnDayChanged += HandleDayChanged;
 
         // Atualiza estado inicial
         UpdateButtonState();
@@ -92,12 +86,12 @@ public class SleepButtonController : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (AppCore.Instance != null)
+        if (_context != null)
         {
-            AppCore.Instance.Events.Time.OnResolutionStarted -= HandleResolutionStarted;
-            AppCore.Instance.Events.Time.OnResolutionEnded -= HandleResolutionEnded;
-            AppCore.Instance.Events.GameState.OnStateChanged -= HandleGameStateChanged;
-            AppCore.Instance.Events.Time.OnDayChanged -= HandleDayChanged;
+            _context.TimeEvents.OnResolutionStarted -= HandleResolutionStarted;
+            _context.TimeEvents.OnResolutionEnded -= HandleResolutionEnded;
+            _context.GameStateEvents.OnStateChanged -= HandleGameStateChanged;
+            _context.TimeEvents.OnDayChanged -= HandleDayChanged;
         }
 
         _button.onClick.RemoveListener(OnSleepButtonClicked);
@@ -122,7 +116,8 @@ public class SleepButtonController : MonoBehaviour
         if (_showDebugLogs)
             Debug.Log("[SleepButtonController] Iniciando ciclo de fim de dia...");
 
-        // Chama sistema de resolução
+        // Chama sistema de resolução (ainda precisa de AppCore para isso)
+        // TODO FUTURO: Injetar DailyResolutionSystem via UIContext
         AppCore.Instance.DailyResolutionSystem.StartEndDaySequence();
     }
 
@@ -148,6 +143,9 @@ public class SleepButtonController : MonoBehaviour
         UpdateButtonState();
     }
 
+    /// <summary>
+    /// Atualiza estado visual do botão.
+    /// </summary>
     private void UpdateButtonState()
     {
         bool canActivate = CanActivate();
@@ -160,30 +158,28 @@ public class SleepButtonController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Valida se botão pode ser ativado.
+    /// DELEGADO: Usa ITimePolicy para regras de tempo.
+    /// </summary>
     private bool CanActivate()
     {
-        if (AppCore.Instance == null) return false;
-        if (AppCore.Instance.SaveManager?.Data?.CurrentRun == null) return false;
+        if (!_isInitialized) return false;
 
-        var runData = AppCore.Instance.SaveManager.Data.CurrentRun;
+        // 1. Lê dados via interface
+        int currentDay = _context.RunData.CurrentDay;
+
+        // 2. Pergunta para GameStateManager (ainda via AppCore, TODO: injetar)
         var gameState = AppCore.Instance.GameStateManager.CurrentState;
-
-        // 1. Verifica estado do jogo
         if (gameState != GameState.Playing)
         {
             return false; // Bloqueado durante Shopping, Pause, etc
         }
 
-        // 2. Verifica se está no fim de semana (Dia 6-7)
-        if (_disableOnWeekend)
-        {
-            if (runData.CurrentDay >= 6)
-            {
-                // Durante fim de semana, usa o botão "Trabalhar" do shop
-                return false;
-            }
-        }
+        // 3. ? DELEGADO: Pergunta para ITimePolicy
+        var runPhase = AppCore.Instance.RunManager.CurrentPhase;
+        bool canSleep = _context.TimePolicy.CanSleep(currentDay, runPhase);
 
-        return true;
+        return canSleep;
     }
 }
