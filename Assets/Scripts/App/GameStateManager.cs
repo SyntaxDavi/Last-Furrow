@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class GameStateManager : MonoBehaviour
+public class GameStateManager : MonoBehaviour, IGameStateProvider
 {
     public GameState CurrentState { get; private set; } = GameState.Initialization;
     public GameState PreviousState { get; private set; } 
