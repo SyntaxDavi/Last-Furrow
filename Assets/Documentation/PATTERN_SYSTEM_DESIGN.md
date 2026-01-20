@@ -1385,7 +1385,10 @@ Console:
 
 ## 🌊 **ONDA 2: FEEDBACK VISUAL + TIER 2 COMPLETO (Sprint 2 - ~2-3 dias)**
 
-### **🏷️ STATUS: ⏳ EM PROGRESSO**
+### **🏷️ STATUS: ✅ COMPLETA (2025-01-XX)**
+
+**Branch:** `feature/pattern-system-wave-2`  
+**Tag:** `wave-2-complete`  
 
 ### **🎯 Objetivo:**
 Adicionar **padrões restantes Tier 2** + **UI básica** (logs visuais, toast notification)
@@ -1393,20 +1396,44 @@ Adicionar **padrões restantes Tier 2** + **UI básica** (logs visuais, toast no
 ### **✅ Entregáveis:**
 
 #### **2.1 - Padrões Tier 2 Restantes**
-- [ ] `CheckerPattern.cs` (Xadrez 2x2 - 20 pts)
+- [x] `CheckerPattern.cs` (Xadrez 2x2 - 20 pts)
 
 #### **2.2 - UI Básica (Sem PopUp Complexo)**
-- [ ] Toast notification "Pattern Detected!" (fade out)
-- [ ] Adicionar score de patterns no HUD (separado de harvest)
-- [ ] Highlight temporário de slots (opcional)
+- [x] `PatternFeedbackView.cs` - Toast notification com fade in/out
+- [x] `PatternScoreHUDView.cs` - Score de patterns separado no HUD
+- [ ] Highlight temporário de slots (opcional - movido para futuro)
 
-**⚠️ Nota sobre UI:**
-> UI complexa (popup de padrões, tabela completa, animações) será documentada em **arquivo separado** (`PATTERN_UI_DESIGN.md`). Por enquanto, apenas feedback mínimo.
+**NOTA:** Os componentes de UI foram criados mas precisam ser adicionados manualmente a um Canvas na Unity.
 
 #### **2.3 - Refinamento de Score** ✅ JÁ IMPLEMENTADO NA ONDA 1
 - [x] Implementar formula de Crop Value ← Feito na Onda 1
 - [x] Implementar bonus de Maturity ← Feito na Onda 1
 - [x] Implementar Soft Cap de Sinergia ← Feito na Onda 1
+
+### **📁 Arquivos Criados (Onda 2):**
+```
+Assets/Scripts/Domain/Patterns/Implementations/
+└── CheckerPattern.cs
+
+Assets/Scripts/UI/Patterns/
+├── PatternFeedbackView.cs   ← Toast notification
+└── PatternScoreHUDView.cs   ← HUD score separado
+```
+
+### **📁 Arquivos Modificados (Onda 2):**
+- `Assets/Scripts/Domain/Patterns/Core/PatternDetector.cs` - Adicionado CheckerPattern
+
+### **🎨 Setup de UI (Manual na Unity):**
+Para ativar a UI de padrões, criar no Canvas:
+1. **PatternFeedback** - GameObject com:
+   - TextMeshProUGUI (para o texto)
+   - CanvasGroup (para fade)
+   - PatternFeedbackView component
+   
+2. **PatternScoreHUD** (opcional) - GameObject com:
+   - TextMeshProUGUI (para score)
+   - CanvasGroup
+   - PatternScoreHUDView component
 
 ### **🧪 Critérios de Aceitação (Onda 2):**
 ```
@@ -1420,6 +1447,8 @@ Adicionar **padrões restantes Tier 2** + **UI básica** (logs visuais, toast no
 ---
 
 ## 🌊 **ONDA 3: PADRÕES AVANÇADOS (Sprint 3 - ~2-3 dias)**
+
+### **🏷️ STATUS: ⏳ PENDENTE**
 
 ### **🎯 Objetivo:**
 Adicionar **Tier 3 e Tier 4** (padrões complexos)
