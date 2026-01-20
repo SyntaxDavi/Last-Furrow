@@ -14,13 +14,11 @@ using System.Collections.Generic;
 /// - Slots bloqueados QUEBRAM a linha (não conta como completa)
 /// - NÃO detecta se houver qualquer slot inválido
 /// </summary>
-public class FullLinePattern : IGridPattern
+public class FullLinePattern : BaseGridPattern
 {
-    public string PatternID => "FULL_LINE";
-    public string DisplayName => "Linha Completa";
-    public int BaseScore => 25;
+    public FullLinePattern(PatternDefinitionSO definition) : base(definition) { }
     
-    public List<PatternMatch> DetectAll(IGridService gridService)
+    public override List<PatternMatch> DetectAll(IGridService gridService)
     {
         var matches = new List<PatternMatch>();
         var config = gridService.Config;

@@ -19,13 +19,11 @@ using System.Collections.Generic;
 /// - Bottom-Left (4,0): slots [20,21,15]
 /// - Bottom-Right (4,4): slots [24,23,19]
 /// </summary>
-public class GridCornerPattern : IGridPattern
+public class GridCornerPattern : BaseGridPattern
 {
-    public string PatternID => "CORNER";
-    public string DisplayName => "Cantinho";
-    public int BaseScore => 8;
+    public GridCornerPattern(PatternDefinitionSO definition) : base(definition) { }
     
-    public List<PatternMatch> DetectAll(IGridService gridService)
+    public override List<PatternMatch> DetectAll(IGridService gridService)
     {
         var matches = new List<PatternMatch>();
         var config = gridService.Config;

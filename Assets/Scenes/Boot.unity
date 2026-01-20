@@ -245,6 +245,10 @@ PrefabInstance:
       value: AppCore
       objectReference: {fileID: 0}
     - target: {fileID: 7086375328797191102, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
+      propertyPath: _patternLibrary
+      value: 
+      objectReference: {fileID: 11400000, guid: db2c5d139cc3e2d43a70c5477290d560, type: 2}
+    - target: {fileID: 7086375328797191102, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
       propertyPath: _gridConfiguration
       value: 
       objectReference: {fileID: 11400000, guid: 449f559565c270944a7aba4dcdc0bd96, type: 2}
@@ -270,11 +274,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
       propertyPath: '_quickSpawnCardIDs.Array.data[2]'
-      value: card_expansion
+      value: card_carrot
       objectReference: {fileID: 0}
     - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
       propertyPath: '_quickSpawnCardIDs.Array.data[3]'
-      value: card_carrot
+      value: card_expansion
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

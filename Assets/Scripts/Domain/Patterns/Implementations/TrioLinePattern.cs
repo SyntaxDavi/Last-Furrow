@@ -14,13 +14,11 @@ using System.Collections.Generic;
 /// - Slots bloqueados QUEBRAM a linha (não é trio se tiver locked no meio)
 /// - Diagonal NÃO conta
 /// </summary>
-public class TrioLinePattern : IGridPattern
+public class TrioLinePattern : BaseGridPattern
 {
-    public string PatternID => "TRIO_LINE";
-    public string DisplayName => "Trio em Linha";
-    public int BaseScore => 10;
+    public TrioLinePattern(PatternDefinitionSO definition) : base(definition) { }
     
-    public List<PatternMatch> DetectAll(IGridService gridService)
+    public override List<PatternMatch> DetectAll(IGridService gridService)
     {
         var matches = new List<PatternMatch>();
         var config = gridService.Config;

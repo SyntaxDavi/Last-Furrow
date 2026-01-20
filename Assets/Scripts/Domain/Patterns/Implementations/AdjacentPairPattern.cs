@@ -4,7 +4,6 @@ using System.Collections.Generic;
 /// Padrão #1: Par Adjacente
 /// 
 /// DESCRIÇÃO: 2 crops iguais lado a lado (horizontal ou vertical)
-/// PONTOS BASE: 5 pts
 /// TIER: 1 (Iniciante)
 /// DIFICULDADE: ?
 /// 
@@ -13,14 +12,19 @@ using System.Collections.Generic;
 /// - Adjacência = horizontal (esquerda/direita) OU vertical (cima/baixo)
 /// - Diagonal NÃO conta
 /// - Slots bloqueados quebram adjacência
+/// 
+/// ONDA 5: Migrado para BaseGridPattern + PatternDefinitionSO
 /// </summary>
-public class AdjacentPairPattern : IGridPattern
+public class AdjacentPairPattern : BaseGridPattern
 {
-    public string PatternID => "ADJACENT_PAIR";
-    public string DisplayName => "Par Adjacente";
-    public int BaseScore => 5;
+    /// <summary>
+    /// Construtor da Onda 5: Recebe configuração do ScriptableObject.
+    /// </summary>
+    public AdjacentPairPattern(PatternDefinitionSO definition) : base(definition)
+    {
+    }
     
-    public List<PatternMatch> DetectAll(IGridService gridService)
+    public override List<PatternMatch> DetectAll(IGridService gridService)
     {
         var matches = new List<PatternMatch>();
         var config = gridService.Config;
@@ -79,19 +83,12 @@ public class AdjacentPairPattern : IGridPattern
         
         detectedPairs.Add(pairKey);
         
-        // Criar match
+        // Criar match usando helper da classe base
         var slotIndices = new List<int> { index1, index2 };
         var cropIDs = PatternHelper.CollectCropIDs(slotIndices, gridService);
         
         string desc = direction == "H" ? "Horizontal" : "Vertical";
         
-        matches.Add(PatternMatch.Create(
-            PatternID,
-            DisplayName,
-            slotIndices,
-            BaseScore,
-            cropIDs,
-            desc
-        ));
+        matches.Add(CreateMatch(slotIndices, cropIDs, desc));
     }
 }

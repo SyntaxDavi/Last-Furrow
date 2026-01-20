@@ -23,13 +23,11 @@ using System.Collections.Generic;
 /// 
 /// Total: 5+5+3+3 = 16 slots (cantos contam uma vez)
 /// </summary>
-public class FramePattern : IGridPattern
+public class FramePattern : BaseGridPattern
 {
-    public string PatternID => "FRAME";
-    public string DisplayName => "Moldura";
-    public int BaseScore => 50;
+    public FramePattern(PatternDefinitionSO definition) : base(definition) { }
     
-    public List<PatternMatch> DetectAll(IGridService gridService)
+    public override List<PatternMatch> DetectAll(IGridService gridService)
     {
         var matches = new List<PatternMatch>();
         var config = gridService.Config;
@@ -52,15 +50,9 @@ public class FramePattern : IGridPattern
         
         // Criar match
         var cropIDs = PatternHelper.CollectCropIDs(borderIndices, gridService);
+        string desc = $"{borderIndices.Count} slots de borda";
         
-        matches.Add(PatternMatch.Create(
-            PatternID,
-            DisplayName,
-            borderIndices,
-            BaseScore,
-            cropIDs,
-            $"{borderIndices.Count} slots de borda"
-        ));
+        matches.Add(CreateMatch(borderIndices, cropIDs, desc));
         
         return matches;
     }

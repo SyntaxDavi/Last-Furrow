@@ -24,13 +24,11 @@ using System.Collections.Generic;
 /// [ ][ ][ ][X][ ]            [ ][X][ ][ ][ ]
 /// [ ][ ][ ][ ][X]            [X][ ][ ][ ][ ]
 /// </summary>
-public class DiagonalPattern : IGridPattern
+public class DiagonalPattern : BaseGridPattern
 {
-    public string PatternID => "DIAGONAL";
-    public string DisplayName => "Diagonal";
-    public int BaseScore => 40;
+    public DiagonalPattern(PatternDefinitionSO definition) : base(definition) { }
     
-    public List<PatternMatch> DetectAll(IGridService gridService)
+    public override List<PatternMatch> DetectAll(IGridService gridService)
     {
         var matches = new List<PatternMatch>();
         var config = gridService.Config;
@@ -80,16 +78,10 @@ public class DiagonalPattern : IGridPattern
         if (!PatternHelper.AllSameCrop(indices, gridService))
             return;
         
+        
         // Criar match
         var cropIDs = PatternHelper.CollectCropIDs(indices, gridService);
         
-        matches.Add(PatternMatch.Create(
-            PatternID,
-            DisplayName,
-            indices,
-            BaseScore,
-            cropIDs,
-            diagName
-        ));
+        matches.Add(CreateMatch(indices, cropIDs, diagName));
     }
 }

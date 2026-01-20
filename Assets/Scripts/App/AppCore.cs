@@ -13,12 +13,8 @@ public class AppCore : MonoBehaviour
     public DailyHandSystem DailyHandSystem { get; private set; }
     public WeeklyGoalSystem WeeklyGoalSystem { get; private set; }
     public ShopService ShopService { get; private set; }
-    
-    // ⭐ NOVO: Pattern System (Onda 1)
     public PatternDetector PatternDetector { get; private set; }
     public PatternScoreCalculator PatternCalculator { get; private set; }
-    
-    // ⭐ NOVO: Pattern Tracking (Onda 4)
     public PatternTrackingService PatternTracking { get; private set; }
 
     [Header("Data")]
@@ -28,6 +24,9 @@ public class AppCore : MonoBehaviour
 
     [Header("Game Design Configs")]
     [SerializeField] private ProgressionSettingsSO _progressionSettings;
+    
+    [Header("Pattern System")]
+    [SerializeField] private PatternLibrary _patternLibrary;
 
     public GridConfiguration GridConfiguration => _gridConfiguration;
     public PatternWeightConfig PatternWeightConfig => _patternWeightConfig;
@@ -48,7 +47,7 @@ public class AppCore : MonoBehaviour
     // O Controlador do Flow (Arraste na cena)
     public WeekendFlowController WeekendFlowController;
 
-    private IGridService _gridService;
+    private IGridService _gridService;  
     
     // Propriedade publica para GridService (read-only)
     public IGridService GridService => _gridService;
@@ -106,8 +105,13 @@ public class AppCore : MonoBehaviour
         WeeklyGoalSystem = new WeeklyGoalSystem(GameLibrary, Events.Progression, _progressionSettings);
         ShopService = new ShopService(EconomyService, SaveManager, GameLibrary, Events);
         
-        // ⭐ NOVO: Pattern System (Onda 1)
-        PatternDetector = new PatternDetector();
+        // ⭐ NOVO: Pattern System (Onda 5 - ScriptableObject)
+        if (_patternLibrary == null)
+        {
+            Debug.LogError("[AppCore] PatternLibrary não atribuída! Pattern System não funcionará.");
+        }
+        
+        PatternDetector = new PatternDetector(_patternLibrary);
         PatternCalculator = new PatternScoreCalculator(GameLibrary);
         // NOTA: PatternTracking é inicializado depois, quando RunData estiver disponível
         // Ver InitializePatternTracking() chamado pelo RunManager ou GameplayBootstrapper

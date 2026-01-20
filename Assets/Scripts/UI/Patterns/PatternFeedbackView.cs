@@ -51,16 +51,24 @@ public class PatternFeedbackView : MonoBehaviour
     
     private void Awake()
     {
-        // Garantir que começa invisível
+        // Garantir que começa invisível e DESATIVADO
         if (_canvasGroup != null)
         {
             _canvasGroup.alpha = 0f;
+        }
+        
+        if (_feedbackText != null)
+        {
+            _feedbackText.text = "";
         }
         
         if (_decayInfoText != null)
         {
             _decayInfoText.text = "";
         }
+        
+        // Desativar o GameObject no início
+        gameObject.SetActive(false);
     }
     
     private void OnEnable()
@@ -131,6 +139,9 @@ public class PatternFeedbackView : MonoBehaviour
             Debug.LogWarning("[PatternFeedbackView] UI References não configuradas!");
             return;
         }
+        
+        // Ativar o GameObject antes de mostrar
+        gameObject.SetActive(true);
         
         // Parar animação anterior se existir
         if (_displayCoroutine != null)
@@ -228,6 +239,9 @@ public class PatternFeedbackView : MonoBehaviour
         {
             _decayInfoText.text = "";
         }
+        
+        // Desativar GameObject após animação
+        gameObject.SetActive(false);
         
         _displayCoroutine = null;
     }
