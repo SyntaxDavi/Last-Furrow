@@ -379,4 +379,38 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 
         return sr;
     }
+    
+    // --- API PÚBLICA PARA PATTERN HIGHLIGHTS (ONDA 5.5) ---
+    
+    /// <summary>
+    /// Define cor do highlight (Layer 4) para pattern system.
+    /// </summary>
+    /// <param name="color">Cor do highlight</param>
+    /// <param name="enable">Se true, ativa o highlight</param>
+    public void SetPatternHighlight(Color color, bool enable = true)
+    {
+        if (_highlightRenderer == null) return;
+        
+        _highlightRenderer.color = color;
+        _highlightRenderer.enabled = enable;
+    }
+    
+    /// <summary>
+    /// Limpa o highlight (desativa Layer 4).
+    /// </summary>
+    public void ClearPatternHighlight()
+    {
+        if (_highlightRenderer == null) return;
+        
+        _highlightRenderer.enabled = false;
+    }
+    
+    /// <summary>
+    /// Retorna se o highlight está ativo.
+    /// </summary>
+    public bool IsHighlightActive()
+    {
+        return _highlightRenderer != null && _highlightRenderer.enabled;
+    }
 }
+

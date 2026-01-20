@@ -270,15 +270,23 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: ec9251d361cfa6f4ab7879e6c9e8f50c, type: 2}
     - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
       propertyPath: _quickSpawnCardIDs.Array.size
-      value: 4
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
       propertyPath: '_quickSpawnCardIDs.Array.data[2]'
-      value: card_carrot
+      value: card_expansion
       objectReference: {fileID: 0}
     - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
       propertyPath: '_quickSpawnCardIDs.Array.data[3]'
-      value: card_expansion
+      value: card_harvest
+      objectReference: {fileID: 0}
+    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
+      propertyPath: '_quickSpawnCardIDs.Array.data[4]'
+      value: card_shovel
+      objectReference: {fileID: 0}
+    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
+      propertyPath: '_quickSpawnCardIDs.Array.data[5]'
+      value: card_water
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
