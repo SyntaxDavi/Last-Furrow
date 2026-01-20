@@ -269,8 +269,35 @@ public class AnalyzingPhaseController : MonoBehaviour
         
         _isAnalyzing = false;
         
-        // Resetar posições de todos os slots (suavemente)
-        StartCoroutine(ResetAllSlotPositionsSmoothly());
+        // CORREÇÃO: Verificar se GameObject está ativo antes de iniciar coroutine
+        // OnDestroy pode chamar isso quando GameObject já está inativo
+        if (gameObject.activeInHierarchy)
+        {
+            // Resetar posições de todos os slots (suavemente)
+            StartCoroutine(ResetAllSlotPositionsSmoothly());
+        }
+        else
+        {
+            // Se GameObject inativo, resetar imediatamente (sem animação)
+            ResetAllSlotPositionsImmediate();
+        }
+    }
+    
+    /// <summary>
+    /// Reseta posições de todos os slots IMEDIATAMENTE (sem animação).
+    /// Usado quando GameObject está inativo (OnDestroy).
+    /// </summary>
+    private void ResetAllSlotPositionsImmediate()
+    {
+        if (_cachedSlots == null) return;
+        
+        foreach (var slot in _cachedSlots)
+        {
+            if (slot != null && _originalPositions.ContainsKey(slot))
+            {
+                slot.transform.localPosition = _originalPositions[slot];
+            }
+        }
     }
     
     /// <summary>
