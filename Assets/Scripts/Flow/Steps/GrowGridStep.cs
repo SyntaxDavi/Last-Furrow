@@ -22,7 +22,7 @@ public class GrowGridStep : IFlowStep
 
     public IEnumerator Execute(FlowControl control)
     {
-        // HARDCODE: Chamar AnalyzingPhaseController ANTES de processar
+        // HARDCODE: Cachear controller
         if (!_controllerCached)
         {
             _analyzingController = Object.FindFirstObjectByType<AnalyzingPhaseController>();
@@ -30,37 +30,36 @@ public class GrowGridStep : IFlowStep
             
             if (_analyzingController != null)
             {
-                Debug.Log("[GrowGridStep] AnalyzingPhaseController encontrado!");
+                Debug.Log("[GrowGridStep] ? AnalyzingPhaseController encontrado!");
             }
             else
             {
-                Debug.LogWarning("[GrowGridStep] AnalyzingPhaseController NÃO encontrado na cena!");
+                Debug.LogError("[GrowGridStep] ? AnalyzingPhaseController NÃO encontrado na cena!");
             }
         }
         
-        // EXECUTAR ANÁLISE HARDCODE
+        // HARDCODE: AnalyzingPhaseController faz TUDO agora
         if (_analyzingController != null)
         {
-            Debug.Log("[GrowGridStep] === CHAMANDO ANALYZING PHASE (HARDCODE) ===");
-            yield return _analyzingController.AnalyzeGridHardcoded();
+            Debug.Log("[GrowGridStep] === DELEGANDO TUDO PARA ANALYZING PHASE ===");
+            yield return _analyzingController.AnalyzeAndGrowGrid(_gridService, _events, _runData);
             Debug.Log("[GrowGridStep] === ANALYZING PHASE CONCLUÍDA ===");
         }
-        
-        // Processar crescimento normal (rápido, sem visual)
-        for (int i = 0; i < _runData.GridSlots.Length; i++)
+        else
         {
-            if (!_gridService.IsSlotUnlocked(i))
+            // Fallback: se não houver controller, processar normalmente (SEM VISUAL)
+            Debug.LogWarning("[GrowGridStep] Fallback: processando grid SEM visual");
+            for (int i = 0; i < _runData.GridSlots.Length; i++)
             {
-                continue; // Pula para próximo slot
+                if (!_gridService.IsSlotUnlocked(i))
+                {
+                    continue;
+                }
+
+                _gridService.ProcessNightCycleForSlot(i);
             }
-
-            _events.Grid.TriggerAnalyzeSlot(i);
-            _gridService.ProcessNightCycleForSlot(i);
-
-            // Ritmo acelerado se segurar botão
-            float delay = _input.IsPrimaryButtonHeld ? 0.05f : 0.3f;
-            yield return new WaitForSeconds(delay);
         }
+        
         yield return new WaitForSeconds(0.5f);
     }
 }

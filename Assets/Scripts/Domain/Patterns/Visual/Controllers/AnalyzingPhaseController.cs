@@ -3,14 +3,17 @@ using UnityEngine;
 using TMPro;
 
 /// <summary>
-/// HARDCODE BRUTO - FAZ FUNCIONAR PRIMEIRO!
+/// HARDCODE BRUTAÇO - FAZ TUDO EM UMA PANCADA!
 /// 
 /// O QUE FAZ:
-/// 1. Passa por cada slot do grid
-/// 2. SE encontrar 2 crops LADO A LADO ? PARA
-/// 3. FAZ os 2 slots BRILHAREM (cor verde)
-/// 4. MOSTRA pop-up "ADJACENT PAIR! +5"
-/// 5. Continua...
+/// 1. Passa por cada slot DO GRID (levita)
+/// 2. CRESCE a planta (ProcessNightCycle)
+/// 3. SE encontrar 2 crops LADO A LADO ? PARA
+/// 4. FAZ os 2 slots BRILHAREM (verde)
+/// 5. MOSTRA pop-up "ADJACENT PAIR! +5"
+/// 6. Continua...
+/// 
+/// LEVITAÇÃO + CRESCIMENTO + DETECÇÃO + POPUP = TUDO JUNTO!
 /// </summary>
 public class AnalyzingPhaseController : MonoBehaviour
 {
@@ -32,11 +35,11 @@ public class AnalyzingPhaseController : MonoBehaviour
     }
     
     /// <summary>
-    /// HARDCODE: Passa por cada slot, detecta par adjacente, MOSTRA VISUAL.
+    /// HARDCODE MEGA: Levita, cresce, detecta, mostra popup TUDO JUNTO!
     /// </summary>
-    public IEnumerator AnalyzeGridHardcoded()
+    public IEnumerator AnalyzeAndGrowGrid(IGridService gridService, GameEvents events, RunData runData)
     {
-        Debug.Log("=== HARDCODE: Iniciando análise ===");
+        Debug.Log("=== HARDCODE MEGA: Iniciando análise COMPLETA ===");
         
         if (_gridManager == null)
         {
@@ -56,12 +59,26 @@ public class AnalyzingPhaseController : MonoBehaviour
             
             if (slot == null) continue;
             
-            Debug.Log($"Analisando slot {i} (Index: {slot.SlotIndex})");
+            int slotIndex = slot.SlotIndex;
             
-            // Levitar slot atual (cosmético)
-            yield return LevitateSlot(slot);
+            // Verificar se está desbloqueado
+            if (!gridService.IsSlotUnlocked(slotIndex))
+            {
+                continue;
+            }
             
-            // HARDCODE: Verificar se TEM CROP neste slot
+            Debug.Log($"?? Analisando slot {i} (Index: {slotIndex})");
+            
+            // EVENTO: Slot sendo analisado
+            events.Grid.TriggerAnalyzeSlot(slotIndex);
+            
+            // LEVITAR slot atual (cosmético)
+            StartCoroutine(LevitateSlot(slot));
+            
+            // CRESCER/PROCESSAR SLOT (lógica de jogo)
+            gridService.ProcessNightCycleForSlot(slotIndex);
+            
+            // HARDCODE: Verificar se TEM CROP APÓS PROCESSAMENTO
             bool hasCrop = slot.HasPlant();
             
             if (hasCrop)
@@ -72,10 +89,11 @@ public class AnalyzingPhaseController : MonoBehaviour
                 if (i + 1 < allSlots.Length)
                 {
                     var nextSlot = allSlots[i + 1];
+                    int nextSlotIndex = nextSlot != null ? nextSlot.SlotIndex : -1;
                     
-                    if (nextSlot != null && nextSlot.HasPlant())
+                    if (nextSlot != null && gridService.IsSlotUnlocked(nextSlotIndex) && nextSlot.HasPlant())
                     {
-                        Debug.Log($"  ? PAR ADJACENTE ENCONTRADO! Slots {i} e {i+1}");
+                        Debug.Log($"  ?? PAR ADJACENTE ENCONTRADO! Slots {i} e {i+1}");
                         
                         // FAZER BRILHAR OS 2 SLOTS (VERDE)
                         StartCoroutine(HighlightSlotHardcoded(slot, Color.green));
@@ -87,8 +105,11 @@ public class AnalyzingPhaseController : MonoBehaviour
                         // PARAR aqui por um tempo (para player ver)
                         yield return new WaitForSeconds(_highlightDuration);
                         
-                        // Pular próximo slot (já foi processado)
+                        // Pular próximo slot (já foi processado visualmente)
+                        // MAS ainda precisa crescer!
                         i++;
+                        events.Grid.TriggerAnalyzeSlot(nextSlotIndex);
+                        gridService.ProcessNightCycleForSlot(nextSlotIndex);
                     }
                 }
             }
@@ -97,7 +118,7 @@ public class AnalyzingPhaseController : MonoBehaviour
             yield return new WaitForSeconds(_delayPerSlot);
         }
         
-        Debug.Log("=== HARDCODE: Análise concluída ===");
+        Debug.Log("=== HARDCODE MEGA: Análise COMPLETA concluída ===");
     }
     
     /// <summary>
@@ -105,6 +126,8 @@ public class AnalyzingPhaseController : MonoBehaviour
     /// </summary>
     private IEnumerator LevitateSlot(GridSlotView slot)
     {
+        if (slot == null) yield break;
+        
         Vector3 originalPos = slot.transform.localPosition;
         float duration = 0.2f;
         float height = 0.1f;
@@ -139,8 +162,12 @@ public class AnalyzingPhaseController : MonoBehaviour
     /// </summary>
     private IEnumerator HighlightSlotHardcoded(GridSlotView slot, Color color)
     {
+        if (slot == null) yield break;
+        
         float duration = _highlightDuration;
         float elapsed = 0f;
+        
+        Debug.Log($"?? Brilhando slot {slot.SlotIndex} em {color}");
         
         while (elapsed < duration)
         {
@@ -184,11 +211,11 @@ public class AnalyzingPhaseController : MonoBehaviour
     {
         if (_popupText == null || _popupCanvasGroup == null)
         {
-            Debug.LogWarning("Pop-up não configurado no Inspector!");
+            Debug.LogWarning("?? Pop-up não configurado no Inspector!");
             yield break;
         }
         
-        Debug.Log($"POP-UP: {text}");
+        Debug.Log($"?? POP-UP: {text}");
         
         // Configurar texto
         _popupText.text = text;
@@ -222,13 +249,5 @@ public class AnalyzingPhaseController : MonoBehaviour
         }
         
         _popupCanvasGroup.alpha = 0f;
-    }
-    
-    /// <summary>
-    /// Método público para iniciar análise (chamar externamente).
-    /// </summary>
-    public void StartAnalyzing()
-    {
-        StartCoroutine(AnalyzeGridHardcoded());
     }
 }
