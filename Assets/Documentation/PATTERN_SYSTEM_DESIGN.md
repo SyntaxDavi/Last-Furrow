@@ -61,6 +61,37 @@ DIA 4: 1 cenoura murcha ? padrão quebrado
 DIA 5: Nova linha de Milho ? 30 pts (100% + 10% bonus) = 33 pts!
 ```
 
+#### **?? IDENTIDADE DE PADRÃO (CRÍTICO)**
+
+**Definição Formal**: Um padrão é considerado o **"mesmo padrão"** para efeitos de decay SOMENTE se:
+
+1. **PatternType** (classe) for idêntico (ex: `FullLinePattern`)
+2. **Slots exatos** (índices) forem os mesmos (ex: Row 0 = [0,1,2,3,4])
+3. **CropID** de todas as crops envolvidas for o mesmo (quando aplicável)
+
+**Implicações Técnicas:**
+```csharp
+// Identidade única de padrão para tracking
+PatternInstanceID = Hash(PatternType + SlotIndices + CropIDs);
+
+// Exemplos de NOVO PADRÃO (reseta decay):
+- Mudou 1 slot ? NOVO PADRÃO
+- Trocou crop de Cenoura pra Milho ? NOVO PADRÃO  
+- Colheu e replantou mesmo slot ? NOVO PADRÃO (crescimento reinicia)
+- Planta morreu e foi substituída ? NOVO PADRÃO
+
+// Exemplos de MESMO PADRÃO (decay continua):
+- Apenas cresceu (young ? mature) ? MESMO PADRÃO
+- Foi regada ? MESMO PADRÃO
+- Nada mudou ? MESMO PADRÃO
+```
+
+**Por que isso importa:**
+- Previne exploits de "replante gratuito"
+- Legitima decay como mecânica de pressão temporal
+- Simplifica implementação (sem lógica "criativa" de comparação)
+- Torna save/load determinístico
+
 ### **R3: Sobreposição**
 - Slots **PODEM** contar para múltiplos padrões
 - Double/triple dipping é **PERMITIDO** e **INCENTIVADO**
@@ -107,6 +138,41 @@ DIA 5: Nova linha de Milho ? 30 pts (100% + 10% bonus) = 33 pts!
 - Tamanho fixo (feature, não limitação)
 - 25 slots totais
 - 5 crops base por estação (futuro: 10)
+
+### **R9: Tempo de Crescimento como Pilar (CRÍTICO)**
+- Plantas **NÃO** crescem instantaneamente
+- **Crescimento lento** (3-4 dias até maturidade) cria **custo irrecuperável**
+- **Implicação estratégica**: Colher = prejuízo de padrão nos próximos dias
+
+**Por que isso é fundamental:**
+```
+SEM crescimento lento:
+Dia 1: Padrão ? Pontos ? Colher tudo ? Dinheiro
+Dia 2: Replantar igual ? Padrão ? Pontos (exploit!)
+
+COM crescimento lento:
+Dia 1: Padrão ? Pontos ? Colher tudo ? Dinheiro
+Dia 2: Grid jovem ? Padrão fraco ou inexistente
+Dia 3: Grid meio maduro ? Padrão parcial
+Dia 4: Grid maduro ? Padrão forte novamente
+```
+
+**Decisão com atraso de consequência:**
+- Você colhe agora, mas prejuízo aparece depois
+- Pattern System premia **paciência**
+- Harvest cobra **juros** (tempo de recuperação)
+- Grid raramente está "perfeito" (oscila naturalmente)
+
+**Regra de coerência:**
+```
+Tempo para reconstruir padrão forte ? Tempo de decay relevante
+Exemplo: Se decay dói no dia 3, crescimento total em 3-4 dias está coerente
+```
+
+**?? Implicação arquitetural:**
+- `slot.HasCrop` **NÃO** é critério suficiente para padrões
+- Estado da planta (young/mature) é parte da **linguagem do padrão**
+- Nunca simplificar isso no futuro (dívida técnica grave)
 
 ---
 
@@ -233,6 +299,139 @@ float synergyBonus = 1.0f + 0.2f * Mathf.Log(patternCount, 2);
 
 ---
 
+## ?? **RESPONSABILIDADES DOS COMPONENTES**
+
+### **PatternDetector - O Orquestrador Burro**
+
+**RESPONSABILIDADE ÚNICA:**
+- Percorrer o grid linha por linha
+- Delegar detecção para cada `IGridPattern.TryDetect()`
+- Coletar resultados em lista de `PatternMatch`
+- Emitir evento `OnPatternDetected`
+
+**EXPLICITAMENTE FORA DO ESCOPO:**
+- ? Cálculo de score
+- ? Aplicação de decay
+- ? Cálculo de sinergia
+- ? Priorização de padrões
+- ? Agrupamento de matches
+- ? Lógica de coordenação entre padrões
+
+**Filosofia:** Detector é **stateless**. Não guarda histórico, não decide valor, não modifica estado.
+
+**Regra de ouro:**
+```csharp
+// ? BOM (detector apenas coleta)
+foreach (var pattern in _patterns) {
+    if (pattern.TryDetect(grid, out match)) {
+        matches.Add(match);
+    }
+}
+
+// ? RUIM (detector decidindo complexidade)
+if (match.PatternType == "FullLine" && season == Spring) {
+    match.BaseScore *= 1.5f; // NÃO! Isso é PatternScoreCalculator
+}
+```
+
+---
+
+### **PatternScoreCalculator - Autoridade Única de Pontuação**
+
+**RESPONSABILIDADE ÚNICA:**
+- Toda matemática de pontuação do sistema
+- Aplicar fórmula base (CropValue, Maturity, Decay)
+- Calcular sinergia global
+- Lidar com casos especiais (Arco-íris, Grid Perfeito)
+- Retornar score final
+
+**REGRA CRÍTICA:**
+```
+NENHUM IGridPattern pode conter lógica matemática 
+além do BaseScore (inteiro fixo).
+```
+
+**Por que isso importa:**
+- Balanceamento centralizado
+- Fácil tuning (1 único arquivo)
+- Tradições futuras modificam Calculator, não Patterns
+- Logs de debug consistentes
+
+**Exemplo de responsabilidade correta:**
+```csharp
+// ? IGridPattern (apenas define critério)
+public class FullLinePattern : IGridPattern {
+    public int BaseScore => 25; // Valor fixo, sem lógica
+    public bool TryDetect(...) { /* lógica geométrica */ }
+}
+
+// ? PatternScoreCalculator (toda matemática)
+public int Calculate(PatternMatch match) {
+    float score = match.BaseScore;
+    score *= GetCropMultiplier(match.Slots);
+    score *= GetMaturityBonus(match.Slots);
+    score *= GetDecayMultiplier(match.DaysActive);
+    return Mathf.RoundToInt(score);
+}
+```
+
+**?? Proteção futura:**
+- Se precisar modificar pontuação ? vá ao Calculator
+- Se precisar adicionar modificador ? vá ao Calculator
+- Se IGridPattern começar a ter `if/else` de score ? REFATORE
+
+---
+
+### **IGridPattern - Contrato de Detecção**
+
+**RESPONSABILIDADE:**
+- Definir geometria do padrão
+- Validar slots (locked, withered, continuidade)
+- Retornar `PatternMatch` se válido
+- Declarar `BaseScore` (valor fixo)
+
+**NÃO DEVE:**
+- Calcular score final
+- Conhecer outros padrões
+- Depender de estado global (exceto IGridService)
+- Conter lógica de negócio além de geometria
+
+**Princípio:**
+> "Padrões dizem 'sou válido?', não 'quanto valho?'"
+
+---
+
+### **PatternMatch - DTO Puro**
+
+**Função:** Transportar resultado de detecção
+
+**Campos essenciais:**
+```csharp
+public class PatternMatch {
+    public string PatternID;        // ID estável (não nome exibido)
+    public PatternType Type;        // Enum ou classe
+    public List<int> SlotIndices;   // Posições exatas
+    public int BaseScore;           // Vindo do Pattern
+    public int DaysActive;          // Para decay (futuro)
+    // Metadados opcionais para UI/analytics
+}
+```
+
+**?? Risco de volume:**
+- Sistema permite sobreposição livre
+- Grid complexo pode gerar 30-40 matches
+- **Mitigação futura:** Agrupar matches por tipo para UI (não agora)
+
+**Nota sobre limite prático:**
+```
+O sistema permite múltiplos PatternMatch sobrepostos.
+Se o volume crescer excessivamente no futuro, 
+resultados podem ser agregados APÓS detecção,
+sem alterar lógica dos padrões.
+```
+
+---
+
 ## ?? **ESTRUTURA DE ARQUIVOS**
 
 ### **Novos arquivos a criar:**
@@ -353,9 +552,37 @@ public class RunData
     // NOVO: Tracking de padrões
     public int TotalPatternsCompleted;
     public int HighestDailyPatternScore;
-    public Dictionary<string, int> PatternCompletionCount;
+    
+    // ?? CRÍTICO: Usa PatternID estável (não nome exibido)
+    // PatternID = identificador único definido no PatternLibrary
+    // Exemplos: "FULL_LINE", "FRAME", "PERFECT_GRID"
+    // Strings humanas (ex: "Linha Completa") ficam só para UI
+    public Dictionary<string, int> PatternCompletionCount; 
+    
+    // FUTURO: Tracking de decay (opcional)
+    // public Dictionary<string, PatternInstanceData> ActivePatterns;
 }
 ```
+
+**?? Nota Arquitetural - SaveData:**
+
+Nunca use strings "humanas" ou nomes de classe diretamente.
+
+**? ERRADO:**
+```csharp
+PatternCompletionCount["Linha Completa"]++; // Nome exibido (muda com i18n)
+PatternCompletionCount["FullLinePattern"]++; // Nome de classe (refactor quebra)
+```
+
+**? CORRETO:**
+```csharp
+PatternCompletionCount["FULL_LINE"]++; // ID estável do ScriptableObject
+```
+
+**Benefícios:**
+- Refactor-safe (renomear classe não quebra save)
+- Localização-safe (traduzir nome não quebra)
+- Debug-friendly (IDs legíveis)
 
 ---
 
@@ -417,6 +644,42 @@ TOTAL: 395 × 1.9 = 750 pontos!!!
 
 ## ?? **INTEGRAÇÃO COM GAMEPLAY**
 
+### **Papel do Pattern System no DailyResolution**
+
+**?? CONCEITO ARQUITETURAL FUNDAMENTAL:**
+
+O Pattern System representa o **resultado principal** da resolução diária.
+Sistemas como crescimento, murchamento e eventos **preparam o estado do grid** para avaliação de padrões.
+
+**Hierarquia conceitual:**
+```
+DailyResolutionSystem
+ ?? PrepareGrid        (grow, wither, eventos)  ? Prepara o palco
+ ?? EvaluatePatterns   (detect + calculate)     ? ? PROTAGONISTA
+ ?? ApplyConsequences  (meta, score, lives)     ? Aplica resultados
+ ?? EmitResults        (eventos, UI, save)      ? Feedback
+```
+
+**Por que Pattern é protagonista:**
+- Pontuação principal vem de padrões
+- Harvest é **alavanca** (dinheiro), não reward principal
+- Crescimento lento torna padrões o foco natural
+- Meta diária é batida primariamente via padrões
+
+**?? Implicação para features futuras:**
+```
+Eventos aleatórios ? devem afetar PADRÕES (não harvest direto)
+Clima/Estações ? modificam detecção ou score de padrões
+Buffs/Tradições ? amplificam padrões, não substituem
+```
+
+**Filosofia de design:**
+> "Outros sistemas são satélites orbitando Pattern System."
+
+Mas atenção: Pattern System **não pode engolir o jogo inteiro** (ver seção de Riscos).
+
+---
+
 ### **Meta Diária**
 ```
 Meta padrão: 100 pontos de harvest
@@ -443,6 +706,248 @@ Decisão estratégica:
 - Preciso pontos? ? Deixo grid perfeito
 - Mix? ? Colho harvest, deixo padrões
 ```
+
+**?? Risco de balanceamento:**
+
+Se harvest ficar "trivial" ou "só quando preciso", o jogo perde tensão.
+
+**O que mantém harvest relevante:**
+- Não pontos ? mas **acesso** (cartas, desbloqueios, emergências)
+- Harvest é **alavanca**, não reward
+- Dinheiro permite **correção de erro** (comprar carta que faltava)
+- Harvest é **válvula de alívio** quando padrões desabam
+
+**Equilíbrio saudável:**
+```
+Padrões = estratégia de longo prazo (dias)
+Harvest = tática de curto prazo (dinheiro agora)
+Ambos necessários, nenhum dominante sozinho
+```
+
+---
+
+## ?? **ANTI-PATTERNS E RISCOS ARQUITETURAIS**
+
+### **?? ANTI-PATTERNS A EVITAR (Lista de Proteção)**
+
+Estas práticas **NUNCA** devem ser permitidas no sistema:
+
+1. **? Padrões contendo lógica de pontuação complexa**
+   ```csharp
+   // ERRADO - Pattern calculando score
+   public int GetScore() {
+       return IsMature ? 50 : 25;
+   }
+   
+   // CERTO - Pattern apenas declara base
+   public int BaseScore => 25;
+   ```
+
+2. **? PatternDetector decidindo decay ou sinergia**
+   ```csharp
+   // ERRADO - Detector virando Deus Objeto
+   if (match.DaysActive > 3) match.Score *= 0.7f;
+   
+   // CERTO - Detector apenas detecta
+   return matches; // Calculator lida com decay
+   ```
+
+3. **? Harvest restaurando padrões no mesmo dia**
+   ```csharp
+   // ERRADO - Exploit de replante grátis
+   OnHarvest() { ReplantSameSpot(); CountAsOldPattern(); }
+   
+   // CERTO - Colheita quebra padrão
+   OnHarvest() { slot.Clear(); /* novo padrão só amanhã */ }
+   ```
+
+4. **? Dependência de strings humanas em SaveData**
+   ```csharp
+   // ERRADO - Nome exibido ou classe
+   data["Linha Completa"]++; // muda com localização
+   data["FullLinePattern"]++; // quebra com refactor
+   
+   // CERTO - ID estável
+   data["FULL_LINE"]++; // definido no ScriptableObject
+   ```
+
+5. **? Eventos dirigindo lógica de jogo**
+   ```csharp
+   // ERRADO - Decisão depende de listener
+   OnPatternDetected += (p) => { GameLogic.DoSomething(); }
+   
+   // CERTO - Eventos apenas observam
+   OnPatternDetected += (p) => { UI.ShowPopup(); }
+   ```
+
+6. **? IGridPattern conhecendo outros padrões**
+   ```csharp
+   // ERRADO - Acoplamento entre padrões
+   if (grid.HasFramePattern()) this.Bonus *= 2;
+   
+   // CERTO - Padrões são independentes
+   return TryDetect() ? new Match() : null;
+   ```
+
+7. **? PatternMatch contendo lógica**
+   ```csharp
+   // ERRADO - DTO com comportamento
+   public int CalculateFinalScore() { /* lógica */ }
+   
+   // CERTO - DTO puro
+   public int BaseScore { get; set; } // apenas dados
+   ```
+
+---
+
+### **?? RISCOS ARQUITETURAIS (Monitoramento Contínuo)**
+
+#### **?? RISCO CRÍTICO: Identidade de Padrão Mal Definida**
+
+**Onde quebra:** Tracking de `DaysActive`, reset semanal, recriação
+
+**Sintoma:** Decay não reseta quando deveria, ou reseta quando não deveria
+
+**Mitigação aplicada:**
+- Definição formal: PatternInstanceID = Hash(Type + Slots + Crops)
+- Qualquer mudança = novo padrão (sem lógica "criativa")
+- Implementação determinística obrigatória
+
+**Monitorar:**
+- Se surgir "padrão similar" ou "quase igual"
+- Se houver tentação de "reusar" padrão parcialmente
+
+---
+
+#### **?? RISCO MÉDIO: PatternDetector vira Deus Objeto**
+
+**Onde quebra:** Quando começar a adicionar padrões condicionais, tradições
+
+**Sintoma:** Detector com 500+ linhas, múltiplas responsabilidades
+
+**Mitigação aplicada:**
+- Detector é stateless e burro
+- Cada IGridPattern é independente
+- Coordenação futura = PatternPostProcessor separado
+
+**Monitorar:**
+- Linhas de código no Detector
+- Se surgir `if (season == X)` dentro do Detector
+- Se Detector começar a "decidir" ao invés de "coletar"
+
+---
+
+#### **?? RISCO MÉDIO: Explosão Combinatória (Sobreposição Livre)**
+
+**Onde quebra:** Grid complexo gerando 30-40 matches, UI poluída
+
+**Sintoma:** Logs imensos, balance tuning impossível, performance
+
+**Mitigação aplicada:**
+- Soft cap logarítmico na sinergia
+- Sobreposição livre permanece (é feature)
+- Porta aberta para agrupamento futuro
+
+**Monitorar:**
+- Média de matches por dia (analytics)
+- Reclamações de UI "poluída"
+- Se tuning virar "jogo de adivinhação"
+
+**Solução futura (não agora):**
+```csharp
+// Agrupar matches do mesmo tipo para exibição
+PatternGroupResult = List<PatternMatch>.GroupBy(m => m.Type);
+```
+
+---
+
+#### **?? RISCO MÉDIO: Fórmula de Score Espalhada**
+
+**Onde quebra:** Ninguém sabe mais onde mexer para balancear
+
+**Sintoma:** "Arco-íris está fraco, mas onde mexo?"
+
+**Mitigação aplicada:**
+- TODA matemática no PatternScoreCalculator
+- Patterns só têm BaseScore (int fixo)
+- Casos especiais documentados explicitamente
+
+**Monitorar:**
+- Se IGridPattern começar a ter `if/else` de score
+- Se surgir "mini-calculadora" dentro de Pattern
+- Se tuning exigir mexer em múltiplos arquivos
+
+---
+
+#### **?? RISCO BAIXO: Eventos Demais Cedo Demais**
+
+**Onde quebra:** UI, Analytics, Achievements, Debug tools todos acoplados
+
+**Sintoma:** "Não posso mudar isso porque quebra três sistemas"
+
+**Mitigação aplicada:**
+- Eventos apenas para observação
+- Lógica de jogo nunca depende de evento ter sido ouvido
+- Nenhuma decisão crítica via eventos
+
+**Monitorar:**
+- Se surgir `if (eventFired)` em lógica de jogo
+- Se evento começar a "orquestrar" fluxo
+- Se remover listener quebrar funcionalidade
+
+---
+
+#### **?? RISCO BAIXO: DailyResolution Pesado Demais**
+
+**Onde quebra:** Arquivo com 1000+ linhas, responsabilidades cruzadas
+
+**Sintoma:** Difícil testar, difícil debugar, bugs em cascata
+
+**Mitigação aplicada:**
+- Arquitetura pipeline (etapas isoladas)
+- Pattern é protagonista, mas não engole tudo
+- Cada etapa claramente demarcada
+
+**Monitorar:**
+- Linhas de código no arquivo
+- Se etapas começarem a "conversar" diretamente
+- Se adicionar feature exigir mexer em múltiplas etapas
+
+---
+
+#### **?? RISCO CONCEITUAL: Sistema Bom Demais**
+
+**Onde quebra:** Pattern System engole o resto do jogo
+
+**Sintoma:** Harvest vira irrelevante, outros sistemas "orbitam" padrões
+
+**Mitigação aplicada:**
+- Harvest é alavanca (acesso), não reward
+- Crescimento lento mantém tensão
+- Meta = padrões + harvest (balanceado)
+
+**Monitorar:**
+- Taxa de uso de Harvest (analytics)
+- Feedback: "Só jogo para padrões"
+- Se outros sistemas começarem a depender de Pattern
+
+**Filosofia de proteção:**
+> "Pattern System é core isolado. Nenhum sistema ASSUME que ele existe. Ele soma pontos, não define vitória sozinho."
+
+---
+
+### **?? CHECKLIST DE PROTEÇÃO (Code Review)**
+
+Ao revisar código do Pattern System, sempre checar:
+
+- [ ] Patterns contêm apenas geometria + BaseScore fixo?
+- [ ] Calculator centraliza TODA matemática?
+- [ ] Detector é stateless e burro?
+- [ ] SaveData usa IDs estáveis (não strings humanas)?
+- [ ] Eventos são observação, não orquestração?
+- [ ] Identidade de padrão é determinística?
+- [ ] Crescimento lento está preservado?
+- [ ] Harvest permanece relevante (não trivial)?
 
 ---
 
@@ -496,6 +1001,12 @@ TOTAL: 28 pts (sobreposição OK!)
 
 ## ?? **CHECKLIST DE IMPLEMENTAÇÃO**
 
+### **Fase 0: Fundação Arquitetural (ANTES DE CODIFICAR)**
+- [ ] Revisar seção "Anti-Patterns e Riscos"
+- [ ] Definir PatternInstanceID (Hash de identidade)
+- [ ] Confirmar IDs estáveis no PatternLibrary (não usar nomes)
+- [ ] Validar que crescimento lento está implementado no CropLogic
+
 ### **Fase 1: Core (Dia 1)**
 - [ ] Criar `IGridPattern.cs`
 - [ ] Criar `PatternMatch.cs`
@@ -534,7 +1045,18 @@ TOTAL: 28 pts (sobreposição OK!)
 - [ ] Testar sobreposição
 - [ ] Testar casos edge (locked, withered)
 - [ ] Testar formula de pontuação
+- [ ] **Validar identidade de padrão (colher e replantar)**
+- [ ] **Confirmar que crescimento lento funciona com padrões**
+- [ ] **Testar volume de matches (grid complexo)**
 - [ ] Tunning de valores
+
+### **Fase 7: Proteção Arquitetural (Dia 6)**
+- [ ] Code review com checklist de Anti-Patterns
+- [ ] Confirmar que Calculator centraliza matemática
+- [ ] Validar que Detector é stateless
+- [ ] Verificar SaveData com IDs estáveis
+- [ ] Confirmar que eventos são observação apenas
+- [ ] Documentar decisões críticas (comentários inline)
 
 ---
 
@@ -587,23 +1109,61 @@ TOTAL: 28 pts (sobreposição OK!)
 - `AppCore.Instance.Events.Pattern` ? Novo event bus
 - Eventos: `OnPatternDetected`, `OnScoreCalculated`
 - Sempre disparar eventos para UI reagir
+- **REGRA:** Eventos são observação, não orquestração
 
 ### **Integração com Existente**
 - `DailyResolutionSystem` já existe e funciona
 - `GridService` expõe `GetSlotReadOnly(index)`
 - `IGridService.Config` tem Rows/Columns
 - `GameLibrary` tem `TryGetCrop(cropID, out data)`
+- **CropLogic** tem crescimento lento (3-4 dias até maturidade)
 
 ### **O que NÃO mudar**
 - Grid visual (acabamos de refatorar!)
 - Sistema de cartas (funciona perfeitamente)
 - DailyResolution flow (só adicionar detecção no meio)
+- **Crescimento lento de plantas** (pilar do Pattern System)
+
+### **?? DIRETRIZES CRÍTICAS DE IMPLEMENTAÇÃO**
+
+1. **Identidade de Padrão:**
+   - PatternInstanceID = Hash(PatternType + SlotIndices + CropIDs)
+   - Qualquer mudança = novo padrão (sem lógica criativa)
+
+2. **Responsabilidades Fixas:**
+   - **PatternDetector:** stateless, apenas coleta matches
+   - **PatternScoreCalculator:** TODA matemática de pontuação
+   - **IGridPattern:** geometria + BaseScore fixo (sem lógica complexa)
+
+3. **SaveData:**
+   - Usar IDs estáveis (ex: "FULL_LINE")
+   - NUNCA usar nomes exibidos ou nomes de classe
+
+4. **Eventos:**
+   - Apenas para observação (UI, analytics)
+   - Lógica de jogo NUNCA depende de eventos
+
+5. **Proteção contra "Sistema Bom Demais":**
+   - Pattern System é core, mas não engole o jogo
+   - Harvest permanece relevante (alavanca de acesso)
+   - Outros sistemas não devem ASSUMIR que Pattern existe
 
 ### **Prioridade**
 1. Implementar detecção funcional (sem UI)
-2. Integrar com DailyResolution
-3. Testar com logs
-4. UI depois (próxima feature)
+2. Implementar calculator com todas as fórmulas
+3. Integrar com DailyResolution
+4. Testar casos críticos (identidade, decay, crescimento)
+5. Code review com checklist de Anti-Patterns
+6. Logs de debug extensivos
+7. UI depois (próxima feature)
+
+### **?? RED FLAGS - Pare e Revise Se:**
+- IGridPattern começar a calcular score
+- PatternDetector tiver mais de 200 linhas
+- Surgir `if (season == X)` dentro de Detector
+- SaveData usar strings "Linha Completa"
+- Eventos orquestrando lógica de jogo
+- Harvest virar "trivial" ou "sempre ignorado"
 
 ---
 
