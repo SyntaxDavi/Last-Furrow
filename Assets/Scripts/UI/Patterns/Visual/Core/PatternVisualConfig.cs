@@ -44,6 +44,19 @@ public class PatternVisualConfig : ScriptableObject
     [Range(0.05f, 0.5f)]
     public float sequentialDelay = 0.15f;
     
+    [Header("=== HIGHLIGHT ADVANCED (ONDA 5.5) ===")]
+    [Tooltip("Velocidade do pulse dos highlights (maior = mais rápido)")]
+    [Range(0.5f, 10f)]
+    public float highlightPulseSpeed = 3f;
+    
+    [Tooltip("Delay entre a aparição de cada highlight (stagger)")]
+    [Range(0f, 0.5f)]
+    public float highlightDelayBetween = 0.1f;
+    
+    [Tooltip("Duração do fade out dos highlights")]
+    [Range(0.1f, 2f)]
+    public float highlightFadeDuration = 0.5f;
+    
     [Header("=== ANALYZING PHASE (ONDA 5.5) ===")]
     [Tooltip("Duração da análise por slot (segundos)")]
     [Range(0.05f, 1f)]
