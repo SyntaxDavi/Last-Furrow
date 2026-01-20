@@ -3003,7 +3003,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _visualConfig: {fileID: 11400000, guid: 09dc2df871bee3f4dac51ec7ad347b21, type: 2}
-  _showDebugLogs: 1
+  _showDebugLogs: 0
 --- !u!1 &976394030
 GameObject:
   m_ObjectHideFlags: 0
@@ -3190,7 +3190,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   _textFormat: Dia {0} - Semana {1}
   _debounceTime: 0.1
-  _showDebugLogs: 1
+  _showDebugLogs: 0
 --- !u!1 &996082408
 GameObject:
   m_ObjectHideFlags: 0
@@ -3682,8 +3682,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _buttonText: {fileID: 1337321134}
   _normalText: Sleep
-  _processingText: Sleeping...
-  _showDebugLogs: 1
+  _processingText: Sleeping
+  _showDebugLogs: 0
 --- !u!1 &1282445935
 GameObject:
   m_ObjectHideFlags: 0
@@ -5088,7 +5088,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7eef7a98385a2ed458afa91e57117a1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _showDebugLogs: 1
+  _showDebugLogs: 0
 --- !u!4 &1785937552
 Transform:
   m_ObjectHideFlags: 0

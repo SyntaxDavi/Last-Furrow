@@ -40,26 +40,25 @@ public class HeartDisplayManagerV2 : MonoBehaviour
     {
         if (_isInitialized)
         {
-            Debug.LogWarning("[HeartDisplayManagerV2] ? Já foi inicializado!");
+            Debug.LogWarning("[HeartDisplayManagerV2] Já foi inicializado!");
             return;
         }
 
         // === VALIDAÇÕES CRÍTICAS ===
         if (context == null)
         {
-            Debug.LogError("[HeartDisplayManagerV2] ? CRITICAL: UIContext é NULL!");
+            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: UIContext é NULL!");
             return;
         }
 
         if (_heartPrefab == null)
         {
-            Debug.LogError("[HeartDisplayManagerV2] ? CRITICAL: HeartPrefab não atribuído no Inspector!");
+            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: HeartPrefab não atribuído no Inspector!");
             return;
         }
 
         if (_container == null)
         {
-            Debug.LogWarning("[HeartDisplayManagerV2] ? Container null, usando this.transform");
             _container = this.transform;
         }
 
@@ -68,21 +67,18 @@ public class HeartDisplayManagerV2 : MonoBehaviour
         // === VALIDAÇÕES DE DADOS ===
         if (_context.RunData == null)
         {
-            Debug.LogError("[HeartDisplayManagerV2] ? CRITICAL: context.RunData é NULL!");
+            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: context.RunData é NULL!");
             return;
         }
 
         if (_context.ProgressionEvents == null)
         {
-            Debug.LogError("[HeartDisplayManagerV2] ? CRITICAL: context.ProgressionEvents é NULL!");
+            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: context.ProgressionEvents é NULL!");
             return;
         }
 
         _maxLives = _context.RunData.MaxLives;
         _currentLives = _context.RunData.CurrentLives;
-
-        Debug.Log($"[HeartDisplayManagerV2] ? HeartPrefab OK: {_heartPrefab.name}");
-        Debug.Log($"[HeartDisplayManagerV2] ? Estado inicial: {_currentLives}/{_maxLives} vidas");
 
         // Cria pool
         CreateHeartPool(_maxLives);
@@ -124,7 +120,7 @@ public class HeartDisplayManagerV2 : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             GameObject heartObj = Instantiate(_heartPrefab, _container);
-            
+
             if (heartObj == null)
             {
                 Debug.LogError($"[HeartDisplayManagerV2] ? Instantiate retornou NULL no índice {i}!");
@@ -145,26 +141,14 @@ public class HeartDisplayManagerV2 : MonoBehaviour
             {
                 rt.anchoredPosition = new Vector2(i * _spacing, 0);
             }
-            else
-            {
-                Debug.LogWarning($"[HeartDisplayManagerV2] ? Coração {i} sem RectTransform!");
-            }
 
             heartView.Hide();
             _heartPool.Add(heartView);
-
-            if (_showDebugLogs)
-                Debug.Log($"[HeartDisplayManagerV2] ? Coração {i} criado em ({i * _spacing}, 0)");
         }
-
-        Debug.Log($"[HeartDisplayManagerV2] ? Pool completo: {_heartPool.Count}/{count} corações");
     }
 
     private IEnumerator SpawnInitialHearts()
     {
-        Debug.Log($"[HeartDisplayManagerV2] ?? SPAWN SEQUÊNCIA: {_currentLives} cheios, {_maxLives - _currentLives} vazios");
-
-        // Corações cheios
         for (int i = 0; i < _currentLives && i < _heartPool.Count; i++)
         {
             if (_heartPool[i] == null)
@@ -173,7 +157,6 @@ public class HeartDisplayManagerV2 : MonoBehaviour
                 continue;
             }
 
-            Debug.Log($"[HeartDisplayManagerV2] ? Spawning coração {i} (CHEIO)...");
             _heartPool[i].SetState(true, immediate: false);
             _heartPool[i].AnimateSpawn();
 
@@ -188,12 +171,8 @@ public class HeartDisplayManagerV2 : MonoBehaviour
                 Debug.LogError($"[HeartDisplayManagerV2] ? HeartPool[{i}] é NULL!");
                 continue;
             }
-
-            Debug.Log($"[HeartDisplayManagerV2] ? Coração {i} configurado como VAZIO");
             _heartPool[i].SetState(false, immediate: true);
         }
-
-        Debug.Log("[HeartDisplayManagerV2] ?? SPAWN COMPLETO!");
     }
 
     private void HandleLivesChanged(int newLives)
@@ -207,18 +186,14 @@ public class HeartDisplayManagerV2 : MonoBehaviour
         int oldLives = _currentLives;
         _currentLives = Mathf.Clamp(newLives, 0, _maxLives);
 
-        Debug.Log($"[HeartDisplayManagerV2] ?? Lives: {oldLives} ? {_currentLives}");
-
         if (_currentLives < oldLives)
         {
             int livesLost = oldLives - _currentLives;
-            Debug.Log($"[HeartDisplayManagerV2] ?? PERDEU {livesLost} vidas!");
             StartCoroutine(AnimateLoseHearts(livesLost));
         }
         else if (_currentLives > oldLives)
         {
             int livesGained = _currentLives - oldLives;
-            Debug.Log($"[HeartDisplayManagerV2] ?? GANHOU {livesGained} vidas!");
             StartCoroutine(AnimateHealHearts(livesGained));
         }
     }
@@ -296,7 +271,5 @@ public class HeartDisplayManagerV2 : MonoBehaviour
                 _heartPool.Add(heartView);
             }
         }
-
-        Debug.Log($"[HeartDisplayManagerV2] ? MaxLives expandido: {_maxLives}");
     }
 }

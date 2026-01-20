@@ -166,12 +166,12 @@ public class GridManager : MonoBehaviour
 
             _spawnedSlots.Add(newSlot);
 
-            if (_showDebugLogs)
-                Debug.Log($"[GridManager] Slot {i} criado em ({xPos:F1}, {yPos:F1})");
+            //if (_showDebugLogs)
+              //  Debug.Log($"[GridManager] Slot {i} criado em ({xPos:F1}, {yPos:F1})");
         }
 
-        if (_showDebugLogs)
-            Debug.Log($"[GridManager] Pool completo: {_spawnedSlots.Count}/{totalSlots} slots");
+       // if (_showDebugLogs)
+         //   Debug.Log($"[GridManager] Pool completo: {_spawnedSlots.Count}/{totalSlots} slots");
     }
 
     private void HandleDropInteraction(int index, CardView cardView)
@@ -208,23 +208,23 @@ public class GridManager : MonoBehaviour
 
     public void RefreshAllSlots()
     {
-        if (_showDebugLogs)
-            Debug.Log("[GridManager] Atualizando todos os slots...");
+     //   if (_showDebugLogs)
+       //     Debug.Log("[GridManager] Atualizando todos os slots...");
 
         for (int i = 0; i < _spawnedSlots.Count; i++)
         {
             RefreshSingleSlot(i);
         }
 
-        if (_showDebugLogs)
-            Debug.Log($"[GridManager] {_spawnedSlots.Count} slots atualizados");
+       // if (_showDebugLogs)
+          //  Debug.Log($"[GridManager] {_spawnedSlots.Count} slots atualizados");
     }
 
     private void RefreshSingleSlot(int index)
     {
         if (index < 0 || index >= _spawnedSlots.Count)
         {
-            Debug.LogWarning($"[GridManager] Indice invalido: {index}");
+          //  Debug.LogWarning($"[GridManager] Indice invalido: {index}");
             return;
         }
 
@@ -237,7 +237,7 @@ public class GridManager : MonoBehaviour
         if (!isUnlocked)
         {
             if (_showDebugLogs)
-                Debug.Log($"[GridManager] Slot {index} bloqueado");
+               // Debug.Log($"[GridManager] Slot {index} bloqueado");
             return; 
         }
 
@@ -253,9 +253,6 @@ public class GridManager : MonoBehaviour
 
             if (state.CropID.IsValid) 
             {
-                // Planta está madura se atingiu os dias necessários
-                isMature = (state.CurrentGrowth >= state.DaysMature) && !isWithered;
-
                 if (_context.Library != null)
                 {
                     if (_context.Library.TryGetCrop(state.CropID, out var cropData))
@@ -265,6 +262,11 @@ public class GridManager : MonoBehaviour
                             state.DaysMature, 
                             state.IsWithered
                         );
+                        
+                        if (spriteToRender != null)
+                        {
+                            isMature = (state.CurrentGrowth >= state.DaysMature) && !isWithered;
+                        }
                     }
                     else
                     {
@@ -276,7 +278,10 @@ public class GridManager : MonoBehaviour
 
         view.SetVisualState(spriteToRender, isWatered, isMature, isWithered);
 
-        if (_showDebugLogs)
-            Debug.Log($"[GridManager] Slot {index}: sprite={spriteToRender != null}, water={isWatered}, mature={isMature}, withered={isWithered}");
+        // DEBUG: Loga apenas quando TEM planta
+        if (_showDebugLogs && spriteToRender != null)
+        {
+            Debug.Log($"[GridManager] PLANTED SLOT {index}: sprite=YES, water={isWatered}, mature={isMature}, withered={isWithered}");
+        }
     }
 }

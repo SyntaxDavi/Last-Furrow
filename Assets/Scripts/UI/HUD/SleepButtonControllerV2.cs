@@ -107,10 +107,12 @@ public class SleepButtonControllerV2 : MonoBehaviour
         _context.GameStateEvents.OnStateChanged += HandleGameStateChanged;
         _context.TimeEvents.OnDayChanged += HandleDayChanged;
 
-        // Atualiza estado inicial
+        // IMPORTANTE: Marca como inicializado ANTES de UpdateButtonState
+        _isInitialized = true;
+
+        // Atualiza estado inicial (agora _isInitialized já é true)
         UpdateButtonState();
 
-        _isInitialized = true;
         Debug.Log("[SleepButtonControllerV2] ?? INICIALIZADO COM SUCESSO!");
     }
 

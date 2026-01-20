@@ -72,8 +72,8 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         ResetVisualState();
         SubscribeToEvents();
 
-        if (_showDebugLogs)
-            Debug.Log($"[GridSlotView {_index}] Inicializado com contexto");
+      //  if (_showDebugLogs)
+        //    Debug.Log($"[GridSlotView {_index}] Inicializado com contexto");
     }
 
     private void OnDestroy()
@@ -130,9 +130,9 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         {
             _baseRenderer.color = _context.VisualConfig.lockedColor;
             _plantRenderer.enabled = false;
-            
-            if (_showDebugLogs)
-                Debug.Log($"[GridSlotView {_index}] Estado: LOCKED");
+
+           // if (_showDebugLogs) ;
+                // Debug.Log($"[GridSlotView {_index}] Estado: LOCKED");
         }
     }
 
@@ -169,23 +169,39 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
                 // Verde forte - pronto para colher
                 _stateOverlayRenderer.enabled = true;
                 _stateOverlayRenderer.color = _context.VisualConfig.matureOverlay;
+                
+                if (_showDebugLogs)
+                    Debug.Log($"[GridSlotView {_index}] STATE: MATURE (verde forte)");
             }
             else if (isWithered)
             {
                 // Amarelo - planta murcha
                 _stateOverlayRenderer.enabled = true;
                 _stateOverlayRenderer.color = _context.VisualConfig.witheredOverlay;
+                
+                if (_showDebugLogs)
+                    Debug.Log($"[GridSlotView {_index}] STATE: WITHERED (amarelo)");
             }
             else
             {
                 // Verde suave - tem algo plantado (crescendo)
                 _stateOverlayRenderer.enabled = true;
                 _stateOverlayRenderer.color = _context.VisualConfig.plantedOverlay;
+                
+                if (_showDebugLogs)
+                    Debug.Log($"[GridSlotView {_index}] STATE: PLANTED (verde suave) - Color: {_context.VisualConfig.plantedOverlay}");
             }
         }
         else if (_stateOverlayRenderer != null)
         {
             _stateOverlayRenderer.enabled = false;
+            
+            if (_showDebugLogs && hasPlant)
+                Debug.LogWarning($"[GridSlotView {_index}] STATE: Tem planta mas _stateOverlayRenderer NULL!");
+        }
+        else if (hasPlant && _showDebugLogs)
+        {
+            Debug.LogError($"[GridSlotView {_index}] CRITICAL: Tem planta mas _stateOverlayRenderer é NULL!");
         }
 
         if (_showDebugLogs)
@@ -249,20 +265,12 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
             return false;
         }
 
-        if (draggable is not CardView cardView)
-        {
-            return false;
-        }
+        if (draggable is not CardView cardView) return false;
 
-        // Usa IDropValidator (desacoplado)
         bool canDrop = _context.DropValidator.CanDrop(_index, cardView.Data);
 
-        if (!canDrop && _showDebugLogs)
+        if (!canDrop)
         {
-            string errorMsg = _context.DropValidator.GetErrorMessage();
-            Debug.Log($"[GridSlotView {_index}] Drop recusado: {errorMsg}");
-            
-            // Feedback visual de erro
             StartCoroutine(FlashError());
         }
 

@@ -147,9 +147,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 348cfbea1261c834ca4fea52b40c6bf0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _baseRenderer: {fileID: 9080896996990885390}
-  _plantRenderer: {fileID: 9080896996990885390}
-  _highlightRenderer: {fileID: 9080896996990885390}
+  _baseRenderer: {fileID: 0}
+  _plantRenderer: {fileID: 0}
+  _stateOverlayRenderer: {fileID: 0}
   _gameStateOverlayRenderer: {fileID: 0}
+  _highlightRenderer: {fileID: 0}
   _interactionPriority: 0
   _showDebugLogs: 1
