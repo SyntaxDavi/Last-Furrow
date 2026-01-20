@@ -63,6 +63,16 @@ public class DailyResolutionSystem : MonoBehaviour
         var pipeline = new List<IFlowStep>
         {
             new GrowGridStep(AppCore.Instance.GetGridLogic(), _events, _inputManager, runData),
+            
+            // ? NOVO: Detectar padrões APÓS crescimento, ANTES de calcular score
+            new DetectPatternsStep(
+                AppCore.Instance.GetGridLogic(),
+                AppCore.Instance.PatternDetector,
+                AppCore.Instance.PatternCalculator,
+                runData,
+                _events
+            ),
+            
             new CalculateScoreStep(_goalSystem, _runManager, runData, _events.Progression),
             new AdvanceTimeStep(_runManager, _saveManager),
             new DailyDrawStep(_handSystem, _runManager, runData)
