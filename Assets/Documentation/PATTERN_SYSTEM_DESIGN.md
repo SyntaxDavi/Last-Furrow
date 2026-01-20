@@ -1,15 +1,198 @@
-# SISTEMA DE PADR�ES DE GRID - DESIGN DOCUMENT
+﻿# SISTEMA DE PADRÕES DE GRID - DESIGN DOCUMENT
 
-## ?? **OVERVIEW DO SISTEMA**
+## 🚀 **GUIA RÁPIDO DE IMPLEMENTAÇÃO**
+
+### **📌 ANTES DE COMEÇAR:**
+```sh
+# 1. Criar branch da Onda
+git checkout -b feature/pattern-system-wave-1
+
+# 2. Ler seção "ONDA 1" por completo
+# 3. Criar checklist de tarefas (pode usar papel!)
+```
+
+---
+
+### **⏱️ WORKFLOW DE CADA TAREFA:**
+
+```
+🔨 IMPLEMENTAR
+    ↓
+📝 COMMIT (feature pequena)
+    ↓
+🧪 TESTAR manualmente
+    ↓
+✅ Se OK → Próxima tarefa
+❌ Se bug → Corrigir → Commit fix → Testar novamente
+    ↓
+🔁 Repetir até completar ONDA
+    ↓
+🎯 VALIDAÇÃO COMPLETA (jogar 7 dias)
+    ↓
+🔀 MERGE na main
+    ↓
+🏷️ TAG (wave-N-complete)
+```
+
+---
+
+### **💾 QUANDO FAZER COMMIT:**
+
+**✅ FAÇA COMMIT quando:**
+- [ ] Criar 1-2 arquivos novos que **compilam**
+- [ ] Implementar 1 padrão completo (ex: `AdjacentPairPattern.cs`)
+- [ ] Adicionar 1 método funcional no Calculator
+- [ ] Integrar 1 componente no AppCore
+- [ ] Corrigir 1 bug específico
+
+**❌ NÃO FAÇA COMMIT quando:**
+- [ ] Código não compila
+- [ ] "Meio implementado" (termina primeiro!)
+- [ ] Fim de dia (termine a feature atual)
+
+**Mensagens sugeridas:**
+```sh
+# Features (80% dos commits)
+git commit -m "feat(patterns): IGridPattern interface + PatternMatch DTO"
+git commit -m "feat(patterns): AdjacentPairPattern implementado"
+git commit -m "feat(patterns): PatternDetector com 5 padrões hardcoded"
+git commit -m "feat(patterns): DetectPatternsStep integrado ao pipeline"
+git commit -m "feat(patterns): PatternScoreCalculator com crop value"
+
+# Fixes (quando quebrar algo)
+git commit -m "fix(patterns): Trio detectando locked incorretamente"
+git commit -m "fix(patterns): NullRef em PatternDetector.DetectAll"
+
+# Tests (validações)
+git commit -m "test(patterns): Onda 1 validada (5 padrões funcionando)"
+git commit -m "test(patterns): Checklist Onda 1 completo"
+```
+
+---
+
+### **🔍 QUANDO TESTAR:**
+
+| O Que | Quando | Como |
+|-------|--------|------|
+| **Compilação** | Após cada commit | Build → Play (F5) |
+| **Feature isolada** | Após implementar 1 padrão | Criar grid específico, testar detecção |
+| **Integração** | Após adicionar ao pipeline | Jogar 1 dia completo |
+| **Onda completa** | Antes de mergear | Jogar 7 dias in-game, 0 crashes |
+
+**Teste Rápido (5 min):**
+```sh
+1. Play no Unity
+2. Criar padrão específico no grid
+3. Clicar "Sleep"
+4. Verificar logs no Console
+5. Se detectou → ✅ Próximo
+   Se bugou → 🐛 Corrigir agora
+```
+
+---
+
+### **🔀 QUANDO FAZER MERGE:**
+
+**SOMENTE quando:**
+- [x] Todos os checkboxes da Onda estão completos
+- [x] Build compila sem erros
+- [x] Jogar 7 dias sem crashes
+- [x] Logs mostram detecção correta
+- [x] Critérios de aceitação da Onda = OK
+
+**Processo de Merge:**
+```sh
+# 1. Validação final
+# Jogar 7 dias in-game, ver logs, verificar score
+
+# 2. Commit de teste
+git add Assets/Testing/PATTERN_WAVE_1_CHECKLIST.md
+git commit -m "test: Onda 1 validada (7 dias playtest, 0 crashes)"
+
+# 3. Merge
+git checkout main
+git merge feature/pattern-system-wave-1 --no-ff -m "feat: Pattern System - Onda 1 completa (MVP)"
+
+# 4. Tag
+git tag -a wave-1-complete -m "Onda 1: MVP com 5 padrões funcionando"
+git push origin main --tags
+
+# 5. Comemorar 🎉
+```
+
+---
+
+### **⚠️ SE ALGO QUEBRAR:**
+
+```sh
+# Opção 1: Bug pequeno (correção rápida)
+# Corrigir → Testar → Commit fix → Continuar
+
+# Opção 2: Bug grande (quebrando tudo)
+git log --oneline  # Ver últimos commits
+git reset --soft HEAD~1  # Desfazer último commit (mantém código)
+# Corrigir → Testar → Commit correto → Continuar
+
+# Opção 3: Desastre total (começar de novo)
+git checkout main
+git branch -D feature/pattern-system-wave-1
+git checkout -b feature/pattern-system-wave-1
+# Recomeçar a onda
+```
+
+---
+
+### **📊 RESUMO VISUAL:**
+
+```
+DIA 1-2 (Onda 1 - Parte 1):
+├─ Implementar Core (IGridPattern, PatternMatch, etc)
+├─ Commit: "feat(patterns): Core infrastructure"
+├─ Testar compilação
+├─ Implementar Par + Trio
+├─ Commit: "feat(patterns): Par Adjacente + Trio"
+├─ Testar cada padrão isoladamente
+└─ ✅ Se OK → Próximo dia
+
+DIA 3 (Onda 1 - Parte 2):
+├─ Implementar 3 padrões restantes
+├─ Commit: "feat(patterns): Cantinho, Linha, Cruz"
+├─ Implementar DetectPatternsStep
+├─ Commit: "feat(patterns): DetectPatternsStep integrado"
+├─ Testar 1 dia completo
+└─ ✅ Se OK → Finalizar Onda
+
+DIA 4-5 (Onda 1 - Validação):
+├─ Setup AppCore
+├─ Commit: "feat(patterns): AppCore expõe Detector + Calculator"
+├─ Jogar 7 dias in-game (validação completa)
+├─ Preencher checklist de testes
+├─ Commit: "test: Onda 1 validada"
+├─ MERGE na main
+├─ TAG wave-1-complete
+└─ 🎉 Onda 1 completa!
+```
+
+---
+
+### **🎯 REGRA DE OURO:**
+
+> **"1 feature funcionando > 10 features pela metade"**
+
+Termine o que começou. Teste antes de avançar. Commit quando compilar.
+
+---
+
+## 📊 **OVERVIEW DO SISTEMA**
 
 **Nome**: Pattern Scoring System  
-**Prop�sito**: Sistema de pontua��o baseado em padr�es no grid (tipo Poker)  
-**Status**: Design completo, pronto para implementa��o  
+**Propósito**: Sistema de pontuação baseado em padrões no grid (tipo Poker)  
+**Status**: Design completo, pronto para implementação  
 **Prioridade**: Alta (core gameplay loop)
 
 ---
 
-## ?? **FILOSOFIA DE DESIGN**
+## 🎯 **FILOSOFIA DE DESIGN**
 
 ### **Conceito Central**
 ```
@@ -17,91 +200,91 @@
 ```
 
 ### **Pilares (V2 - Decay Update)**
-1. **Descoberta Emergente** - Plantar e descobrir padr�es por acaso
-2. **Satisfa��o Imediata** - Completar padr�o = dopamina
-3. **Press�o Temporal** - Padr�es s�o fortes mas inst�veis (decay for�ado)
-4. **Adapta��o For�ada** - Meta sobe, padr�es decaem, jogador renova
-5. **Sinergias Controladas** - M�ltiplos padr�es = melhor, mas com soft cap
+1. **Descoberta Emergente** - Plantar e descobrir padrões por acaso
+2. **Satisfação Imediata** - Completar padrão = dopamina
+3. **Pressão Temporal** - Padrões são fortes mas instáveis (decay forçado)
+4. **Adaptação Forçada** - Meta sobe, padrões decaem, jogador renova
+5. **Sinergias Controladas** - Múltiplos padrões = melhor, mas com soft cap
 
 **Conceito V2:**
 ```
-Patr�es existem para alguns dias, n�o para sempre
-Grid "resolvido" � raro por escolha, n�o inevit�vel
-Early game � permissivo, mid/late exige inten��o
-Sistema conversa com withering, cartas limitadas, meta obrigat�ria
+Patrões existem para alguns dias, não para sempre
+Grid "resolvido" é raro por escolha, não inevitável
+Early game é permissivo, mid/late exige intenção
+Sistema conversa com withering, cartas limitadas, meta obrigatória
 ```
 
-### **Inspira��o**
-- **Poker** (m�os reconhec�veis, combos fixos)
+### **Inspiração**
+- **Poker** (mãos reconhecíveis, combos fixos)
 - **Balatro** (multiplicadores, sinergias)
 - **Stardew Valley** (grid farming)
 
 ---
 
-## ?? **REGRAS FUNDAMENTAIS**
+## 📐 **REGRAS FUNDAMENTAIS**
 
-### **R1: Timing de Pontua��o**
-- Padr�es s�o detectados **FIM DO DIA** (quando clica "Sleep")
-- Momento: Durante `DailyResolutionSystem` ? `AnalyzeGrid()`
+### **R1: Timing de Pontuação**
+- Padrões são detectados **FIM DO DIA** (quando clica "Sleep")
+- Momento: Durante `DailyResolutionSystem` → `AnalyzeGrid()`
 - Acontece ANTES de withering, DEPOIS de crescimento
 
 ### **R2: Decay Temporal (ATUALIZADO V2)**
-- Padr�es pontuam **DIARIAMENTE**, mas com **decay progressivo**
-- **Decay**: -10% de pontua��o por dia consecutivo mantendo o mesmo padr�o
-- **Reset**: Decay reseta semanalmente OU quando padr�o � quebrado e recriado
-- **Bonus p�s-reset**: Padr�es recriados ganham +10% no primeiro dia
-- **Filosofia**: Padr�es s�o fortes no curto prazo (2-3 dias), mas estruturalmente inst�veis no longo prazo
+- Padrões pontuam **DIARIAMENTE**, mas com **decay progressivo**
+- **Decay**: -10% de pontuação por dia consecutivo mantendo o mesmo padrão
+- **Reset**: Decay reseta semanalmente OU quando padrão é quebrado e recriado
+- **Bonus pós-reset**: Padrões recriados ganham +10% no primeiro dia
+- **Filosofia**: Padrões são fortes no curto prazo (2-3 dias), mas estruturalmente instáveis no longo prazo
 
 **Exemplo de Decay:**
 ```
-DIA 1: Linha de Cenouras ? 25 pts (100%)
-DIA 2: Mesma linha ? 22.5 pts (90%)
-DIA 3: Mesma linha ? 20 pts (80%)
-DIA 4: 1 cenoura murcha ? padr�o quebrado
-DIA 5: Nova linha de Milho ? 30 pts (100% + 10% bonus) = 33 pts!
+DIA 1: Linha de Cenouras → 25 pts (100%)
+DIA 2: Mesma linha → 22.5 pts (90%)
+DIA 3: Mesma linha → 20 pts (80%)
+DIA 4: 1 cenoura murcha → padrão quebrado
+DIA 5: Nova linha de Milho → 30 pts (100% + 10% bonus) = 33 pts!
 ```
 
-#### **?? IDENTIDADE DE PADR�O (CR�TICO)**
+#### **⚠️ IDENTIDADE DE PADRÃO (CRÍTICO)**
 
-**Defini��o Formal**: Um padr�o � considerado o **"mesmo padr�o"** para efeitos de decay SOMENTE se:
+**Definição Formal**: Um padrão é considerado o **"mesmo padrão"** para efeitos de decay SOMENTE se:
 
-1. **PatternType** (classe) for id�ntico (ex: `FullLinePattern`)
-2. **Slots exatos** (�ndices) forem os mesmos (ex: Row 0 = [0,1,2,3,4])
-3. **CropID** de todas as crops envolvidas for o mesmo (quando aplic�vel)
+1. **PatternType** (classe) for idêntico (ex: `FullLinePattern`)
+2. **Slots exatos** (índices) forem os mesmos (ex: Row 0 = [0,1,2,3,4])
+3. **CropID** de todas as crops envolvidas for o mesmo (quando aplicável)
 
-**Implica��es T�cnicas:**
+**Implicações Técnicas:**
 ```csharp
-// Identidade �nica de padr�o para tracking
+// Identidade única de padrão para tracking
 PatternInstanceID = Hash(PatternType + SlotIndices + CropIDs);
 
-// Exemplos de NOVO PADR�O (reseta decay):
-- Mudou 1 slot ? NOVO PADR�O
-- Trocou crop de Cenoura pra Milho ? NOVO PADR�O  
-- Colheu e replantou mesmo slot ? NOVO PADR�O (crescimento reinicia)
-- Planta morreu e foi substitu�da ? NOVO PADR�O
+// Exemplos de NOVO PADRÃO (reseta decay):
+- Mudou 1 slot → NOVO PADRÃO
+- Trocou crop de Cenoura pra Milho → NOVO PADRÃO  
+- Colheu e replantou mesmo slot → NOVO PADRÃO (crescimento reinicia)
+- Planta morreu e foi substituída → NOVO PADRÃO
 
-// Exemplos de MESMO PADR�O (decay continua):
-- Apenas cresceu (young ? mature) ? MESMO PADR�O
-- Foi regada ? MESMO PADR�O
-- Nada mudou ? MESMO PADR�O
+// Exemplos de MESMO PADRÃO (decay continua):
+- Apenas cresceu (young → mature) → MESMO PADRÃO
+- Foi regada → MESMO PADRÃO
+- Nada mudou → MESMO PADRÃO
 ```
 
 **Por que isso importa:**
 - Previne exploits de "replante gratuito"
-- Legitima decay como mec�nica de press�o temporal
-- Simplifica implementa��o (sem l�gica "criativa" de compara��o)
-- Torna save/load determin�stico
+- Legitima decay como mecânica de pressão temporal
+- Simplifica implementação (sem lógica "criativa" de comparação)
+- Torna save/load determinístico
 
-### **R3: Sobreposi��o**
-- Slots **PODEM** contar para m�ltiplos padr�es
-- Double/triple dipping � **PERMITIDO** e **INCENTIVADO**
-- Exemplo v�lido:
+### **R3: Sobreposição**
+- Slots **PODEM** contar para múltiplos padrões
+- Double/triple dipping é **PERMITIDO** e **INCENTIVADO**
+- Exemplo válido:
 ```
-[??][??][??][??][??]  ? Linha Horizontal (25 pts)
-[??][  ][  ][  ][??]  ? Moldura (40 pts)
-[??][  ][  ][  ][??]
-[??][  ][  ][  ][??]
-[??][??][??][??][??]
+[🥕][🥕][🥕][🥕][🥕]  ← Linha Horizontal (25 pts)
+[🥕][  ][  ][  ][🥕]  ← Moldura (40 pts)
+[🥕][  ][  ][  ][🥕]
+[🥕][  ][  ][  ][🥕]
+[🥕][🥕][🥕][🥕][🥕]
 = 65 pontos (sinergia!)
 ```
 
@@ -110,105 +293,105 @@ PatternInstanceID = Hash(PatternType + SlotIndices + CropIDs);
 - **Raridade**: Carta rara da mesma crop vale MAIS
   - Carrot Comum (val: 5) < Corn Comum (val: 8)
   - Carrot Rara (val: 10) > Corn Comum (val: 8)
-- **Padr�o**: Pontos = BaseScore � (Avg Crop Value / 5)
+- **Padrão**: Pontos = BaseScore × (Avg Crop Value / 5)
 
 ### **R5: Maturidade**
-- Plantas **MADURAS** d�o **+50% bonus**
-- Padr�o com 3 maduras + 2 jovens = bonus parcial
-- Formula: `finalScore = baseScore � (1 + 0.5 � ratioMature)`
+- Plantas **MADURAS** dão **+50% bonus**
+- Padrão com 3 maduras + 2 jovens = bonus parcial
+- Formula: `finalScore = baseScore × (1 + 0.5 × ratioMature)`
 
 ### **R6: Plantas Mortas**
-- Withered crops **QUEBRAM** o padr�o
-- Linha com 1 morta no meio = N�O CONTA
-- Ignora mortas, mas padr�o precisa ser cont�guo
+- Withered crops **QUEBRAM** o padrão
+- Linha com 1 morta no meio = NÃO CONTA
+- Ignora mortas, mas padrão precisa ser contíguo
 
 ### **R7: Slots Bloqueados**
-- Locked slots s�o **IGNORADOS**
-- Padr�o pula locked e conta s� os v�lidos
-- **IMPORTANTE**: Slots bloqueados **interrompem continuidade geom�trica**, mas n�o invalidam padr�es menores adjacentes
+- Locked slots são **IGNORADOS**
+- Padrão pula locked e conta só os válidos
+- **IMPORTANTE**: Slots bloqueados **interrompem continuidade geométrica**, mas não invalidam padrões menores adjacentes
 - Exemplo:
 ```
-[??][??][??][??][??]  ? N�O � "linha de 4" (locked quebra continuidade)
-                         ? � "par + par" (2+2 separados, ambos v�lidos)
+[🥕][🥕][🔒][🥕][🥕]  ← NÃO É "linha de 4" (locked quebra continuidade)
+                         ← É "par + par" (2+2 separados, ambos válidos)
 ```
 
-**Implica��o t�cnica**: Padr�es que dependem de continuidade (Linha, Diagonal, Moldura, Cruz) s�o quebrados por locked. Padr�es locais (Par, Trio local, Cantinho) n�o s�o afetados.
+**Implicação técnica**: Padrões que dependem de continuidade (Linha, Diagonal, Moldura, Cruz) são quebrados por locked. Padrões locais (Par, Trio local, Cantinho) não são afetados.
 
 ### **R8: Grid 5x5**
-- Tamanho fixo (feature, n�o limita��o)
+- Tamanho fixo (feature, não limitação)
 - 25 slots totais
-- 5 crops base por esta��o (futuro: 10)
+- 5 crops base por estação (futuro: 10)
 
-### **R9: Tempo de Crescimento como Pilar (CR�TICO)**
-- Plantas **N�O** crescem instantaneamente
-- **Crescimento lento** (3-4 dias at� maturidade) cria **custo irrecuper�vel**
-- **Implica��o estrat�gica**: Colher = preju�zo de padr�o nos pr�ximos dias
+### **R9: Tempo de Crescimento como Pilar (CRÍTICO)**
+- Plantas **NÃO** crescem instantaneamente
+- **Crescimento lento** (3-4 dias até maturidade) cria **custo irrecuperável**
+- **Implicação estratégica**: Colher = prejuízo de padrão nos próximos dias
 
-**Por que isso � fundamental:**
+**Por que isso é fundamental:**
 ```
 SEM crescimento lento:
-Dia 1: Padr�o ? Pontos ? Colher tudo ? Dinheiro
-Dia 2: Replantar igual ? Padr�o ? Pontos (exploit!)
+Dia 1: Padrão → Pontos → Colher tudo → Dinheiro
+Dia 2: Replantar igual → Padrão → Pontos (exploit!)
 
 COM crescimento lento:
-Dia 1: Padr�o ? Pontos ? Colher tudo ? Dinheiro
-Dia 2: Grid jovem ? Padr�o fraco ou inexistente
-Dia 3: Grid meio maduro ? Padr�o parcial
-Dia 4: Grid maduro ? Padr�o forte novamente
+Dia 1: Padrão → Pontos → Colher tudo → Dinheiro
+Dia 2: Grid jovem → Padrão fraco ou inexistente
+Dia 3: Grid meio maduro → Padrão parcial
+Dia 4: Grid maduro → Padrão forte novamente
 ```
 
-**Decis�o com atraso de consequ�ncia:**
-- Voc� colhe agora, mas preju�zo aparece depois
-- Pattern System premia **paci�ncia**
-- Harvest cobra **juros** (tempo de recupera��o)
-- Grid raramente est� "perfeito" (oscila naturalmente)
+**Decisão com atraso de consequência:**
+- Você colhe agora, mas prejuízo aparece depois
+- Pattern System premia **paciência**
+- Harvest cobra **juros** (tempo de recuperação)
+- Grid raramente está "perfeito" (oscila naturalmente)
 
-**Regra de coer�ncia:**
+**Regra de coerência:**
 ```
-Tempo para reconstruir padr�o forte ? Tempo de decay relevante
-Exemplo: Se decay d�i no dia 3, crescimento total em 3-4 dias est� coerente
+Tempo para reconstruir padrão forte ≥ Tempo de decay relevante
+Exemplo: Se decay dói no dia 3, crescimento total em 3-4 dias está coerente
 ```
 
-**?? Implica��o arquitetural:**
-- `slot.HasCrop` **N�O** � crit�rio suficiente para padr�es
-- Estado da planta (young/mature) � parte da **linguagem do padr�o**
-- Nunca simplificar isso no futuro (d�vida t�cnica grave)
+**⚠️ Implicação arquitetural:**
+- `slot.HasCrop` **NÃO** é critério suficiente para padrões
+- Estado da planta (young/mature) é parte da **linguagem do padrão**
+- Nunca simplificar isso no futuro (dívida técnica grave)
 
 ---
 
-## ?? **TABELA DOS 10 PADR�ES BASE**
+## 🎴 **TABELA DOS 10 PADRÕES BASE**
 
 ### **TIER 1: INICIANTE (5-15 pts) - "Sempre consegue"**
 
-| # | Nome | Descri��o | Pontos Base | Condi��o | Dificuldade |
+| # | Nome | Descrição | Pontos Base | Condição | Dificuldade |
 |---|------|-----------|-------------|----------|-------------|
-| **1** | **Par Adjacente** | 2 crops iguais lado a lado (H ou V) | **5 pts** | Mesma crop, adjacentes | ? |
-| **2** | **Trio em Linha** | 3 crops iguais em linha (H ou V) | **10 pts** | Mesma crop, linha/coluna | ? |
-| **3** | **Cantinho** | 3 crops iguais formando L | **8 pts** | Mesma crop, canto do grid | ? |
+| **1** | **Par Adjacente** | 2 crops iguais lado a lado (H ou V) | **5 pts** | Mesma crop, adjacentes | ⭐ |
+| **2** | **Trio em Linha** | 3 crops iguais em linha (H ou V) | **10 pts** | Mesma crop, linha/coluna | ⭐ |
+| **3** | **Cantinho** | 3 crops iguais formando L | **8 pts** | Mesma crop, canto do grid | ⭐ |
 
-**Filosofia Tier 1 (V2)**: Imposs�vel N�O conseguir pelo menos 1. Confian�a inicial. **Early game dominante**, mas contribui��o cai naturalmente com meta crescente (Tier 1 vira "ru�do aceit�vel" no late game).
+**Filosofia Tier 1 (V2)**: Impossível NÃO conseguir pelo menos 1. Confiança inicial. **Early game dominante**, mas contribuição cai naturalmente com meta crescente (Tier 1 vira "ruído aceitável" no late game).
 
 ---
 
-### **TIER 2: CASUAL (15-35 pts) - "Com pouco esfor�o"**
+### **TIER 2: CASUAL (15-35 pts) - "Com pouco esforço"**
 
-| # | Nome | Descri��o | Pontos Base | Condi��o | Dificuldade |
+| # | Nome | Descrição | Pontos Base | Condição | Dificuldade |
 |---|------|-----------|-------------|----------|-------------|
-| **4** | **Linha Completa** | 5 crops iguais em linha inteira | **25 pts** | Mesma crop, linha/coluna completa | ?? |
-| **5** | **Xadrez 2x2** | 4 crops alternados em quadrado | **20 pts** | Padr�o ABAB em 2x2 | ?? |
-| **6** | **Cruz Simples** | 5 crops formando + (centro + 4 adj) | **30 pts** | Mesma crop, centro + N/S/E/W | ?? |
+| **4** | **Linha Completa** | 5 crops iguais em linha inteira | **25 pts** | Mesma crop, linha/coluna completa | ⭐⭐ |
+| **5** | **Xadrez 2x2** | 4 crops alternados em quadrado | **20 pts** | Padrão ABAB em 2x2 | ⭐⭐ |
+| **6** | **Cruz Simples** | 5 crops formando + (centro + 4 adj) | **30 pts** | Mesma crop, centro + N/S/E/W | ⭐⭐ |
 
-**Filosofia Tier 2**: Requer planejamento b�sico (1-2 dias). Recompensa consist�ncia.
+**Filosofia Tier 2**: Requer planejamento básico (1-2 dias). Recompensa consistência.
 
 ---
 
 ### **TIER 3: DEDICADO (35-60 pts) - "Precisa planejar"**
 
-| # | Nome | Descri��o | Pontos Base | Condi��o | Dificuldade |
+| # | Nome | Descrição | Pontos Base | Condição | Dificuldade |
 |---|------|-----------|-------------|----------|-------------|
-| **7** | **Diagonal** | 5 crops iguais em diagonal (\ ou /) | **40 pts** | Mesma crop, diagonal completa | ??? |
-| **8** | **Moldura** | Bordas do grid mesma crop (16 slots) | **50 pts** | Mesma crop, todas as bordas | ??? |
-| **9** | **Arco-�ris** | Linha com crops DIFERENTES | **55 pts** | 3-5 tipos diferentes, linha/coluna | ???? |
+| **7** | **Diagonal** | 5 crops iguais em diagonal (\ ou /) | **40 pts** | Mesma crop, diagonal completa | ⭐⭐⭐ |
+| **8** | **Moldura** | Bordas do grid mesma crop (16 slots) | **50 pts** | Mesma crop, todas as bordas | ⭐⭐⭐ |
+| **9** | **Arco-íris** | Linha com crops DIFERENTES | **55 pts** | 3-5 tipos diferentes, linha/coluna | ⭐⭐⭐⭐ |
 
 **Filosofia Tier 3**: Commitment de 3-5 dias. Alto risco/recompensa. Meta-changer.
 
@@ -216,15 +399,15 @@ Exemplo: Se decay d�i no dia 3, crescimento total em 3-4 dias est� coerente
 
 ### **TIER 4: MASTER (80-150 pts) - "Win condition"**
 
-| # | Nome | Descri��o | Pontos Base | Condi��o | Dificuldade |
+| # | Nome | Descrição | Pontos Base | Condição | Dificuldade |
 |---|------|-----------|-------------|----------|-------------|
-| **10** | **Grid Perfeito** | Todos os 25 slots plantados COM DIVERSIDADE | **150 pts** | 25 crops vivas + m�nimo 4 tipos diferentes | ????? |
+| **10** | **Grid Perfeito** | Todos os 25 slots plantados COM DIVERSIDADE | **150 pts** | 25 crops vivas + mínimo 4 tipos diferentes | ⭐⭐⭐⭐⭐ |
 
-**Filosofia Tier 4 (V2)**: Mais comum do mid-game em diante. Raro por escolha (diversidade), n�o por dificuldade t�cnica. **High-investment late-game strategy** entre v�rias poss�veis. Game changer, mas n�o win condition autom�tica.
+**Filosofia Tier 4 (V2)**: Mais comum do mid-game em diante. Raro por escolha (diversidade), não por dificuldade técnica. **High-investment late-game strategy** entre várias possíveis. Game changer, mas não win condition automática.
 
 ---
 
-## ?? **F�RMULAS DE C�LCULO**
+## 🧮 **FÓRMULAS DE CÁLCULO**
 
 ### **Formula Base**
 ```csharp
@@ -235,137 +418,137 @@ daysActive = pattern.DaysActive; // NOVO: tracking de decay
 decayMultiplier = Mathf.Pow(0.9f, daysActive - 1); // -10% por dia
 
 finalScore = baseScore 
-           � (cropValue / 5.0f)          // Crop multiplier
-           � (1 + 0.5f � maturityRatio)  // Maturity bonus
-           � decayMultiplier;            // NOVO: Decay temporal
+           × (cropValue / 5.0f)          // Crop multiplier
+           × (1 + 0.5f × maturityRatio)  // Maturity bonus
+           × decayMultiplier;            // NOVO: Decay temporal
 
 // Exemplo com Decay:
-// Linha de 5 Carrots (val: 5), 3 maduras, 3� dia consecutivo
-// = 25 � (5/5) � (1 + 0.5 � 0.6) � (0.9^2)
-// = 25 � 1.0 � 1.3 � 0.81
+// Linha de 5 Carrots (val: 5), 3 maduras, 3º dia consecutivo
+// = 25 × (5/5) × (1 + 0.5 × 0.6) × (0.9^2)
+// = 25 × 1.0 × 1.3 × 0.81
 // = 26.3 pts (era 32.5 sem decay)
 
-// NOTA: Para padr�es especiais como Arco-�ris e Grid Perfeito,
-// usar f�rmulas customizadas (ver se��es espec�ficas)
+// NOTA: Para padrões especiais como Arco-íris e Grid Perfeito,
+// usar fórmulas customizadas (ver seções específicas)
 ```
 
 ### **Bonus de Sinergia (ATUALIZADO V2 - Soft Cap)**
 ```csharp
-// Soft cap logar�tmico - evita explos�o num�rica
+// Soft cap logarítmico - evita explosão numérica
 float synergyBonus = 1.0f + 0.2f * Mathf.Log(patternCount, 2);
 
 // Exemplos:
-// 2 padr�es = 1.0 + 0.2 * 1.0 = 1.2x (+20%)
-// 4 padr�es = 1.0 + 0.2 * 2.0 = 1.4x (+40%)
-// 8 padr�es = 1.0 + 0.2 * 3.0 = 1.6x (+60%)
-// 16 padr�es = 1.0 + 0.2 * 4.0 = 1.8x (+80%) [praticamente imposs�vel]
+// 2 padrões = 1.0 + 0.2 * 1.0 = 1.2x (+20%)
+// 4 padrões = 1.0 + 0.2 * 2.0 = 1.4x (+40%)
+// 8 padrões = 1.0 + 0.2 * 3.0 = 1.6x (+60%)
+// 16 padrões = 1.0 + 0.2 * 4.0 = 1.8x (+80%) [praticamente impossível]
 
-// Filosofia: Sinergia cresce r�pido no in�cio, desacelera depois
-// N�meros absurdos s�o aceitos, mas n�o infinitos
-// Jogador sente que "quebrou o jogo", mas sistema mant�m controle
+// Filosofia: Sinergia cresce rápido no início, desacelera depois
+// Números absurdos são aceitos, mas não infinitos
+// Jogador sente que "quebrou o jogo", mas sistema mantém controle
 ```
 
 ---
 
-## ??? **ARQUITETURA T�CNICA**
+## 🏗️ **ARQUITETURA TÉCNICA**
 
 ### **Diagrama de Componentes**
 ```
-???????????????????????????????????????????
-?  IGridPattern (interface)               ?
-?    ?? AdjacentPairPattern               ?
-?    ?? LinePattern (Trio, Full, Rainbow) ?
-?    ?? CornerPattern                     ?
-?    ?? CheckerPattern                    ?
-?    ?? CrossPattern                      ?
-?    ?? DiagonalPattern                   ?
-?    ?? FramePattern                      ?
-?    ?? PerfectGridPattern                ?
-???????????????????????????????????????????
-?  PatternLibrary (ScriptableObject)      ?
-?    ?? Lista dos 10 padr�es base         ?
-???????????????????????????????????????????
-?  PatternDetector (service)              ?
-?    ?? DetectAll(IGridService)           ?
-???????????????????????????????????????????
-?  PatternScoreCalculator (service)       ?
-?    ?? Calculate(matches, context)       ?
-???????????????????????????????????????????
-?  PatternEvents (event bus)              ?
-?    ?? OnPatternDetected                 ?
-?    ?? OnScoreCalculated                 ?
-???????????????????????????????????????????
+┌─────────────────────────────────────────┐
+│  IGridPattern (interface)               │
+│    ├─ AdjacentPairPattern               │
+│    ├─ LinePattern (Trio, Full, Rainbow) │
+│    ├─ CornerPattern                     │
+│    ├─ CheckerPattern                    │
+│    ├─ CrossPattern                      │
+│    ├─ DiagonalPattern                   │
+│    ├─ FramePattern                      │
+│    └─ PerfectGridPattern                │
+├─────────────────────────────────────────┤
+│  PatternLibrary (ScriptableObject)      │
+│    └─ Lista dos 10 padrões base         │
+├─────────────────────────────────────────┤
+│  PatternDetector (service)              │
+│    └─ DetectAll(IGridService)           │
+├─────────────────────────────────────────┤
+│  PatternScoreCalculator (service)       │
+│    └─ Calculate(matches, context)       │
+├─────────────────────────────────────────┤
+│  PatternEvents (event bus)              │
+│    └─ OnPatternDetected                 │
+│    └─ OnScoreCalculated                 │
+└─────────────────────────────────────────┘
 ```
 
 ---
 
-## ?? **RESPONSABILIDADES DOS COMPONENTES**
+## 🎯 **RESPONSABILIDADES DOS COMPONENTES**
 
 ### **PatternDetector - O Orquestrador Burro**
 
-**RESPONSABILIDADE �NICA:**
+**RESPONSABILIDADE ÚNICA:**
 - Percorrer o grid linha por linha
-- Delegar detec��o para cada `IGridPattern.TryDetect()`
+- Delegar detecção para cada `IGridPattern.TryDetect()`
 - Coletar resultados em lista de `PatternMatch`
 - Emitir evento `OnPatternDetected`
 
 **EXPLICITAMENTE FORA DO ESCOPO:**
-- ? C�lculo de score
-- ? Aplica��o de decay
-- ? C�lculo de sinergia
-- ? Prioriza��o de padr�es
-- ? Agrupamento de matches
-- ? L�gica de coordena��o entre padr�es
+- ❌ Cálculo de score
+- ❌ Aplicação de decay
+- ❌ Cálculo de sinergia
+- ❌ Priorização de padrões
+- ❌ Agrupamento de matches
+- ❌ Lógica de coordenação entre padrões
 
-**Filosofia:** Detector � **stateless**. N�o guarda hist�rico, n�o decide valor, n�o modifica estado.
+**Filosofia:** Detector é **stateless**. Não guarda histórico, não decide valor, não modifica estado.
 
 **Regra de ouro:**
 ```csharp
-// ? BOM (detector apenas coleta)
+// ✅ BOM (detector apenas coleta)
 foreach (var pattern in _patterns) {
     if (pattern.TryDetect(grid, out match)) {
         matches.Add(match);
     }
 }
 
-// ? RUIM (detector decidindo complexidade)
+// ❌ RUIM (detector decidindo complexidade)
 if (match.PatternType == "FullLine" && season == Spring) {
-    match.BaseScore *= 1.5f; // N�O! Isso � PatternScoreCalculator
+    match.BaseScore *= 1.5f; // NÃO! Isso é PatternScoreCalculator
 }
 ```
 
 ---
 
-### **PatternScoreCalculator - Autoridade �nica de Pontua��o**
+### **PatternScoreCalculator - Autoridade Única de Pontuação**
 
-**RESPONSABILIDADE �NICA:**
-- Toda matem�tica de pontua��o do sistema
-- Aplicar f�rmula base (CropValue, Maturity, Decay)
+**RESPONSABILIDADE ÚNICA:**
+- Toda matemática de pontuação do sistema
+- Aplicar fórmula base (CropValue, Maturity, Decay)
 - Calcular sinergia global
-- Lidar com casos especiais (Arco-�ris, Grid Perfeito)
+- Lidar com casos especiais (Arco-íris, Grid Perfeito)
 - Retornar score final
 
-**REGRA CR�TICA:**
+**REGRA CRÍTICA:**
 ```
-NENHUM IGridPattern pode conter l�gica matem�tica 
-al�m do BaseScore (inteiro fixo).
+NENHUM IGridPattern pode conter lógica matemática 
+além do BaseScore (inteiro fixo).
 ```
 
 **Por que isso importa:**
 - Balanceamento centralizado
-- F�cil tuning (1 �nico arquivo)
-- Tradi��es futuras modificam Calculator, n�o Patterns
+- Fácil tuning (1 único arquivo)
+- Tradições futuras modificam Calculator, não Patterns
 - Logs de debug consistentes
 
 **Exemplo de responsabilidade correta:**
 ```csharp
-// ? IGridPattern (apenas define crit�rio)
+// ✅ IGridPattern (apenas define critério)
 public class FullLinePattern : IGridPattern {
-    public int BaseScore => 25; // Valor fixo, sem l�gica
-    public bool TryDetect(...) { /* l�gica geom�trica */ }
+    public int BaseScore => 25; // Valor fixo, sem lógica
+    public bool TryDetect(...) { /* lógica geométrica */ }
 }
 
-// ? PatternScoreCalculator (toda matem�tica)
+// ✅ PatternScoreCalculator (toda matemática)
 public int Calculate(PatternMatch match) {
     float score = match.BaseScore;
     score *= GetCropMultiplier(match.Slots);
@@ -375,115 +558,115 @@ public int Calculate(PatternMatch match) {
 }
 ```
 
-**?? Prote��o futura:**
-- Se precisar modificar pontua��o ? v� ao Calculator
-- Se precisar adicionar modificador ? v� ao Calculator
-- Se IGridPattern come�ar a ter `if/else` de score ? REFATORE
+**⚠️ Proteção futura:**
+- Se precisar modificar pontuação → vá ao Calculator
+- Se precisar adicionar modificador → vá ao Calculator
+- Se IGridPattern começar a ter `if/else` de score → REFATORE
 
 ---
 
-### **IGridPattern - Contrato de Detec��o**
+### **IGridPattern - Contrato de Detecção**
 
 **RESPONSABILIDADE:**
-- Definir geometria do padr�o
+- Definir geometria do padrão
 - Validar slots (locked, withered, continuidade)
-- Retornar `PatternMatch` se v�lido
+- Retornar `PatternMatch` se válido
 - Declarar `BaseScore` (valor fixo)
 
-**N�O DEVE:**
+**NÃO DEVE:**
 - Calcular score final
-- Conhecer outros padr�es
+- Conhecer outros padrões
 - Depender de estado global (exceto IGridService)
-- Conter l�gica de neg�cio al�m de geometria
+- Conter lógica de negócio além de geometria
 
-**Princ�pio:**
-> "Padr�es dizem 'sou v�lido?', n�o 'quanto valho?'"
+**Princípio:**
+> "Padrões dizem 'sou válido?', não 'quanto valho?'"
 
 ---
 
 ### **PatternMatch - DTO Puro**
 
-**Fun��o:** Transportar resultado de detec��o
+**Função:** Transportar resultado de detecção
 
 **Campos essenciais:**
 ```csharp
 public class PatternMatch {
-    public string PatternID;        // ID est�vel (n�o nome exibido)
+    public string PatternID;        // ID estável (não nome exibido)
     public PatternType Type;        // Enum ou classe
-    public List<int> SlotIndices;   // Posi��es exatas
+    public List<int> SlotIndices;   // Posições exatas
     public int BaseScore;           // Vindo do Pattern
     public int DaysActive;          // Para decay (futuro)
     // Metadados opcionais para UI/analytics
 }
 ```
 
-**?? Risco de volume:**
-- Sistema permite sobreposi��o livre
+**⚠️ Risco de volume:**
+- Sistema permite sobreposição livre
 - Grid complexo pode gerar 30-40 matches
-- **Mitiga��o futura:** Agrupar matches por tipo para UI (n�o agora)
+- **Mitigação futura:** Agrupar matches por tipo para UI (não agora)
 
-**Nota sobre limite pr�tico:**
+**Nota sobre limite prático:**
 ```
-O sistema permite m�ltiplos PatternMatch sobrepostos.
+O sistema permite múltiplos PatternMatch sobrepostos.
 Se o volume crescer excessivamente no futuro, 
-resultados podem ser agregados AP�S detec��o,
-sem alterar l�gica dos padr�es.
+resultados podem ser agregados APÓS detecção,
+sem alterar lógica dos padrões.
 ```
 
 ---
 
-## ?? **ESTRUTURA DE ARQUIVOS**
+## 📂 **ESTRUTURA DE ARQUIVOS**
 
 ### **Novos arquivos a criar:**
 ```
 Assets/Scripts/Domain/Patterns/
-??? Core/
-?   ??? IGridPattern.cs                    ? Interface base
-?   ??? PatternMatch.cs                    ? DTO de resultado
-?   ??? PatternDetector.cs                 ? Servi�o principal
-?   ??? PatternScoreCalculator.cs          ? C�lculo de pontos
-?
-??? Implementations/
-?   ??? AdjacentPairPattern.cs             ? Padr�o #1
-?   ??? TrioLinePattern.cs                 ? Padr�o #2
-?   ??? CornerPattern.cs                   ? Padr�o #3
-?   ??? FullLinePattern.cs                 ? Padr�o #4
-?   ??? CheckerPattern.cs                  ? Padr�o #5
-?   ??? CrossPattern.cs                    ? Padr�o #6
-?   ??? DiagonalPattern.cs                 ? Padr�o #7
-?   ??? FramePattern.cs                    ? Padr�o #8
-?   ??? RainbowLinePattern.cs              ? Padr�o #9
-?   ??? PerfectGridPattern.cs              ? Padr�o #10
-?
-??? Data/
-?   ??? PatternLibrary.cs                  ? ScriptableObject
-?
-??? Events/
-    ??? PatternEvents.cs                   ? Event bus
+├── Core/
+│   ├── IGridPattern.cs                    ← Interface base
+│   ├── PatternMatch.cs                    ← DTO de resultado
+│   ├── PatternDetector.cs                 ← Serviço principal
+│   └── PatternScoreCalculator.cs          ← Cálculo de pontos
+│
+├── Implementations/
+│   ├── AdjacentPairPattern.cs             ← Padrão #1
+│   ├── TrioLinePattern.cs                 ← Padrão #2
+│   ├── CornerPattern.cs                   ← Padrão #3
+│   ├── FullLinePattern.cs                 ← Padrão #4
+│   ├── CheckerPattern.cs                  ← Padrão #5
+│   ├── CrossPattern.cs                    ← Padrão #6
+│   ├── DiagonalPattern.cs                 ← Padrão #7
+│   ├── FramePattern.cs                    ← Padrão #8
+│   ├── RainbowLinePattern.cs              ← Padrão #9
+│   └── PerfectGridPattern.cs              ← Padrão #10
+│
+├── Data/
+│   └── PatternLibrary.cs                  ← ScriptableObject
+│
+└── Events/
+    └── PatternEvents.cs                   ← Event bus
 
 Assets/Scripts/Infrastructure/Events/
-??? PatternEvents.cs                       ? Adicionar a GameEvents
+└── PatternEvents.cs                       ← Adicionar a GameEvents
 
 Assets/Documentation/
-??? PATTERN_SYSTEM_DESIGN.md              ? Este arquivo
+└── PATTERN_SYSTEM_DESIGN.md              ← Este arquivo
 ```
 
 ---
 
-## ?? **SCRIPTS A MODIFICAR**
+## 🔧 **SCRIPTS A MODIFICAR**
 
 ### **1. GameEvents.cs**
 ```csharp
 public class GameEvents
 {
     public GridEvents Grid { get; private set; }
-    public PatternEvents Pattern { get; private set; } // ? NOVO
+    public PatternEvents Pattern { get; private set; } // ← NOVO
     // ... resto
     
     public GameEvents()
     {
         Grid = new GridEvents();
-        Pattern = new PatternEvents(); // ? NOVO
+        Pattern = new PatternEvents(); // ← NOVO
         // ...
     }
 }
@@ -493,9 +676,9 @@ public class GameEvents
 ```csharp
 private IEnumerator AnalyzeGrid()
 {
-    // ... c�digo existente de grow/wither ...
+    // ... código existente de grow/wither ...
     
-    // NOVO: Detectar padr�es
+    // NOVO: Detectar padrões
     var patternDetector = AppCore.Instance.PatternDetector;
     var matches = patternDetector.DetectAll(_gridService);
     
@@ -508,9 +691,9 @@ private IEnumerator AnalyzeGrid()
     // NOVO: Adicionar aos pontos do dia
     _currentDayScore += bonusPoints;
     
-    Debug.Log($"[Patterns] {matches.Count} padr�es = +{bonusPoints} pts!");
+    Debug.Log($"[Patterns] {matches.Count} padrões = +{bonusPoints} pts!");
     
-    // ... resto da an�lise ...
+    // ... resto da análise ...
 }
 ```
 
@@ -531,7 +714,7 @@ public class AppCore : MonoBehaviour
     
     private void InitializeGlobalServices()
     {
-        // ... c�digo existente ...
+        // ... código existente ...
         
         // NOVO: Pattern System
         _patternDetector = new PatternDetector(_patternLibrary, _events.Pattern);
@@ -549,14 +732,14 @@ public class RunData
 {
     // ... campos existentes ...
     
-    // NOVO: Tracking de padr�es
+    // NOVO: Tracking de padrões
     public int TotalPatternsCompleted;
     public int HighestDailyPatternScore;
     
-    // ?? CR�TICO: Usa PatternID est�vel (n�o nome exibido)
-    // PatternID = identificador �nico definido no PatternLibrary
+    // ⚠️ CRÍTICO: Usa PatternID estável (não nome exibido)
+    // PatternID = identificador único definido no PatternLibrary
     // Exemplos: "FULL_LINE", "FRAME", "PERFECT_GRID"
-    // Strings humanas (ex: "Linha Completa") ficam s� para UI
+    // Strings humanas (ex: "Linha Completa") ficam só para UI
     public Dictionary<string, int> PatternCompletionCount; 
     
     // FUTURO: Tracking de decay (opcional)
@@ -564,135 +747,135 @@ public class RunData
 }
 ```
 
-**?? Nota Arquitetural - SaveData:**
+**⚠️ Nota Arquitetural - SaveData:**
 
 Nunca use strings "humanas" ou nomes de classe diretamente.
 
-**? ERRADO:**
+**❌ ERRADO:**
 ```csharp
 PatternCompletionCount["Linha Completa"]++; // Nome exibido (muda com i18n)
 PatternCompletionCount["FullLinePattern"]++; // Nome de classe (refactor quebra)
 ```
 
-**? CORRETO:**
+**✅ CORRETO:**
 ```csharp
-PatternCompletionCount["FULL_LINE"]++; // ID est�vel do ScriptableObject
+PatternCompletionCount["FULL_LINE"]++; // ID estável do ScriptableObject
 ```
 
-**Benef�cios:**
-- Refactor-safe (renomear classe n�o quebra save)
-- Localiza��o-safe (traduzir nome n�o quebra)
-- Debug-friendly (IDs leg�veis)
+**Benefícios:**
+- Refactor-safe (renomear classe não quebra save)
+- Localização-safe (traduzir nome não quebra)
+- Debug-friendly (IDs legíveis)
 
 ---
 
-## ?? **DADOS DE EXEMPLO**
+## 📊 **DADOS DE EXEMPLO**
 
 ### **Exemplo 1: Grid Casual**
 ```
 DIA 3:
-[??][??][??][  ][  ]  ? Trio em Linha (10 pts)
-[??][  ][  ][  ][  ]
+[🥕][🥕][🥕][  ][  ]  ← Trio em Linha (10 pts)
+[🥕][  ][  ][  ][  ]
 [  ][  ][  ][  ][  ]
-[??][??][  ][  ][  ]  ? Par Adjacente (5 pts)
+[🌽][🌽][  ][  ][  ]  ← Par Adjacente (5 pts)
 [  ][  ][  ][  ][  ]
 
-PADR�ES DETECTADOS:
-? Trio em Linha (Carrots) ? 10 pts
-? Par Adjacente (Corn) ? 5 pts
+PADRÕES DETECTADOS:
+✅ Trio em Linha (Carrots) → 10 pts
+✅ Par Adjacente (Corn) → 5 pts
 
-TOTAL: 15 pontos de padr�es
+TOTAL: 15 pontos de padrões
 ```
 
 ### **Exemplo 2: Grid Otimizado**
 ```
 DIA 7:
-[??][??][??][??][??]  ? Linha Completa (25 pts)
-[??][  ][  ][  ][??]  ? Moldura (50 pts)
-[??][  ][  ][  ][??]
-[??][  ][  ][  ][??]
-[??][??][??][??][??]
+[🥕][🥕][🥕][🥕][🥕]  ← Linha Completa (25 pts)
+[🥕][  ][  ][  ][🥕]  ← Moldura (50 pts)
+[🥕][  ][  ][  ][🥕]
+[🥕][  ][  ][  ][🥕]
+[🥕][🥕][🥕][🥕][🥕]
 
-PADR�ES DETECTADOS:
-? Linha Completa (Row 0) ? 25 pts
-? Linha Completa (Row 4) ? 25 pts
-? Moldura ? 50 pts
+PADRÕES DETECTADOS:
+✅ Linha Completa (Row 0) → 25 pts
+✅ Linha Completa (Row 4) → 25 pts
+✅ Moldura → 50 pts
 
-SINERGIA: 3 padr�es = 1.2x multiplier
-TOTAL: 100 � 1.2 = 120 pontos!
+SINERGIA: 3 padrões = 1.2x multiplier
+TOTAL: 100 × 1.2 = 120 pontos!
 ```
 
 ### **Exemplo 3: Grid Perfeito**
 ```
 DIA 14 (Boss):
-[??][??][??][??][??]
-[??][??][??][??][??]
-[??][??][??][??][??]
-[??][??][??][??][??]
-[??][??][??][??][??]
+[🥕][🌽][🥕][🌽][🥕]
+[🌽][🥕][🌽][🥕][🌽]
+[🥕][🌽][🥕][🌽][🥕]
+[🌽][🥕][🌽][🥕][🌽]
+[🥕][🌽][🥕][🌽][🥕]
 
-PADR�ES DETECTADOS:
-? Xadrez 2x2 (m�ltiplos) ? 80 pts
-? Grid Perfeito ? 150 pts
-? Linha Arco-�ris (v�rias) ? 165 pts
+PADRÕES DETECTADOS:
+✅ Xadrez 2x2 (múltiplos) → 80 pts
+✅ Grid Perfeito → 150 pts
+✅ Linha Arco-íris (várias) → 165 pts
 
-SINERGIA: 10+ padr�es = 1.9x
-TOTAL: 395 � 1.9 = 750 pontos!!!
+SINERGIA: 10+ padrões = 1.9x
+TOTAL: 395 × 1.9 = 750 pontos!!!
 ```
 
 ---
 
-## ?? **INTEGRA��O COM GAMEPLAY**
+## 🎮 **INTEGRAÇÃO COM GAMEPLAY**
 
 ### **Papel do Pattern System no DailyResolution**
 
-**?? CONCEITO ARQUITETURAL FUNDAMENTAL:**
+**🎯 CONCEITO ARQUITETURAL FUNDAMENTAL:**
 
-O Pattern System representa o **resultado principal** da resolu��o di�ria.
-Sistemas como crescimento, murchamento e eventos **preparam o estado do grid** para avalia��o de padr�es.
+O Pattern System representa o **resultado principal** da resolução diária.
+Sistemas como crescimento, murchamento e eventos **preparam o estado do grid** para avaliação de padrões.
 
 **Hierarquia conceitual:**
 ```
 DailyResolutionSystem
- ?? PrepareGrid        (grow, wither, eventos)  ? Prepara o palco
- ?? EvaluatePatterns   (detect + calculate)     ? ? PROTAGONISTA
- ?? ApplyConsequences  (meta, score, lives)     ? Aplica resultados
- ?? EmitResults        (eventos, UI, save)      ? Feedback
+ ├─ PrepareGrid        (grow, wither, eventos)  ← Prepara o palco
+ ├─ EvaluatePatterns   (detect + calculate)     ← ⭐ PROTAGONISTA
+ ├─ ApplyConsequences  (meta, score, lives)     ← Aplica resultados
+ └─ EmitResults        (eventos, UI, save)      ← Feedback
 ```
 
-**Por que Pattern � protagonista:**
-- Pontua��o principal vem de padr�es
-- Harvest � **alavanca** (dinheiro), n�o reward principal
-- Crescimento lento torna padr�es o foco natural
-- Meta di�ria � batida primariamente via padr�es
+**Por que Pattern é protagonista:**
+- Pontuação principal vem de padrões
+- Harvest é **alavanca** (dinheiro), não reward principal
+- Crescimento lento torna padrões o foco natural
+- Meta diária é batida primariamente via padrões
 
-**?? Implica��o para features futuras:**
+**⚠️ Implicação para features futuras:**
 ```
-Eventos aleat�rios ? devem afetar PADR�ES (n�o harvest direto)
-Clima/Esta��es ? modificam detec��o ou score de padr�es
-Buffs/Tradi��es ? amplificam padr�es, n�o substituem
+Eventos aleatórios → devem afetar PADRÕES (não harvest direto)
+Clima/Estações → modificam detecção ou score de padrões
+Buffs/Tradições → amplificam padrões, não substituem
 ```
 
 **Filosofia de design:**
-> "Outros sistemas s�o sat�lites orbitando Pattern System."
+> "Outros sistemas são satélites orbitando Pattern System."
 
-Mas aten��o: Pattern System **n�o pode engolir o jogo inteiro** (ver se��o de Riscos).
+Mas atenção: Pattern System **não pode engolir o jogo inteiro** (ver seção de Riscos).
 
 ---
 
-### **Meta Di�ria**
+### **Meta Diária**
 ```
-Meta padr�o: 100 pontos de harvest
-Meta nova: 100 pontos (harvest + padr�es)
+Meta padrão: 100 pontos de harvest
+Meta nova: 100 pontos (harvest + padrões)
 
 DIA NORMAL:
 - 50 pts harvest (vendeu crops)
-- 50 pts padr�es (deixou plantado)
+- 50 pts padrões (deixou plantado)
 = 100 pts (bateu meta!)
 
 DIA OTIMIZADO:
 - 20 pts harvest (vendeu pouco)
-- 150 pts padr�es (grid estrat�gico)
+- 150 pts padrões (grid estratégico)
 = 170 pts (OVERACHIEVER!)
 ```
 
@@ -701,38 +884,38 @@ DIA OTIMIZADO:
 COLHER = Dinheiro (comprar cartas)
 DEIXAR PLANTADO = Pontos (bater meta)
 
-Decis�o estrat�gica:
-- Preciso dinheiro? ? Colho tudo
-- Preciso pontos? ? Deixo grid perfeito
-- Mix? ? Colho harvest, deixo padr�es
+Decisão estratégica:
+- Preciso dinheiro? → Colho tudo
+- Preciso pontos? → Deixo grid perfeito
+- Mix? → Colho harvest, deixo padrões
 ```
 
-**?? Risco de balanceamento:**
+**⚠️ Risco de balanceamento:**
 
-Se harvest ficar "trivial" ou "s� quando preciso", o jogo perde tens�o.
+Se harvest ficar "trivial" ou "só quando preciso", o jogo perde tensão.
 
-**O que mant�m harvest relevante:**
-- N�o pontos ? mas **acesso** (cartas, desbloqueios, emerg�ncias)
-- Harvest � **alavanca**, n�o reward
-- Dinheiro permite **corre��o de erro** (comprar carta que faltava)
-- Harvest � **v�lvula de al�vio** quando padr�es desabam
+**O que mantém harvest relevante:**
+- Não pontos → mas **acesso** (cartas, desbloqueios, emergências)
+- Harvest é **alavanca**, não reward
+- Dinheiro permite **correção de erro** (comprar carta que faltava)
+- Harvest é **válvula de alívio** quando padrões desabam
 
-**Equil�brio saud�vel:**
+**Equilíbrio saudável:**
 ```
-Padr�es = estrat�gia de longo prazo (dias)
-Harvest = t�tica de curto prazo (dinheiro agora)
-Ambos necess�rios, nenhum dominante sozinho
+Padrões = estratégia de longo prazo (dias)
+Harvest = tática de curto prazo (dinheiro agora)
+Ambos necessários, nenhum dominante sozinho
 ```
 
 ---
 
-## ?? **ANTI-PATTERNS E RISCOS ARQUITETURAIS**
+## ⚠️ **ANTI-PATTERNS E RISCOS ARQUITETURAIS**
 
-### **?? ANTI-PATTERNS A EVITAR (Lista de Prote��o)**
+### **🚫 ANTI-PATTERNS A EVITAR (Lista de Proteção)**
 
-Estas pr�ticas **NUNCA** devem ser permitidas no sistema:
+Estas práticas **NUNCA** devem ser permitidas no sistema:
 
-1. **? Padr�es contendo l�gica de pontua��o complexa**
+1. **❌ Padrões contendo lógica de pontuação complexa**
    ```csharp
    // ERRADO - Pattern calculando score
    public int GetScore() {
@@ -743,7 +926,7 @@ Estas pr�ticas **NUNCA** devem ser permitidas no sistema:
    public int BaseScore => 25;
    ```
 
-2. **? PatternDetector decidindo decay ou sinergia**
+2. **❌ PatternDetector decidindo decay ou sinergia**
    ```csharp
    // ERRADO - Detector virando Deus Objeto
    if (match.DaysActive > 3) match.Score *= 0.7f;
@@ -752,47 +935,47 @@ Estas pr�ticas **NUNCA** devem ser permitidas no sistema:
    return matches; // Calculator lida com decay
    ```
 
-3. **? Harvest restaurando padr�es no mesmo dia**
+3. **❌ Harvest restaurando padrões no mesmo dia**
    ```csharp
-   // ERRADO - Exploit de replante gr�tis
+   // ERRADO - Exploit de replante grátis
    OnHarvest() { ReplantSameSpot(); CountAsOldPattern(); }
    
-   // CERTO - Colheita quebra padr�o
-   OnHarvest() { slot.Clear(); /* novo padr�o s� amanh� */ }
+   // CERTO - Colheita quebra padrão
+   OnHarvest() { slot.Clear(); /* novo padrão só amanhã */ }
    ```
 
-4. **? Depend�ncia de strings humanas em SaveData**
+4. **❌ Dependência de strings humanas em SaveData**
    ```csharp
    // ERRADO - Nome exibido ou classe
-   data["Linha Completa"]++; // muda com localiza��o
+   data["Linha Completa"]++; // muda com localização
    data["FullLinePattern"]++; // quebra com refactor
    
-   // CERTO - ID est�vel
+   // CERTO - ID estável
    data["FULL_LINE"]++; // definido no ScriptableObject
    ```
 
-5. **? Eventos dirigindo l�gica de jogo**
+5. **❌ Eventos dirigindo lógica de jogo**
    ```csharp
-   // ERRADO - Decis�o depende de listener
+   // ERRADO - Decisão depende de listener
    OnPatternDetected += (p) => { GameLogic.DoSomething(); }
    
    // CERTO - Eventos apenas observam
    OnPatternDetected += (p) => { UI.ShowPopup(); }
    ```
 
-6. **? IGridPattern conhecendo outros padr�es**
+6. **❌ IGridPattern conhecendo outros padrões**
    ```csharp
-   // ERRADO - Acoplamento entre padr�es
+   // ERRADO - Acoplamento entre padrões
    if (grid.HasFramePattern()) this.Bonus *= 2;
    
-   // CERTO - Padr�es s�o independentes
+   // CERTO - Padrões são independentes
    return TryDetect() ? new Match() : null;
    ```
 
-7. **? PatternMatch contendo l�gica**
+7. **❌ PatternMatch contendo lógica**
    ```csharp
    // ERRADO - DTO com comportamento
-   public int CalculateFinalScore() { /* l�gica */ }
+   public int CalculateFinalScore() { /* lógica */ }
    
    // CERTO - DTO puro
    public int BaseScore { get; set; } // apenas dados
@@ -800,166 +983,166 @@ Estas pr�ticas **NUNCA** devem ser permitidas no sistema:
 
 ---
 
-### **?? RISCOS ARQUITETURAIS (Monitoramento Cont�nuo)**
+### **⚠️ RISCOS ARQUITETURAIS (Monitoramento Contínuo)**
 
-#### **?? RISCO CR�TICO: Identidade de Padr�o Mal Definida**
+#### **🔴 RISCO CRÍTICO: Identidade de Padrão Mal Definida**
 
-**Onde quebra:** Tracking de `DaysActive`, reset semanal, recria��o
+**Onde quebra:** Tracking de `DaysActive`, reset semanal, recriação
 
-**Sintoma:** Decay n�o reseta quando deveria, ou reseta quando n�o deveria
+**Sintoma:** Decay não reseta quando deveria, ou reseta quando não deveria
 
-**Mitiga��o aplicada:**
-- Defini��o formal: PatternInstanceID = Hash(Type + Slots + Crops)
-- Qualquer mudan�a = novo padr�o (sem l�gica "criativa")
-- Implementa��o determin�stica obrigat�ria
+**Mitigação aplicada:**
+- Definição formal: PatternInstanceID = Hash(Type + Slots + Crops)
+- Qualquer mudança = novo padrão (sem lógica "criativa")
+- Implementação determinística obrigatória
 
 **Monitorar:**
-- Se surgir "padr�o similar" ou "quase igual"
-- Se houver tenta��o de "reusar" padr�o parcialmente
+- Se surgir "padrão similar" ou "quase igual"
+- Se houver tentação de "reusar" padrão parcialmente
 
 ---
 
-#### **?? RISCO M�DIO: PatternDetector vira Deus Objeto**
+#### **🟡 RISCO MÉDIO: PatternDetector vira Deus Objeto**
 
-**Onde quebra:** Quando come�ar a adicionar padr�es condicionais, tradi��es
+**Onde quebra:** Quando começar a adicionar padrões condicionais, tradições
 
-**Sintoma:** Detector com 500+ linhas, m�ltiplas responsabilidades
+**Sintoma:** Detector com 500+ linhas, múltiplas responsabilidades
 
-**Mitiga��o aplicada:**
-- Detector � stateless e burro
-- Cada IGridPattern � independente
-- Coordena��o futura = PatternPostProcessor separado
+**Mitigação aplicada:**
+- Detector é stateless e burro
+- Cada IGridPattern é independente
+- Coordenação futura = PatternPostProcessor separado
 
 **Monitorar:**
-- Linhas de c�digo no Detector
+- Linhas de código no Detector
 - Se surgir `if (season == X)` dentro do Detector
-- Se Detector come�ar a "decidir" ao inv�s de "coletar"
+- Se Detector começar a "decidir" ao invés de "coletar"
 
 ---
 
-#### **?? RISCO M�DIO: Explos�o Combinat�ria (Sobreposi��o Livre)**
+#### **🟡 RISCO MÉDIO: Explosão Combinatória (Sobreposição Livre)**
 
-**Onde quebra:** Grid complexo gerando 30-40 matches, UI polu�da
+**Onde quebra:** Grid complexo gerando 30-40 matches, UI poluída
 
-**Sintoma:** Logs imensos, balance tuning imposs�vel, performance
+**Sintoma:** Logs imensos, balance tuning impossível, performance
 
-**Mitiga��o aplicada:**
-- Soft cap logar�tmico na sinergia
-- Sobreposi��o livre permanece (� feature)
+**Mitigação aplicada:**
+- Soft cap logarítmico na sinergia
+- Sobreposição livre permanece (é feature)
 - Porta aberta para agrupamento futuro
 
 **Monitorar:**
-- M�dia de matches por dia (analytics)
-- Reclama��es de UI "polu�da"
-- Se tuning virar "jogo de adivinha��o"
+- Média de matches por dia (analytics)
+- Reclamações de UI "poluída"
+- Se tuning virar "jogo de adivinhação"
 
-**Solu��o futura (n�o agora):**
+**Solução futura (não agora):**
 ```csharp
-// Agrupar matches do mesmo tipo para exibi��o
+// Agrupar matches do mesmo tipo para exibição
 PatternGroupResult = List<PatternMatch>.GroupBy(m => m.Type);
 ```
 
 ---
 
-#### **?? RISCO M�DIO: F�rmula de Score Espalhada**
+#### **🟡 RISCO MÉDIO: Fórmula de Score Espalhada**
 
-**Onde quebra:** Ningu�m sabe mais onde mexer para balancear
+**Onde quebra:** Ninguém sabe mais onde mexer para balancear
 
-**Sintoma:** "Arco-�ris est� fraco, mas onde mexo?"
+**Sintoma:** "Arco-íris está fraco, mas onde mexo?"
 
-**Mitiga��o aplicada:**
-- TODA matem�tica no PatternScoreCalculator
-- Patterns s� t�m BaseScore (int fixo)
+**Mitigação aplicada:**
+- TODA matemática no PatternScoreCalculator
+- Patterns só têm BaseScore (int fixo)
 - Casos especiais documentados explicitamente
 
 **Monitorar:**
-- Se IGridPattern come�ar a ter `if/else` de score
+- Se IGridPattern começar a ter `if/else` de score
 - Se surgir "mini-calculadora" dentro de Pattern
-- Se tuning exigir mexer em m�ltiplos arquivos
+- Se tuning exigir mexer em múltiplos arquivos
 
 ---
 
-#### **?? RISCO BAIXO: Eventos Demais Cedo Demais**
+#### **🟢 RISCO BAIXO: Eventos Demais Cedo Demais**
 
 **Onde quebra:** UI, Analytics, Achievements, Debug tools todos acoplados
 
-**Sintoma:** "N�o posso mudar isso porque quebra tr�s sistemas"
+**Sintoma:** "Não posso mudar isso porque quebra três sistemas"
 
-**Mitiga��o aplicada:**
-- Eventos apenas para observa��o
-- L�gica de jogo nunca depende de evento ter sido ouvido
-- Nenhuma decis�o cr�tica via eventos
+**Mitigação aplicada:**
+- Eventos apenas para observação
+- Lógica de jogo nunca depende de evento ter sido ouvido
+- Nenhuma decisão crítica via eventos
 
 **Monitorar:**
-- Se surgir `if (eventFired)` em l�gica de jogo
-- Se evento come�ar a "orquestrar" fluxo
+- Se surgir `if (eventFired)` em lógica de jogo
+- Se evento começar a "orquestrar" fluxo
 - Se remover listener quebrar funcionalidade
 
 ---
 
-#### **?? RISCO BAIXO: DailyResolution Pesado Demais**
+#### **🟢 RISCO BAIXO: DailyResolution Pesado Demais**
 
 **Onde quebra:** Arquivo com 1000+ linhas, responsabilidades cruzadas
 
-**Sintoma:** Dif�cil testar, dif�cil debugar, bugs em cascata
+**Sintoma:** Difícil testar, difícil debugar, bugs em cascata
 
-**Mitiga��o aplicada:**
+**Mitigação aplicada:**
 - Arquitetura pipeline (etapas isoladas)
-- Pattern � protagonista, mas n�o engole tudo
+- Pattern é protagonista, mas não engole tudo
 - Cada etapa claramente demarcada
 
 **Monitorar:**
-- Linhas de c�digo no arquivo
-- Se etapas come�arem a "conversar" diretamente
-- Se adicionar feature exigir mexer em m�ltiplas etapas
+- Linhas de código no arquivo
+- Se etapas começarem a "conversar" diretamente
+- Se adicionar feature exigir mexer em múltiplas etapas
 
 ---
 
-#### **?? RISCO CONCEITUAL: Sistema Bom Demais**
+#### **🔴 RISCO CONCEITUAL: Sistema Bom Demais**
 
 **Onde quebra:** Pattern System engole o resto do jogo
 
-**Sintoma:** Harvest vira irrelevante, outros sistemas "orbitam" padr�es
+**Sintoma:** Harvest vira irrelevante, outros sistemas "orbitam" padrões
 
-**Mitiga��o aplicada:**
-- Harvest � alavanca (acesso), n�o reward
-- Crescimento lento mant�m tens�o
-- Meta = padr�es + harvest (balanceado)
+**Mitigação aplicada:**
+- Harvest é alavanca (acesso), não reward
+- Crescimento lento mantém tensão
+- Meta = padrões + harvest (balanceado)
 
 **Monitorar:**
 - Taxa de uso de Harvest (analytics)
-- Feedback: "S� jogo para padr�es"
-- Se outros sistemas come�arem a depender de Pattern
+- Feedback: "Só jogo para padrões"
+- Se outros sistemas começarem a depender de Pattern
 
-**Filosofia de prote��o:**
-> "Pattern System � core isolado. Nenhum sistema ASSUME que ele existe. Ele soma pontos, n�o define vit�ria sozinho."
-
----
-
-### **?? CHECKLIST DE PROTE��O (Code Review)**
-
-Ao revisar c�digo do Pattern System, sempre checar:
-
-- [ ] Patterns cont�m apenas geometria + BaseScore fixo?
-- [ ] Calculator centraliza TODA matem�tica?
-- [ ] Detector � stateless e burro?
-- [ ] SaveData usa IDs est�veis (n�o strings humanas)?
-- [ ] Eventos s�o observa��o, n�o orquestra��o?
-- [ ] Identidade de padr�o � determin�stica?
-- [ ] Crescimento lento est� preservado?
-- [ ] Harvest permanece relevante (n�o trivial)?
+**Filosofia de proteção:**
+> "Pattern System é core isolado. Nenhum sistema ASSUME que ele existe. Ele soma pontos, não define vitória sozinho."
 
 ---
 
-## ?? **CASOS DE TESTE**
+### **📋 CHECKLIST DE PROTEÇÃO (Code Review)**
+
+Ao revisar código do Pattern System, sempre checar:
+
+- [ ] Patterns contêm apenas geometria + BaseScore fixo?
+- [ ] Calculator centraliza TODA matemática?
+- [ ] Detector é stateless e burro?
+- [ ] SaveData usa IDs estáveis (não strings humanas)?
+- [ ] Eventos são observação, não orquestração?
+- [ ] Identidade de padrão é determinística?
+- [ ] Crescimento lento está preservado?
+- [ ] Harvest permanece relevante (não trivial)?
+
+---
+
+## 🧪 **CASOS DE TESTE**
 
 ### **Teste 1: Par Simples**
 ```
 Input:
-[??][??][  ][  ][  ]
+[🥕][🥕][  ][  ][  ]
 
 Expected:
-? AdjacentPairPattern detected
+✅ AdjacentPairPattern detected
    Slots: [0, 1]
    Score: 5 pts
 ```
@@ -967,212 +1150,635 @@ Expected:
 ### **Teste 2: Linha com Locked**
 ```
 Input:
-[??][??][??][??][??]
+[🥕][🥕][🔒][🥕][🥕]
 
 Expected:
-? TrioLinePattern detected (slots 0,1 ignoram locked)
-? N�O � FullLinePattern (locked quebra)
+✅ TrioLinePattern detected (slots 0,1 ignoram locked)
+❌ NÃO é FullLinePattern (locked quebra)
 ```
 
 ### **Teste 3: Linha com Morta**
 ```
 Input:
-[??][??][??][??][??]
+[🥕][🥕][💀][🥕][🥕]
 
 Expected:
-? NENHUM padr�o (morta quebra tudo)
+❌ NENHUM padrão (morta quebra tudo)
 ```
 
-### **Teste 4: Sobreposi��o**
+### **Teste 4: Sobreposição**
 ```
 Input:
-[??][??][??]
-[??][  ][  ]
-[??][  ][  ]
+[🥕][🥕][🥕]
+[🥕][  ][  ]
+[🥕][  ][  ]
 
 Expected:
-? TrioLinePattern (row 0) ? 10 pts
-? TrioLinePattern (col 0) ? 10 pts
-? CornerPattern (L shape) ? 8 pts
-TOTAL: 28 pts (sobreposi��o OK!)
+✅ TrioLinePattern (row 0) → 10 pts
+✅ TrioLinePattern (col 0) → 10 pts
+✅ CornerPattern (L shape) → 8 pts
+TOTAL: 28 pts (sobreposição OK!)
 ```
 
 ---
 
-## ?? **CHECKLIST DE IMPLEMENTA��O**
+## 🌊 **PLANO DE IMPLEMENTAÇÃO EM ONDAS**
 
-### **Fase 0: Funda��o Arquitetural (ANTES DE CODIFICAR)**
-- [ ] Revisar se��o "Anti-Patterns e Riscos"
-- [ ] Definir PatternInstanceID (Hash de identidade)
-- [ ] Confirmar IDs est�veis no PatternLibrary (n�o usar nomes)
-- [ ] Validar que crescimento lento est� implementado no CropLogic
+### **📋 FILOSOFIA: Sprint Jogável End-to-End**
 
-### **Fase 1: Core (Dia 1)**
-- [ ] Criar `IGridPattern.cs`
-- [ ] Criar `PatternMatch.cs`
-- [ ] Criar `PatternDetector.cs`
-- [ ] Criar `PatternScoreCalculator.cs`
-- [ ] Criar `PatternEvents.cs`
-- [ ] Integrar em `GameEvents.cs`
+Cada onda representa um **sprint completo e funcional**. Se precisar parar, o sistema está **sempre jogável**.
 
-### **Fase 2: Padr�es Tier 1-2 (Dia 2)**
+**Regra de Ouro:**
+> "Nunca termine uma onda com o jogo quebrado. Cada onda adiciona features, não conserta features."
+
+---
+
+## 🌊 **ONDA 1: MVP FUNCIONAL (Sprint 1 - ~3-5 dias)**
+
+### **🎯 Objetivo:**
+Sistema de detecção básico funcionando **sem decay**, com **5 padrões Tier 1-2**, integrado ao pipeline de resolução diária.
+
+### **✅ Entregáveis:**
+
+#### **1.1 - Core Infrastructure**
+- [ ] `IGridPattern.cs` (interface base)
+- [ ] `PatternMatch.cs` (DTO simples, sem DaysActive ainda)
+- [ ] `PatternDetector.cs` (stateless, hardcoded patterns)
+- [ ] `PatternScoreCalculator.cs` (sem decay, fórmula básica)
+- [ ] `PatternEvents.cs` (event bus)
+
+#### **1.2 - GameEvents Integration**
+- [ ] Adicionar `PatternEvents` em `GameEvents.cs`
+- [ ] Testar evento `OnPatternDetected`
+
+#### **1.3 - 5 Padrões Essenciais (Tier 1-2)**
+- [ ] `AdjacentPairPattern.cs` (Par Adjacente - 5 pts)
+- [ ] `TrioLinePattern.cs` (Trio em Linha - 10 pts)
+- [ ] `CornerPattern.cs` (Cantinho - 8 pts)
+- [ ] `FullLinePattern.cs` (Linha Completa - 25 pts)
+- [ ] `CrossPattern.cs` (Cruz Simples - 30 pts)
+
+**Por que esses 5?**
+- Cobrem range de dificuldade (fácil → médio)
+- Testam geometrias diferentes (adjacência, linha, cruz)
+- Permitem validar sobreposição
+- Score variado (5-30 pts) para testar cálculo
+
+#### **1.4 - DailyResolution Integration (CRÍTICO)**
+- [ ] Criar `DetectPatternsStep.cs` (novo IFlowStep)
+- [ ] Adicionar ao pipeline APÓS `GrowGridStep`
+- [ ] Testar ordem: Grow → Detect → Score → Advance
+
+**Detalhes do DetectPatternsStep:**
+```csharp
+/// <summary>
+/// IFlowStep que detecta padrões no grid e adiciona pontos à meta semanal.
+/// 
+/// POSIÇÃO NO PIPELINE:
+/// 1. GrowGridStep (plantas crescem/murcham)
+/// 2. DetectPatternsStep ← AQUI (avalia grid final)
+/// 3. CalculateScoreStep (aplica meta + patterns)
+/// 4. AdvanceTimeStep
+/// 5. DailyDrawStep
+/// 
+/// RESPONSABILIDADES:
+/// - Chamar PatternDetector.DetectAll()
+/// - Chamar PatternScoreCalculator.CalculateTotal()
+/// - Adicionar pontos ao RunData.CurrentWeeklyScore
+/// - Emitir evento OnPatternDetected
+/// - Logs de debug verbosos
+/// </summary>
+public class DetectPatternsStep : IFlowStep
+{
+    private readonly IGridService _gridService;
+    private readonly PatternDetector _detector;
+    private readonly PatternScoreCalculator _calculator;
+    private readonly RunData _runData;
+    private readonly GameEvents _events;
+
+    public IEnumerator Execute(FlowControl control)
+    {
+        Debug.Log("[DetectPatternsStep] Iniciando detecção de padrões...");
+        
+        // 1. Detectar padrões
+        var matches = _detector.DetectAll(_gridService);
+        Debug.Log($"[DetectPatternsStep] {matches.Count} padrões detectados");
+        
+        // 2. Calcular pontos
+        int points = _calculator.CalculateTotal(matches, _gridService);
+        Debug.Log($"[DetectPatternsStep] Total de pontos: {points}");
+        
+        // 3. Adicionar à meta
+        _runData.CurrentWeeklyScore += points;
+        
+        // 4. Emitir evento (UI pode reagir)
+        _events.Pattern.TriggerPatternsDetected(matches, points);
+        
+        // 5. Delay visual (opcional)
+        yield return new WaitForSeconds(0.3f);
+    }
+}
+```
+
+#### **1.5 - AppCore Setup**
+- [ ] Adicionar `PatternDetector` e `PatternScoreCalculator` ao AppCore
+- [ ] **NÃO adicionar PatternLibrary SO ainda** (hardcode patterns)
+- [ ] Propriedades públicas para acesso
+
+#### **1.6 - Logs de Debug**
+- [ ] Log cada padrão detectado (tipo, slots, score)
+- [ ] Log score final com breakdown
+- [ ] Log de erro se grid inválido
+
+### **🧪 Critérios de Aceitação (Onda 1):**
+```
+✅ Jogar 1 dia completo sem erros
+✅ Ver logs de padrões detectados no Console
+✅ Score aumenta corretamente após "Sleep"
+✅ 5 padrões funcionando (testar cada um)
+✅ Sobreposição funciona (ex: Trio + Linha)
+✅ Locked/withered quebram padrões corretamente
+✅ Nenhuma exceção no Console
+```
+
+### **📊 Resultado Esperado:**
+```
+Dia 1:
+[🥕][🥕][🥕][  ][  ]  ← Trio (10 pts)
+[🥕][  ][  ][  ][  ]  ← Par vertical (5 pts)
+[  ][  ][  ][  ][  ]
+
+Console:
+[DetectPatternsStep] 2 padrões detectados
+- Trio em Linha (Row 0) → 10 pts
+- Par Adjacente (Col 0) → 5 pts
+[DetectPatternsStep] Total: 15 pts
+```
+
+---
+
+## 🌊 **ONDA 2: FEEDBACK VISUAL + TIER 2 COMPLETO (Sprint 2 - ~2-3 dias)**
+
+### **🎯 Objetivo:**
+Adicionar **padrões restantes Tier 2** + **UI básica** (logs visuais, toast notification)
+
+### **✅ Entregáveis:**
+
+#### **2.1 - Padrões Tier 2 Restantes**
+- [ ] `CheckerPattern.cs` (Xadrez 2x2 - 20 pts)
+
+#### **2.2 - UI Básica (Sem PopUp Complexo)**
+- [ ] Toast notification "Pattern Detected!" (fade out)
+- [ ] Adicionar score de patterns no HUD (separado de harvest)
+- [ ] Highlight temporário de slots (opcional)
+
+**⚠️ Nota sobre UI:**
+> UI complexa (popup de padrões, tabela completa, animações) será documentada em **arquivo separado** (`PATTERN_UI_DESIGN.md`). Por enquanto, apenas feedback mínimo.
+
+#### **2.3 - Refinamento de Score**
+- [ ] Implementar formula de Crop Value
+- [ ] Implementar bonus de Maturity
+- [ ] Implementar Soft Cap de Sinergia
+
+### **🧪 Critérios de Aceitação (Onda 2):**
+```
+✅ 6 padrões funcionando (Tier 1 + Tier 2 completo)
+✅ UI mostra "15 pts de padrões!" após Sleep
+✅ Fórmula de score com crop value/maturity funciona
+✅ Sinergia logarítmica aplicada corretamente
+✅ Jogar 3 dias consecutivos sem bugs
+```
+
+---
+
+## 🌊 **ONDA 3: PADRÕES AVANÇADOS (Sprint 3 - ~2-3 dias)**
+
+### **🎯 Objetivo:**
+Adicionar **Tier 3 e Tier 4** (padrões complexos)
+
+### **✅ Entregáveis:**
+
+#### **3.1 - Tier 3**
+- [ ] `DiagonalPattern.cs` (Diagonal - 40 pts)
+- [ ] `FramePattern.cs` (Moldura - 50 pts)
+- [ ] `RainbowLinePattern.cs` (Arco-íris - 55 pts)
+
+#### **3.2 - Tier 4**
+- [ ] `PerfectGridPattern.cs` (Grid Perfeito - 150 pts)
+
+#### **3.3 - Casos Especiais**
+- [ ] Fórmula custom para Arco-íris (diversidade)
+- [ ] Fórmula custom para Grid Perfeito
+- [ ] Validação de mínimo 4 tipos diferentes (Grid Perfeito)
+
+### **🧪 Critérios de Aceitação (Onda 3):**
+```
+✅ 10 padrões funcionando (todos os tiers)
+✅ Arco-íris detecta diversidade corretamente
+✅ Grid Perfeito valida 25 slots + 4 tipos
+✅ Score de 500+ pontos é possível (teste stress)
+✅ Nenhuma explosão numérica (soft cap funciona)
+```
+
+---
+
+## 🌊 **ONDA 4: PERSISTÊNCIA + DECAY (Sprint 4 - ~3-4 dias)**
+
+### **🎯 Objetivo:**
+Adicionar **tracking de padrões** + **sistema de decay**
+
+### **✅ Entregáveis:**
+
+#### **4.1 - PatternInstanceID**
+- [ ] Implementar Hash(Type + Slots + Crops)
+- [ ] Comparação determinística
+
+#### **4.2 - RunData Tracking**
+- [ ] `TotalPatternsCompleted`
+- [ ] `HighestDailyPatternScore`
+- [ ] `Dictionary<string, int> PatternCompletionCount`
+- [ ] `Dictionary<string, PatternInstanceData> ActivePatterns` (novo)
+
+#### **4.3 - Decay System**
+- [ ] Campo `DaysActive` em `PatternMatch`
+- [ ] Aplicar decay no Calculator (-10% por dia)
+- [ ] Reset semanal (lógica em `AdvanceTimeStep` ou novo step)
+- [ ] Bonus pós-reset (+10% no primeiro dia)
+
+#### **4.4 - SaveData Persistence**
+- [ ] Salvar padrões ativos entre sessões
+- [ ] Carregar e restaurar decay state
+- [ ] Validar compatibilidade de save
+
+### **🧪 Critérios de Aceitação (Onda 4):**
+```
+✅ Padrão mantido por 3 dias decai corretamente (100% → 90% → 80%)
+✅ Colher/replantar reseta decay (novo padrão)
+✅ Reset semanal funciona
+✅ Bonus pós-reset aplicado
+✅ Save/Load preserva decay state
+✅ PatternInstanceID é único e determinístico
+```
+
+---
+
+## 🌊 **ONDA 5: POLISH + SCRIPTABLE OBJECT (Sprint 5 - ~2 dias)**
+
+### **🎯 Objetivo:**
+Migrar patterns hardcoded para **ScriptableObject** + polish final
+
+### **✅ Entregáveis:**
+
+#### **5.1 - PatternLibrary SO**
+- [ ] Criar `PatternLibrary.cs` (ScriptableObject)
+- [ ] Migrar 10 padrões para asset
+- [ ] Configurar IDs estáveis (ex: "FULL_LINE")
+- [ ] Configurar nomes exibidos (para UI)
+
+#### **5.2 - AppCore Integration**
+- [ ] Injetar `PatternLibrary` no `PatternDetector`
+- [ ] Remover patterns hardcoded
+
+#### **5.3 - Polish**
+- [ ] Tuning de valores (playtesting)
+- [ ] Ajustar soft cap se necessário
+- [ ] Refinar logs de debug
+- [ ] Adicionar comentários inline faltantes
+
+### **🧪 Critérios de Aceitação (Onda 5):**
+```
+✅ PatternLibrary asset configurado no Inspector
+✅ Renomear pattern via SO não quebra código
+✅ Adicionar novo padrão = só criar SO entry
+✅ Balance de pontos está coerente
+✅ Code review com checklist de Anti-Patterns
+✅ Documentação inline completa
+```
+
+---
+
+## 📊 **RESUMO DAS ONDAS**
+
+| Onda | Duração | Entregável Principal | Status no Final |
+|------|---------|---------------------|-----------------|
+| **1** | 3-5 dias | MVP com 5 padrões, sem decay, sem UI | ✅ Jogável |
+| **2** | 2-3 dias | 6 padrões + UI básica + score final | ✅ Jogável |
+| **3** | 2-3 dias | 10 padrões (todos os tiers) | ✅ Jogável |
+| **4** | 3-4 dias | Decay + persistência | ✅ Jogável |
+| **5** | 2 dias | ScriptableObject + polish | ✅ Completo |
+
+**Total estimado:** 12-17 dias (2-3 semanas)
+
+---
+
+## 🚨 **REGRAS DE TRANSIÇÃO ENTRE ONDAS**
+
+### **Antes de avançar para próxima onda:**
+
+1. ✅ **Build compila sem erros**
+2. ✅ **Jogar 1 run completo (7 dias) sem crashes**
+3. ✅ **Logs não mostram exceções**
+4. ✅ **Critérios de aceitação da onda atual = OK**
+5. ✅ **Commit no Git** (`feat: Onda X completa`)
+
+**Se algo quebrar na Onda N, NUNCA corrija na Onda N+1.**  
+Volte, conserte, valide, e só então avance.
+
+---
+
+## 📝 **CHECKLIST COMPLETO (Referência Detalhada)**
+
+### **Onda 1: MVP Funcional**
+- [ ] `IGridPattern.cs`
+- [ ] `PatternMatch.cs` (sem DaysActive)
+- [ ] `PatternDetector.cs` (hardcoded, stateless)
+- [ ] `PatternScoreCalculator.cs` (sem decay)
+- [ ] `PatternEvents.cs`
+- [ ] Integrar `PatternEvents` em `GameEvents.cs`
 - [ ] `AdjacentPairPattern.cs`
 - [ ] `TrioLinePattern.cs`
 - [ ] `CornerPattern.cs`
 - [ ] `FullLinePattern.cs`
-- [ ] `CheckerPattern.cs`
 - [ ] `CrossPattern.cs`
+- [ ] `DetectPatternsStep.cs` (IFlowStep)
+- [ ] Adicionar step ao pipeline em `DailyResolutionSystem`
+- [ ] Modificar `AppCore.cs` (adicionar Detector + Calculator)
+- [ ] Logs de debug verbosos
+- [ ] Testar 5 padrões individualmente
+- [ ] Testar sobreposição
+- [ ] Testar locked/withered
+- [ ] Jogar 1 dia completo sem erros
 
-### **Fase 3: Padr�es Tier 3-4 (Dia 3)**
+### **Onda 2: Feedback + Tier 2**
+- [ ] `CheckerPattern.cs`
+- [ ] Toast notification "Pattern Detected!"
+- [ ] HUD mostra score de patterns separado
+- [ ] Implementar Crop Value multiplier
+- [ ] Implementar Maturity bonus
+- [ ] Implementar Soft Cap de Sinergia
+- [ ] Testar fórmula de score completa
+- [ ] Jogar 3 dias consecutivos
+
+### **Onda 3: Padrões Avançados**
 - [ ] `DiagonalPattern.cs`
 - [ ] `FramePattern.cs`
 - [ ] `RainbowLinePattern.cs`
 - [ ] `PerfectGridPattern.cs`
+- [ ] Fórmula custom para Arco-íris
+- [ ] Fórmula custom para Grid Perfeito
+- [ ] Validação de 4 tipos (Grid Perfeito)
+- [ ] Teste stress (500+ pontos)
 
-### **Fase 4: ScriptableObject (Dia 3)**
-- [ ] Criar `PatternLibrary.cs`
-- [ ] Criar asset `PatternLibrary.asset` na Unity
-- [ ] Configurar 10 padr�es no Inspector
+### **Onda 4: Decay + Persistência**
+- [ ] PatternInstanceID (Hash)
+- [ ] Campo `DaysActive` em PatternMatch
+- [ ] Tracking em RunData
+- [ ] Decay aplicado no Calculator
+- [ ] Reset semanal
+- [ ] Bonus pós-reset
+- [ ] Save/Load de decay state
+- [ ] Testar decay por 3 dias
+- [ ] Testar reset semanal
 
-### **Fase 5: Integra��o (Dia 4)**
-- [ ] Modificar `AppCore.cs`
-- [ ] Modificar `DailyResolutionSystem.cs`
-- [ ] Modificar `RunData.cs`
-- [ ] Adicionar logs de debug
-
-### **Fase 6: Testes (Dia 5)**
-- [ ] Testar cada padr�o individualmente
-- [ ] Testar sobreposi��o
-- [ ] Testar casos edge (locked, withered)
-- [ ] Testar formula de pontua��o
-- [ ] **Validar identidade de padr�o (colher e replantar)**
-- [ ] **Confirmar que crescimento lento funciona com padr�es**
-- [ ] **Testar volume de matches (grid complexo)**
-- [ ] Tunning de valores
-
-### **Fase 7: Prote��o Arquitetural (Dia 6)**
-- [ ] Code review com checklist de Anti-Patterns
-- [ ] Confirmar que Calculator centraliza matem�tica
-- [ ] Validar que Detector � stateless
-- [ ] Verificar SaveData com IDs est�veis
-- [ ] Confirmar que eventos s�o observa��o apenas
-- [ ] Documentar decis�es cr�ticas (coment�rios inline)
+### **Onda 5: ScriptableObject + Polish**
+- [ ] `PatternLibrary.cs` (SO)
+- [ ] Criar asset `PatternLibrary.asset`
+- [ ] Configurar 10 padrões
+- [ ] IDs estáveis (ex: "FULL_LINE")
+- [ ] Injetar no PatternDetector
+- [ ] Remover hardcode
+- [ ] Tuning de valores
+- [ ] Code review com checklist
+- [ ] Documentação inline completa
 
 ---
 
-## ?? **PR�XIMOS PASSOS (Fase 2 - Futuro)**
+## 🚀 **PRÓXIMOS PASSOS (APÓS ONDA 5 - Futuro)**
 
-### **UI de Padr�es**
-- Popup mostrando padr�es detectados
-- Tabela in-game com todos os 10 padr�es
-- Highlight visual dos slots que formam padr�o
-- Anima��o de "Pattern Completed!"
+### **UI de Padrões Avançada (Sprint 6 - Separado)**
 
-### **Tradi��es (Modificadores)**
+**⚠️ IMPORTANTE:** UI complexa será documentada em arquivo separado.
+
+**Criar:** `Assets/Documentation/PATTERN_UI_DESIGN.md`
+
+**Conteúdo sugerido:**
+- Popup detalhado mostrando padrões detectados
+- Tabela in-game com todos os 10 padrões + progresso
+- Highlight visual animado dos slots que formam padrão
+- Animação "Pattern Completed!" com juicy effects
+- Particle effects por tier (bronze/prata/ouro/diamante)
+- Breakdown de score (tooltip mostrando cálculo)
+- História de padrões (últimos 7 dias)
+- Indicador visual de decay (barra amarela → vermelha)
+
+**Mockups/References:**
+- Balatro (popup de mãos de poker)
+- Slay the Spire (card rewards screen)
+- Inscryption (pattern recognition feedback)
+
+**Razão da separação:**
+- UI não afeta lógica de jogo
+- Pode ser iterada independentemente
+- Designer (você do futuro) pode prototipar sem quebrar backend
+- Sprint de UI pode ser mais longo (polish visual demora)
+
+---
+
+### **Tradições (Modificadores) - Sprint 7+**
 - Sistema de buffs estilo Balatro Jokers
-- "Mestre da Moldura" ? Molduras valem 2x
-- "Arco-�ris Divino" ? Linha diversa +100%
-- Escolher 3 tradi��es ativas por run
+- "Mestre da Moldura" → Molduras valem 2x
+- "Arco-íris Divino" → Linha diversa +100%
+- "Agricultor Paciente" → Decay -5% ao invés de -10%
+- Escolher 3 tradições ativas por run
+- Tradições desbloqueadas por achievements
 
-### **Stats & Meta**
-- Tracking de padr�es completados
+---
+
+### **Stats & Meta - Sprint 8+**
+- Tracking de padrões completados
 - Achievement "Complete todos os 10 em 1 dia"
 - Daily challenge "Complete 5 Molduras"
+- Leaderboard (padrões mais raros)
+- Stats screen no menu
 
 ---
 
-## ?? **NOTAS PARA O PR�XIMO CHAT (Claude Opus)**
+## 💬 **NOTAS PARA O PRÓXIMO CHAT (Claude Opus)**
 
 ### **Contexto do Projeto**
 - Farming game roguelike
 - Grid 5x5
 - Sistema de cartas (plantar/regar/colher)
 - Ciclo dia/noite
-- Meta di�ria de pontos
+- Meta diária de pontos
 
-### **Refatora��o Recente (IMPORTANTE!)**
+### **Refatoração Recente (IMPORTANTE!)**
 - Grid visual foi COMPLETAMENTE refatorado
 - Usa Dependency Injection (GridVisualContext)
-- IDropValidator para valida��o
+- IDropValidator para validação
 - Event-driven architecture
 - Ver: `Assets/Documentation/GRID_REFACTORING_SUMMARY.md`
 
-### **Estilo de C�digo**
+### **Estilo de Código**
 - C# 9.0, .NET Framework 4.7.1
 - SOLID principles
-- Interfaces para tudo que � test�vel
-- ScriptableObjects para configura��o
-- Event-driven onde poss�vel
-- Coment�rios inline extensivos
+- Interfaces para tudo que é testável
+- ScriptableObjects para configuração
+- Event-driven onde possível
+- Comentários inline extensivos
 
 ### **Sistema de Eventos**
-- `AppCore.Instance.Events.Pattern` ? Novo event bus
+- `AppCore.Instance.Events.Pattern` → Novo event bus
 - Eventos: `OnPatternDetected`, `OnScoreCalculated`
 - Sempre disparar eventos para UI reagir
-- **REGRA:** Eventos s�o observa��o, n�o orquestra��o
+- **REGRA:** Eventos são observação, não orquestração
 
-### **Integra��o com Existente**
-- `DailyResolutionSystem` j� existe e funciona
-- `GridService` exp�e `GetSlotReadOnly(index)`
+### **Integração com Existente**
+- `DailyResolutionSystem` já existe e funciona
+- `GridService` expõe `GetSlotReadOnly(index)`
 - `IGridService.Config` tem Rows/Columns
 - `GameLibrary` tem `TryGetCrop(cropID, out data)`
-- **CropLogic** tem crescimento lento (3-4 dias at� maturidade)
+- **CropLogic** tem crescimento lento (3-4 dias até maturidade)
 
-### **O que N�O mudar**
+### **O que NÃO mudar**
 - Grid visual (acabamos de refatorar!)
 - Sistema de cartas (funciona perfeitamente)
-- DailyResolution flow (s� adicionar detec��o no meio)
+- DailyResolution flow (só adicionar detecção no meio)
 - **Crescimento lento de plantas** (pilar do Pattern System)
 
-### **?? DIRETRIZES CR�TICAS DE IMPLEMENTA��O**
+### **⚠️ DIRETRIZES CRÍTICAS DE IMPLEMENTAÇÃO**
 
-1. **Identidade de Padr�o:**
+1. **Identidade de Padrão:**
    - PatternInstanceID = Hash(PatternType + SlotIndices + CropIDs)
-   - Qualquer mudan�a = novo padr�o (sem l�gica criativa)
+   - Qualquer mudança = novo padrão (sem lógica criativa)
 
 2. **Responsabilidades Fixas:**
    - **PatternDetector:** stateless, apenas coleta matches
-   - **PatternScoreCalculator:** TODA matem�tica de pontua��o
-   - **IGridPattern:** geometria + BaseScore fixo (sem l�gica complexa)
+   - **PatternScoreCalculator:** TODA matemática de pontuação
+   - **IGridPattern:** geometria + BaseScore fixo (sem lógica complexa)
 
 3. **SaveData:**
-   - Usar IDs est�veis (ex: "FULL_LINE")
+   - Usar IDs estáveis (ex: "FULL_LINE")
    - NUNCA usar nomes exibidos ou nomes de classe
 
 4. **Eventos:**
-   - Apenas para observa��o (UI, analytics)
-   - L�gica de jogo NUNCA depende de eventos
+   - Apenas para observação (UI, analytics)
+   - Lógica de jogo NUNCA depende de eventos
 
-5. **Prote��o contra "Sistema Bom Demais":**
-   - Pattern System � core, mas n�o engole o jogo
+5. **Proteção contra "Sistema Bom Demais":**
+   - Pattern System é core, mas não engole o jogo
    - Harvest permanece relevante (alavanca de acesso)
-   - Outros sistemas n�o devem ASSUMIR que Pattern existe
+   - Outros sistemas não devem ASSUMIR que Pattern existe
 
-### **Prioridade**
-1. Implementar detec��o funcional (sem UI)
-2. Implementar calculator com todas as f�rmulas
-3. Integrar com DailyResolution
-4. Testar casos cr�ticos (identidade, decay, crescimento)
-5. Code review com checklist de Anti-Patterns
-6. Logs de debug extensivos
-7. UI depois (pr�xima feature)
+### **Prioridade de Implementação (ATUALIZADO)**
 
-### **?? RED FLAGS - Pare e Revise Se:**
-- IGridPattern come�ar a calcular score
+**🌊 ONDA 1 - MVP Funcional (Sprint 1):**
+1. Core infrastructure (IGridPattern, PatternMatch, Detector, Calculator)
+2. 5 padrões essenciais (Par, Trio, Cantinho, Linha, Cruz)
+3. **DetectPatternsStep.cs** (novo IFlowStep - ver Onda 1 para detalhes)
+4. Integração com DailyResolution pipeline
+5. Logs de debug extensivos
+6. **SEM DECAY** (adicionar na Onda 4)
+7. **SEM UI complexa** (apenas logs, toast simples na Onda 2)
+
+**🌊 ONDA 2 - Feedback + Tier 2 (Sprint 2):**
+1. Completar Tier 2 (Xadrez)
+2. UI básica (toast notification, HUD score)
+3. Score formula completa (crop value, maturity, sinergia)
+
+**🌊 ONDA 3 - Padrões Avançados (Sprint 3):**
+1. Tier 3 (Diagonal, Moldura, Arco-íris)
+2. Tier 4 (Grid Perfeito)
+3. Fórmulas customizadas
+
+**🌊 ONDA 4 - Decay + Persistência (Sprint 4):**
+1. PatternInstanceID (Hash)
+2. Tracking de padrões ativos
+3. Sistema de decay (-10% por dia)
+4. Reset semanal + bonus pós-reset
+5. Save/Load de decay state
+
+**🌊 ONDA 5 - ScriptableObject + Polish (Sprint 5):**
+1. PatternLibrary SO
+2. Migrar patterns hardcoded
+3. Tuning de valores
+4. Code review final
+
+**📋 Critérios para avançar de onda:**
+- ✅ Build compila sem erros
+- ✅ Jogar 1 run (7 dias) sem crashes
+- ✅ Critérios de aceitação da onda = OK
+- ✅ Commit no Git
+
+---
+
+### **🚨 RED FLAGS - Pare e Revise Se:**
+- IGridPattern começar a calcular score
 - PatternDetector tiver mais de 200 linhas
 - Surgir `if (season == X)` dentro de Detector
 - SaveData usar strings "Linha Completa"
-- Eventos orquestrando l�gica de jogo
+- Eventos orquestrando lógica de jogo
 - Harvest virar "trivial" ou "sempre ignorado"
 
 ---
 
-## ? **APROVA��O DO DESIGN**
+## ✅ **APROVAÇÃO DO DESIGN**
 
 **Designer**: Davi  
-**Status**: ? APROVADO  
-**Data**: 2024  
-**Pr�ximo**: Implementa��o no Claude Opus
+**Status**: ✅ APROVADO (Versão 2.0 - Implementação em Ondas)  
+**Data**: 2026 
+**Próximo**: Implementação no Claude Opus (Onda por Onda)
+
+---
+
+## 📌 **NOTAS FINAIS PARA O IMPLEMENTADOR (Claude Opus)**
+
+### **🎯 Mindset Correto:**
+
+Este documento foi escrito **com carinho** pelo designer. Cada detalhe importa.
+
+**Regras de Ouro:**
+1. **Nunca pule ondas** - Cada onda é testável end-to-end
+2. **Nunca comprometa a arquitetura** - Atalhos viram dívida técnica
+3. **Logs verbosos sempre** - Debug é parte do MVP
+4. **UI complexa é Fase 2** - Foco em lógica funcional primeiro
+5. **Decay vem depois** - MVP sem decay está OK
+
+---
+
+### **📞 Se Algo Der Errado:**
+
+**Problema:** "Não sei onde adicionar DetectPatternsStep"  
+**Solução:** Ver seção "Onda 1 → 1.4 DailyResolution Integration" (código completo fornecido)
+
+**Problema:** "PatternDetector está ficando grande"  
+**Solução:** Revise seção "Anti-Patterns" - Detector deve ter <200 linhas, apenas coletar matches
+
+**Problema:** "Padrões não detectam corretamente"  
+**Solução:** Teste cada padrão isoladamente antes de integrar. Use logs verbosos em cada TryDetect()
+
+**Problema:** "Score parece errado"  
+**Solução:** Logs devem mostrar breakdown completo (base × crop × maturity × sinergia)
+
+**Problema:** "Não sei se posso avançar de onda"  
+**Solução:** Critérios de aceitação no final de cada onda são **obrigatórios**. Se não passar, corrija antes de avançar.
+
+**Problema:** "Quero adicionar feature X que não está no documento"  
+**Solução:** Documente primeiro, implemente depois. Nunca adicione features "nas coxas".
+
+---
+
+### **💚 Mensagem do Designer:**
+
+Esse sistema foi pensado para ser o **coração do jogo**. Implemente com paciência.
+
+Cada onda é um marco. Comemora quando completar. 🎉
+
+Se precisar adaptar algo, tudo bem - mas **documente o porquê** nos comentários inline.
+
+O documento tem 1500+ linhas porque eu me importei. Espero que você também se importe. 💚
+
+Boa sorte, eu do futuro (ou Claude Opus). Você consegue! 🚀
 
 ---
 
