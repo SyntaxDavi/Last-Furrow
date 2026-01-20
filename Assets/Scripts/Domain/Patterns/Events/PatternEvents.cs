@@ -11,6 +11,7 @@ using System.Collections.Generic;
 /// 
 /// EVENTOS DISPONÍVEIS:
 /// - OnPatternsDetected: Disparado após detecção completa (lista de matches + total de pontos)
+/// - OnPatternSlotCompleted: Disparado por slot durante scanner incremental (ONDA 5.5 - NOVO)
 /// - OnPatternScoreCalculated: Disparado após cálculo de score (para UI mostrar breakdown)
 /// - OnPatternDecayApplied: Disparado quando decay é aplicado a um padrão (ONDA 4)
 /// - OnPatternRecreated: Disparado quando padrão quebrado é recriado com bonus (ONDA 4)
@@ -22,6 +23,18 @@ public class PatternEvents
     /// Parâmetros: (Lista de PatternMatch, Pontos totais de padrões)
     /// </summary>
     public event Action<List<PatternMatch>, int> OnPatternsDetected;
+    
+    /// <summary>
+    /// ONDA 5.5 (NOVO): Disparado quando scanner incremental encontra um padrão completo.
+    /// Usado para animações sequenciais (highlight + pop-up).
+    /// Parâmetros: (PatternMatch)
+    /// 
+    /// FILOSOFIA:
+    /// - Cada padrão dispara 1 evento (mesmo que compartilhe slots)
+    /// - UI escuta e aplica visual (cor, pulse, pop-up)
+    /// - Não calcula score/tier (recebe dados prontos)
+    /// </summary>
+    public event Action<PatternMatch> OnPatternSlotCompleted;
     
     /// <summary>
     /// Disparado quando um padrão individual é calculado (para UI/debug detalhado).
@@ -48,6 +61,15 @@ public class PatternEvents
     public void TriggerPatternsDetected(List<PatternMatch> matches, int totalPoints)
     {
         OnPatternsDetected?.Invoke(matches, totalPoints);
+    }
+    
+    /// <summary>
+    /// ONDA 5.5 (NOVO): Dispara evento quando scanner incremental completa um padrão.
+    /// Chamado pelo GridSlotScanner ao encontrar padrão completo.
+    /// </summary>
+    public void TriggerPatternSlotCompleted(PatternMatch match)
+    {
+        OnPatternSlotCompleted?.Invoke(match);
     }
     
     public void TriggerPatternScoreCalculated(PatternMatch match, int finalScore)
