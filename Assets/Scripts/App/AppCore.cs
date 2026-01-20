@@ -17,6 +17,9 @@ public class AppCore : MonoBehaviour
     // ⭐ NOVO: Pattern System (Onda 1)
     public PatternDetector PatternDetector { get; private set; }
     public PatternScoreCalculator PatternCalculator { get; private set; }
+    
+    // ⭐ NOVO: Pattern Tracking (Onda 4)
+    public PatternTrackingService PatternTracking { get; private set; }
 
     [Header("Data")]
     [SerializeField] private GameDatabaseSO _gameDatabase;
@@ -106,6 +109,8 @@ public class AppCore : MonoBehaviour
         // ⭐ NOVO: Pattern System (Onda 1)
         PatternDetector = new PatternDetector();
         PatternCalculator = new PatternScoreCalculator(GameLibrary);
+        // NOTA: PatternTracking é inicializado depois, quando RunData estiver disponível
+        // Ver InitializePatternTracking() chamado pelo RunManager ou GameplayBootstrapper
         Debug.Log("[AppCore] ✓ Pattern System inicializado (Detector + Calculator)");
 
         // Injeta RunIdentityContext (imutável) em TODAS as estratégias
@@ -230,5 +235,31 @@ public class AppCore : MonoBehaviour
     public void UnregisterGridService()
     {
         _gridService = null;
+    }
+    
+    // ===== ONDA 4: Pattern Tracking =====
+    
+    /// <summary>
+    /// Inicializa o PatternTrackingService quando o RunData estiver disponível.
+    /// Chamado pelo GameplayBootstrapper após carregar/criar uma run.
+    /// </summary>
+    public void InitializePatternTracking(RunData runData)
+    {
+        if (runData == null)
+        {
+            Debug.LogError("[AppCore] Não é possível inicializar PatternTracking sem RunData!");
+            return;
+        }
+        
+        PatternTracking = new PatternTrackingService(runData);
+        Debug.Log("[AppCore] ✓ PatternTrackingService inicializado");
+    }
+    
+    /// <summary>
+    /// Chamado no início de uma nova semana para resetar tracking.
+    /// </summary>
+    public void OnWeeklyReset()
+    {
+        PatternTracking?.OnWeeklyReset();
     }
 }

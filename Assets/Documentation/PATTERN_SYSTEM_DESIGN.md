@@ -1448,7 +1448,11 @@ Para ativar a UI de padrões, criar no Canvas:
 
 ## 🌊 **ONDA 3: PADRÕES AVANÇADOS (Sprint 3 - ~2-3 dias)**
 
-### **🏷️ STATUS: ⏳ PENDENTE**
+### **🏷️ STATUS: ✅ COMPLETA (2025-01-XX)**
+
+**Branch:** `feature/pattern-system-wave-3`  
+**Tag:** `wave-3-complete`  
+**Commit:** `feat(patterns): Onda 3 - 4 padrões avançados (Diagonal, Frame, Rainbow, PerfectGrid)`
 
 ### **🎯 Objetivo:**
 Adicionar **Tier 3 e Tier 4** (padrões complexos)
@@ -1456,24 +1460,58 @@ Adicionar **Tier 3 e Tier 4** (padrões complexos)
 ### **✅ Entregáveis:**
 
 #### **3.1 - Tier 3**
-- [ ] `DiagonalPattern.cs` (Diagonal - 40 pts)
-- [ ] `FramePattern.cs` (Moldura - 50 pts)
-- [ ] `RainbowLinePattern.cs` (Arco-íris - 55 pts)
+- [x] `DiagonalPattern.cs` (Diagonal - 40 pts)
+- [x] `FramePattern.cs` (Moldura - 50 pts)
+- [x] `RainbowLinePattern.cs` (Arco-íris - 55 pts)
 
 #### **3.2 - Tier 4**
-- [ ] `PerfectGridPattern.cs` (Grid Perfeito - 150 pts)
+- [x] `PerfectGridPattern.cs` (Grid Perfeito - 150 pts)
 
 #### **3.3 - Casos Especiais**
-- [ ] Fórmula custom para Arco-íris (diversidade)
-- [ ] Fórmula custom para Grid Perfeito
-- [ ] Validação de mínimo 4 tipos diferentes (Grid Perfeito)
+- [x] Fórmula custom para Arco-íris (diversityBonus)
+- [x] Fórmula custom para Grid Perfeito (diversityBonus)
+- [x] Validação de mínimo 4 tipos diferentes (Grid Perfeito)
+- [x] Validação de mínimo 3 tipos diferentes (Rainbow)
+
+### **📁 Arquivos Criados (Onda 3):**
+```
+Assets/Scripts/Domain/Patterns/Implementations/
+├── DiagonalPattern.cs      ← 40 pts (diagonais \ e /)
+├── FramePattern.cs         ← 50 pts (16 slots de borda)
+├── RainbowLinePattern.cs   ← 55 pts (3-5 tipos diferentes)
+└── PerfectGridPattern.cs   ← 150 pts (25 slots + 4 tipos)
+```
+
+### **📁 Arquivos Modificados (Onda 3):**
+- `Assets/Scripts/Domain/Patterns/Core/PatternDetector.cs` - Adicionados 4 novos padrões (total: 10)
+- `Assets/Scripts/Domain/Patterns/Core/PatternScoreCalculator.cs` - Adicionado CalculateDiversityBonus()
+
+### **🔢 Fórmulas de Diversidade Implementadas:**
+
+**Rainbow Line (Arco-íris):**
+```csharp
+// bonus = 1 + 0.25 × (uniqueTypes - 3)
+// 3 tipos = 1.0x (mínimo)
+// 4 tipos = 1.25x (+25%)
+// 5 tipos = 1.5x (+50%)
+```
+
+**Perfect Grid (Grid Perfeito):**
+```csharp
+// bonus = 1 + 0.15 × (uniqueTypes - 4)
+// 4 tipos = 1.0x (mínimo)
+// 5 tipos = 1.15x (+15%)
+// 6+ tipos = escala continua
+```
 
 ### **🧪 Critérios de Aceitação (Onda 3):**
 ```
 ✅ 10 padrões funcionando (todos os tiers)
-✅ Arco-íris detecta diversidade corretamente
+✅ Arco-íris detecta diversidade corretamente (3+ tipos)
 ✅ Grid Perfeito valida 25 slots + 4 tipos
-✅ Score de 500+ pontos é possível (teste stress)
+✅ Diagonal detecta nas duas direções (\ e /)
+✅ Moldura detecta os 16 slots de borda
+✅ Score de 500+ pontos é possível
 ✅ Nenhuma explosão numérica (soft cap funciona)
 ```
 
@@ -1481,40 +1519,167 @@ Adicionar **Tier 3 e Tier 4** (padrões complexos)
 
 ## 🌊 **ONDA 4: PERSISTÊNCIA + DECAY (Sprint 4 - ~3-4 dias)**
 
+### **🏷️ STATUS: ✅ COMPLETA (2025-01-XX)**
+
+**Branch:** `feature/pattern-system-wave-4`  
+**Tag:** `wave-4-complete`  
+**Commit:** `feat(patterns): Onda 4 - Decay System + Tracking + UI Integration`
+
 ### **🎯 Objetivo:**
-Adicionar **tracking de padrões** + **sistema de decay**
+Adicionar **tracking de padrões** + **sistema de decay** + **UI feedback de decay**
 
 ### **✅ Entregáveis:**
 
 #### **4.1 - PatternInstanceID**
-- [ ] Implementar Hash(Type + Slots + Crops)
-- [ ] Comparação determinística
+- [x] Implementar Hash(Type + Slots + Crops)
+- [x] Comparação determinística
+- [x] `PatternInstanceData.GenerateInstanceID()` implementado
 
 #### **4.2 - RunData Tracking**
-- [ ] `TotalPatternsCompleted`
-- [ ] `HighestDailyPatternScore`
-- [ ] `Dictionary<string, int> PatternCompletionCount`
-- [ ] `Dictionary<string, PatternInstanceData> ActivePatterns` (novo)
+- [x] `TotalPatternsDetected` (contador global)
+- [x] `HighestDailyPatternScore` (recorde diário)
+- [x] `Dictionary<string, int> PatternCompletionCount` (por tipo)
+- [x] `Dictionary<string, PatternInstanceData> ActivePatterns` (padrões ativos)
+- [x] `List<string> BrokenPatternIDs` (para bonus de recriação)
 
 #### **4.3 - Decay System**
-- [ ] Campo `DaysActive` em `PatternMatch`
-- [ ] Aplicar decay no Calculator (-10% por dia)
-- [ ] Reset semanal (lógica em `AdvanceTimeStep` ou novo step)
-- [ ] Bonus pós-reset (+10% no primeiro dia)
+- [x] Campo `DaysActive` em `PatternMatch`
+- [x] Campo `HasRecreationBonus` em `PatternMatch`
+- [x] Aplicar decay no Calculator (-10% por dia)
+- [x] Reset semanal em `RunManager.StartNextWeek()`
+- [x] Bonus pós-reset (+10% no primeiro dia)
 
 #### **4.4 - SaveData Persistence**
-- [ ] Salvar padrões ativos entre sessões
-- [ ] Carregar e restaurar decay state
-- [ ] Validar compatibilidade de save
+- [x] Salvar padrões ativos entre sessões (via `PatternTrackingService`)
+- [x] Carregar e restaurar decay state
+- [x] Validar compatibilidade de save (hash de identidade)
+
+#### **4.5 - PatternTrackingService**
+- [x] `UpdateActivePatterns()` - compara padrões detectados vs anteriores
+- [x] Incrementa `DaysActive` para padrões mantidos
+- [x] Marca padrões quebrados em `_brokenPatternIDs`
+- [x] Detecta recriação e aplica bonus
+- [x] `OnWeeklyReset()` - limpa histórico de quebrados
+
+#### **4.6 - Pattern Events (UI)**
+- [x] `OnPatternDecayApplied` - evento quando decay é aplicado
+- [x] `OnPatternRecreated` - evento quando padrão tem bonus
+
+#### **4.7 - UI Integration**
+- [x] `PatternFeedbackView` atualizada com indicadores de decay
+- [x] Cores: laranja (decay) e verde (recreation bonus)
+- [x] Texto dinâmico: "⏰ 2 padrões com decay (-19%)"
+- [x] Texto dinâmico: "🔄 1 padrão recriado (+10%!)"
+
+#### **4.8 - CheatManager Integration**
+- [x] Seção "PATTERNS (Onda 4)" no CheatManager
+- [x] Botão "Detectar Padrões Agora"
+- [x] Botão "Log Tracking Status"
+- [x] Botão "Reset Weekly Tracking"
+- [x] Botão "Simular Fim de Dia"
+
+### **📁 Arquivos Criados (Onda 4):**
+```
+Assets/Scripts/Domain/Patterns/Core/
+├── PatternInstanceData.cs      ← DTO serializável para tracking
+└── PatternTrackingService.cs   ← Serviço de tracking/decay
+```
+
+### **📁 Arquivos Modificados (Onda 4):**
+```
+Assets/Scripts/Domain/Patterns/Core/
+├── PatternMatch.cs             ← +DaysActive, +HasRecreationBonus, +SetTrackingData()
+└── PatternScoreCalculator.cs   ← +CalculateDecayMultiplier(), +eventos de UI
+
+Assets/Scripts/Domain/Patterns/Events/
+└── PatternEvents.cs            ← +OnPatternDecayApplied, +OnPatternRecreated
+
+Assets/Scripts/Domain/Run/
+├── RunData.cs                  ← +ActivePatterns, +BrokenPatternIDs, +TotalPatternsDetected
+└── RunManager.cs               ← +AppCore.Instance.OnWeeklyReset() em StartNextWeek()
+
+Assets/Scripts/App/
+├── AppCore.cs                  ← +PatternTracking, +InitializePatternTracking(), +OnWeeklyReset()
+└── GameplayBootstrapper.cs     ← +InitializePatternTracking()
+
+Assets/Scripts/Flow/Steps/
+└── DetectPatternsStep.cs       ← +TrackingService.UpdateActivePatterns()
+
+Assets/Scripts/UI/Patterns/
+└── PatternFeedbackView.cs      ← +Decay UI, +cores, +AnalyzeDecayStatus()
+
+Assets/Scripts/Debug/
+└── CheatManager.cs             ← +DrawPatternSection(), +4 comandos de debug
+```
+
+### **🔢 Fórmula de Decay Implementada:**
+```csharp
+// decayMultiplier = 0.9^(DaysActive - 1)
+// Dia 1: 1.0x   (100% - sem decay)
+// Dia 2: 0.9x   (90%)
+// Dia 3: 0.81x  (81%)
+// Dia 4: 0.729x (72.9%)
+// Dia 5: 0.656x (65.6%)
+
+float decayMultiplier = Mathf.Pow(0.9f, match.DaysActive - 1);
+```
+
+### **🔢 Fórmula de Recreation Bonus:**
+```csharp
+// +10% no primeiro dia após recriar padrão quebrado
+float recreationBonus = match.HasRecreationBonus ? 1.1f : 1f;
+```
+
+### **🔄 Fluxo de Tracking:**
+```
+FIM DO DIA:
+1. DetectPatternsStep.Execute()
+2. PatternDetector.DetectAll() → List<PatternMatch>
+3. PatternTrackingService.UpdateActivePatterns()
+   ├─ Padrão existe no tracking? → DaysActive++
+   ├─ Padrão novo? → DaysActive = 1
+   ├─ Padrão era quebrado? → IsRecreated = true (+10%)
+   └─ Padrão não detectado? → Marcar como quebrado
+4. PatternScoreCalculator.CalculateTotal()
+   ├─ Aplicar decay baseado em DaysActive
+   └─ Aplicar recreationBonus se aplicável
+5. Eventos disparados para UI
+
+RESET SEMANAL:
+1. RunManager.StartNextWeek()
+2. AppCore.OnWeeklyReset()
+3. PatternTrackingService.OnWeeklyReset()
+   └─ Limpa _brokenPatternIDs (histórico de quebrados)
+```
 
 ### **🧪 Critérios de Aceitação (Onda 4):**
 ```
-✅ Padrão mantido por 3 dias decai corretamente (100% → 90% → 80%)
-✅ Colher/replantar reseta decay (novo padrão)
-✅ Reset semanal funciona
-✅ Bonus pós-reset aplicado
-✅ Save/Load preserva decay state
+✅ Padrão mantido por 3 dias decai corretamente (100% → 90% → 81%)
+✅ Colher/replantar reseta decay (novo padrão = DaysActive 1)
+✅ Reset semanal limpa histórico de quebrados
+✅ Bonus pós-reset (+10%) aplicado no primeiro dia
+✅ Save/Load preserva decay state (ActivePatterns no RunData)
 ✅ PatternInstanceID é único e determinístico
+✅ UI mostra indicadores de decay (cor laranja)
+✅ UI mostra indicador de recreation bonus (cor verde)
+✅ CheatManager permite debug do tracking
+✅ Logs mostram decay aplicado corretamente
+```
+
+### **📊 Exemplo de Log (Decay em Ação):**
+```
+[PatternTracking] Padrão mantido: FULL_LINE (Dia 3)
+[PatternScoreCalculator] Linha Completa: decay (Dia 3) = 0.81x
+[PatternScoreCalculator] Linha Completa: 25 base → 20 final
+[PatternTracking] Padrão QUEBRADO: ADJACENT_PAIR
+[PatternTracking] Fim do dia: 4 padrões ativos, 1 quebrado
+```
+
+### **📊 Exemplo de Log (Recreation Bonus):**
+```
+[PatternTracking] Padrão RECRIADO: FULL_LINE (+10% bonus)
+[PatternScoreCalculator] Linha Completa: recreation bonus = +10%
+[PatternScoreCalculator] Linha Completa: 25 base → 27 final
 ```
 
 ---
@@ -1556,13 +1721,13 @@ Migrar patterns hardcoded para **ScriptableObject** + polish final
 
 ## 📊 **RESUMO DAS ONDAS**
 
-| Onda | Duração | Entregável Principal | Status no Final |
-|------|---------|---------------------|-----------------|
-| **1** | 3-5 dias | MVP com 5 padrões, sem decay, sem UI | ✅ Jogável |
-| **2** | 2-3 dias | 6 padrões + UI básica + score final | ✅ Jogável |
-| **3** | 2-3 dias | 10 padrões (todos os tiers) | ✅ Jogável |
-| **4** | 3-4 dias | Decay + persistência | ✅ Jogável |
-| **5** | 2 dias | ScriptableObject + polish | ✅ Completo |
+| Onda | Duração | Entregável Principal | Status |
+|------|---------|---------------------|--------|
+| **1** | 3-5 dias | MVP com 5 padrões, sem decay, sem UI | ✅ COMPLETA |
+| **2** | 2-3 dias | 6 padrões + UI básica + score final | ✅ COMPLETA |
+| **3** | 2-3 dias | 10 padrões (todos os tiers) | ✅ COMPLETA |
+| **4** | 3-4 dias | Decay + Tracking + UI de decay | ✅ COMPLETA |
+| **5** | 2 dias | ScriptableObject + polish | ⏳ PENDENTE |
 
 **Total estimado:** 12-17 dias (2-3 semanas)
 
@@ -1627,15 +1792,23 @@ Volte, conserte, valide, e só então avance.
 - [ ] Teste stress (500+ pontos)
 
 ### **Onda 4: Decay + Persistência**
-- [ ] PatternInstanceID (Hash)
-- [ ] Campo `DaysActive` em PatternMatch
-- [ ] Tracking em RunData
-- [ ] Decay aplicado no Calculator
-- [ ] Reset semanal
-- [ ] Bonus pós-reset
-- [ ] Save/Load de decay state
-- [ ] Testar decay por 3 dias
-- [ ] Testar reset semanal
+- [x] PatternInstanceID (Hash)
+- [x] PatternInstanceData.cs (DTO serializável)
+- [x] PatternTrackingService.cs (serviço de tracking)
+- [x] Campo `DaysActive` em PatternMatch
+- [x] Campo `HasRecreationBonus` em PatternMatch
+- [x] SetTrackingData() em PatternMatch
+- [x] Tracking em RunData (ActivePatterns, BrokenPatternIDs)
+- [x] Decay aplicado no Calculator (0.9^(DaysActive-1))
+- [x] Reset semanal em RunManager.StartNextWeek()
+- [x] Bonus pós-reset (+10%)
+- [x] Save/Load de decay state
+- [x] Eventos OnPatternDecayApplied e OnPatternRecreated
+- [x] PatternFeedbackView com UI de decay
+- [x] CheatManager com seção Pattern Debug
+- [x] Testar decay por 3 dias
+- [x] Testar reset semanal
+- [x] Testar recreation bonus
 
 ### **Onda 5: ScriptableObject + Polish**
 - [ ] `PatternLibrary.cs` (SO)

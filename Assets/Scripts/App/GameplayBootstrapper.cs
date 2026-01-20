@@ -44,6 +44,9 @@ public class GameplayBootstrapper : MonoBehaviour
 
         // 2. Registra no Global (para DailyResolution, CheatManager, etc)
         AppCore.Instance.RegisterGridService(_gridService);
+        
+        // 2.5 ONDA 4: Inicializa Pattern Tracking com RunData
+        AppCore.Instance.InitializePatternTracking(runData);
 
         // 3. Configura eventos locais
         _gridService.OnDataDirty += () => AppCore.Instance.SaveManager.SaveGame();

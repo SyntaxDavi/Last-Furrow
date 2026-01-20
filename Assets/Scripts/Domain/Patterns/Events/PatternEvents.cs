@@ -12,6 +12,8 @@ using System.Collections.Generic;
 /// EVENTOS DISPONÍVEIS:
 /// - OnPatternsDetected: Disparado após detecção completa (lista de matches + total de pontos)
 /// - OnPatternScoreCalculated: Disparado após cálculo de score (para UI mostrar breakdown)
+/// - OnPatternDecayApplied: Disparado quando decay é aplicado a um padrão (ONDA 4)
+/// - OnPatternRecreated: Disparado quando padrão quebrado é recriado com bonus (ONDA 4)
 /// </summary>
 public class PatternEvents
 {
@@ -27,6 +29,20 @@ public class PatternEvents
     /// </summary>
     public event Action<PatternMatch, int> OnPatternScoreCalculated;
     
+    /// <summary>
+    /// ONDA 4: Disparado quando decay é aplicado a um padrão.
+    /// Parâmetros: (PatternMatch, DaysActive, DecayMultiplier)
+    /// UI pode usar isso para mostrar indicador visual de decay.
+    /// </summary>
+    public event Action<PatternMatch, int, float> OnPatternDecayApplied;
+    
+    /// <summary>
+    /// ONDA 4: Disparado quando um padrão quebrado é recriado com bonus.
+    /// Parâmetros: (PatternMatch com HasRecreationBonus = true)
+    /// UI pode usar isso para mostrar efeito especial de "+10%".
+    /// </summary>
+    public event Action<PatternMatch> OnPatternRecreated;
+    
     // --- Triggers ---
     
     public void TriggerPatternsDetected(List<PatternMatch> matches, int totalPoints)
@@ -37,5 +53,21 @@ public class PatternEvents
     public void TriggerPatternScoreCalculated(PatternMatch match, int finalScore)
     {
         OnPatternScoreCalculated?.Invoke(match, finalScore);
+    }
+    
+    /// <summary>
+    /// ONDA 4: Dispara evento de decay aplicado.
+    /// </summary>
+    public void TriggerPatternDecayApplied(PatternMatch match, int daysActive, float decayMultiplier)
+    {
+        OnPatternDecayApplied?.Invoke(match, daysActive, decayMultiplier);
+    }
+    
+    /// <summary>
+    /// ONDA 4: Dispara evento de padrão recriado com bonus.
+    /// </summary>
+    public void TriggerPatternRecreated(PatternMatch match)
+    {
+        OnPatternRecreated?.Invoke(match);
     }
 }

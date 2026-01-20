@@ -38,6 +38,24 @@ public class RunData
 
     public int Money;
     public int TotalMoneyEarned;
+    
+    // ===== ONDA 4: Pattern Tracking =====
+    
+    [Header("Pattern System - Tracking")]
+    [Tooltip("Total de padrões detectados durante toda a run.")]
+    public int TotalPatternsDetected;
+    
+    [Tooltip("Maior pontuação de padrões em um único dia.")]
+    public int HighestDailyPatternScore;
+    
+    [Tooltip("Contador de quantas vezes cada tipo de padrão foi completado. Usa PatternID (ex: 'FULL_LINE').")]
+    public Dictionary<string, int> PatternCompletionCount;
+    
+    [Tooltip("Padrões atualmente ativos com seus dados de decay. Indexado por InstanceID.")]
+    public Dictionary<string, PatternInstanceData> ActivePatterns;
+    
+    [Tooltip("Lista de PatternIDs que foram quebrados (para detectar recriação e dar bonus).")]
+    public List<string> BrokenPatternIDs;
 
     // Construtor padrão (usado pelo JSON Utility ou Serializer)
     // Mantemos ele "burro" apenas alocando listas para evitar NullReference
@@ -48,6 +66,11 @@ public class RunData
         // mas o tamanho real será corrigido pelo GridService.
         GridSlots = new CropState[0]; 
         SlotStates = new GridSlotState[0];
+        
+        // Pattern Tracking (Onda 4)
+        PatternCompletionCount = new Dictionary<string, int>();
+        ActivePatterns = new Dictionary<string, PatternInstanceData>();
+        BrokenPatternIDs = new List<string>();
     }
 
 

@@ -141,6 +141,9 @@ public class RunManager : MonoBehaviour, IRunManager
         // 2. Atualiza Dado
         _currentPhase = RunPhase.Production;
 
+        // ? ONDA 4: Reset semanal do Pattern Tracking
+        // Limpa histórico de padrões quebrados (para bonus de recriação)
+        AppCore.Instance.OnWeeklyReset();
 
         // 3. Dispara Fato
         // O WeekendFlowController (no ExitPipeline) ou um ProductionFlowController vai pegar isso

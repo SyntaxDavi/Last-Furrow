@@ -90,6 +90,8 @@ public class CheatManager : MonoBehaviour
         GUILayout.Space(10);
         DrawCardsSection(run);
         GUILayout.Space(10);
+        DrawPatternSection(run);  // ONDA 4: Pattern Debug
+        GUILayout.Space(10);
         DrawSaveSection();
 
         GUILayout.EndScrollView();
@@ -205,6 +207,133 @@ public class CheatManager : MonoBehaviour
             _saveManager?.SaveGame();
             Debug.Log("[Cheat] Save forçado");
         }
+    }
+    
+    // ===== ONDA 4: Pattern Debug Section =====
+    
+    private void DrawPatternSection(RunData run)
+    {
+        GUILayout.Label("?? PATTERNS (Onda 4)");
+        
+        // Mostrar estatísticas de tracking
+        var tracking = AppCore.Instance?.PatternTracking;
+        if (tracking != null)
+        {
+            int activeCount = tracking.GetActivePatternsCount();
+            GUILayout.Label($"Padrões ativos: {activeCount}");
+            GUILayout.Label($"Total detectados: {run.TotalPatternsDetected}");
+            GUILayout.Label($"Recorde diário: {run.HighestDailyPatternScore} pts");
+        }
+        else
+        {
+            GUILayout.Label("? PatternTracking não inicializado");
+        }
+        
+        GUILayout.Space(5);
+        
+        if (GUILayout.Button("?? Detectar Padrões Agora"))
+        {
+            CheatDetectPatterns();
+        }
+        
+        if (GUILayout.Button("?? Log Tracking Status"))
+        {
+            CheatLogTrackingStatus();
+        }
+        
+        if (GUILayout.Button("?? Reset Weekly Tracking"))
+        {
+            CheatResetWeeklyTracking();
+        }
+        
+        if (GUILayout.Button("? Simular Fim de Dia"))
+        {
+            CheatSimulateEndDay();
+        }
+    }
+    
+    private void CheatDetectPatterns()
+    {
+        if (_gridService == null)
+        {
+            Debug.LogWarning("[Cheat] GridService não disponível");
+            return;
+        }
+        
+        var detector = AppCore.Instance?.PatternDetector;
+        var calculator = AppCore.Instance?.PatternCalculator;
+        
+        if (detector == null || calculator == null)
+        {
+            Debug.LogWarning("[Cheat] Pattern System não inicializado");
+            return;
+        }
+        
+        var matches = detector.DetectAll(_gridService);
+        Debug.Log($"[Cheat] ??????? DETECÇÃO DE PADRÕES ???????");
+        Debug.Log($"[Cheat] Padrões detectados: {matches.Count}");
+        
+        foreach (var match in matches)
+        {
+            string slots = string.Join(",", match.SlotIndices);
+            Debug.Log($"[Cheat] • {match.DisplayName} (slots: {slots}) = {match.BaseScore} base pts");
+        }
+        
+        int totalScore = calculator.CalculateTotal(matches, _gridService);
+        Debug.Log($"[Cheat] TOTAL: {totalScore} pontos");
+        Debug.Log($"[Cheat] ???????????????????????????????????");
+    }
+    
+    private void CheatLogTrackingStatus()
+    {
+        var tracking = AppCore.Instance?.PatternTracking;
+        var run = _saveManager?.Data?.CurrentRun;
+        
+        if (tracking == null || run == null)
+        {
+            Debug.LogWarning("[Cheat] Tracking não disponível");
+            return;
+        }
+        
+        Debug.Log($"[Cheat] ??????? PATTERN TRACKING STATUS ???????");
+        Debug.Log($"[Cheat] Semana: {run.CurrentWeek} | Dia: {run.CurrentDay}");
+        Debug.Log($"[Cheat] Padrões ativos: {tracking.GetActivePatternsCount()}");
+        
+        if (run.ActivePatterns != null)
+        {
+            foreach (var kvp in run.ActivePatterns)
+            {
+                var data = kvp.Value;
+                float decay = Mathf.Pow(0.9f, data.DaysActive - 1);
+                string recreated = data.IsRecreated ? " [RECREATED]" : "";
+                Debug.Log($"[Cheat] • {data.PatternID}: Dia {data.DaysActive} ({decay:P0} pts){recreated}");
+            }
+        }
+        
+        if (run.BrokenPatternIDs != null && run.BrokenPatternIDs.Count > 0)
+        {
+            Debug.Log($"[Cheat] Padrões quebrados (dão bonus): {string.Join(", ", run.BrokenPatternIDs)}");
+        }
+        
+        Debug.Log($"[Cheat] ??????????????????????????????????????");
+    }
+    
+    private void CheatResetWeeklyTracking()
+    {
+        AppCore.Instance?.OnWeeklyReset();
+        Debug.Log("[Cheat] Weekly tracking resetado (broken patterns limpos)");
+    }
+    
+    private void CheatSimulateEndDay()
+    {
+        if (_resolutionSystem == null)
+        {
+            Debug.LogWarning("[Cheat] DailyResolutionSystem não disponível");
+            return;
+        }
+        
+        _resolutionSystem.StartEndDaySequence();
+        Debug.Log("[Cheat] Fim de dia iniciado");
     }
 
     private void CheatUnlockAllSlots()

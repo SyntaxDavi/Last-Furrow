@@ -72,8 +72,8 @@ public class PatternScoreCalculator
     /// <summary>
     /// Calcula o score de um único padrão.
     /// 
-    /// FÓRMULA PADRÃO:
-    /// score = baseScore × cropMultiplier × maturityBonus
+    /// FÓRMULA COMPLETA (Onda 4):
+    /// score = baseScore × cropMultiplier × maturityBonus × decayMultiplier × recreationBonus
     /// 
     /// FÓRMULAS ESPECIAIS (Onda 3):
     /// - Rainbow: score × diversityBonus (mais tipos = mais pontos)
@@ -83,6 +83,8 @@ public class PatternScoreCalculator
     /// - cropMultiplier = avgCropValue / 10.0 (normalizado)
     /// - maturityBonus = 1 + 0.5 × (matureCrops / totalCrops)
     /// - diversityBonus = 1 + 0.2 × (uniqueTypes - minRequired)
+    /// - decayMultiplier = 0.9^(DaysActive - 1) [Onda 4]
+    /// - recreationBonus = 1.1 se padrão foi recriado [Onda 4]
     /// </summary>
     public int CalculateSingle(PatternMatch match, IGridService gridService)
     {
@@ -95,7 +97,7 @@ public class PatternScoreCalculator
         score *= cropMultiplier;
         score *= maturityBonus;
         
-        // NOVO Onda 3: Fórmulas especiais para padrões de diversidade
+        // Onda 3: Fórmulas especiais para padrões de diversidade
         if (match.PatternID == "RAINBOW_LINE" || match.PatternID == "PERFECT_GRID")
         {
             float diversityBonus = CalculateDiversityBonus(match);
@@ -104,7 +106,46 @@ public class PatternScoreCalculator
             Debug.Log($"[PatternScoreCalculator] {match.DisplayName}: diversityBonus = {diversityBonus:F2}x");
         }
         
+        // NOVO Onda 4: Decay e Recreation Bonus
+        if (match.DaysActive > 0)
+        {
+            float decayMultiplier = CalculateDecayMultiplier(match.DaysActive);
+            float recreationBonus = match.HasRecreationBonus ? 1.1f : 1f;
+            
+            score *= decayMultiplier;
+            score *= recreationBonus;
+            
+            // Disparar eventos para UI (ONDA 4)
+            if (match.DaysActive > 1)
+            {
+                Debug.Log($"[PatternScoreCalculator] {match.DisplayName}: decay (Dia {match.DaysActive}) = {decayMultiplier:F2}x");
+                AppCore.Instance?.Events.Pattern.TriggerPatternDecayApplied(match, match.DaysActive, decayMultiplier);
+            }
+            if (match.HasRecreationBonus)
+            {
+                Debug.Log($"[PatternScoreCalculator] {match.DisplayName}: recreation bonus = +10%");
+                AppCore.Instance?.Events.Pattern.TriggerPatternRecreated(match);
+            }
+        }
+        
         return Mathf.RoundToInt(score);
+    }
+    
+    /// <summary>
+    /// Calcula multiplicador de decay baseado nos dias ativos.
+    /// 
+    /// FÓRMULA: 0.9^(DaysActive - 1)
+    /// - Dia 1: 1.0x (100%)
+    /// - Dia 2: 0.9x (90%)
+    /// - Dia 3: 0.81x (81%)
+    /// - Dia 4: 0.729x (72.9%)
+    /// </summary>
+    private float CalculateDecayMultiplier(int daysActive)
+    {
+        if (daysActive <= 1)
+            return 1f;
+        
+        return Mathf.Pow(0.9f, daysActive - 1);
     }
     
     /// <summary>
