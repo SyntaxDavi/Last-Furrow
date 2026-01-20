@@ -163,7 +163,7 @@ public class DetectPatternsStep : IFlowStep
         // Lazy initialization do visual controller (primeira chamada)
         if (!_visualControllerInitialized)
         {
-            _visualReplayController = Object.FindObjectOfType<PatternVisualReplayController>();
+            _visualReplayController = Object.FindFirstObjectByType<PatternVisualReplayController>();
             _visualControllerInitialized = true;
             
             if (_visualReplayController == null)

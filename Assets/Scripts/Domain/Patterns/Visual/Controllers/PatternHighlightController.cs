@@ -7,12 +7,16 @@ using UnityEngine;
 /// 
 /// RESPONSABILIDADE:
 /// - Escutar evento OnPatternsDetected
-/// - Enfileirar highlights via VisualQueueSystem
 /// - Aplicar cores baseadas em Tier + Decay
 /// - Animação de pulse nos slots
+/// - API pública para PatternVisualReplayController
 /// 
 /// FILOSOFIA: Mostra VISUALMENTE quais slots formam padrões.
-/// Usa VisualQueueSystem para evitar explosão visual.
+/// 
+/// ONDA 5.5 REFACTORED:
+/// - Cache de slots em Dictionary (performance)
+/// - Método público HighlightPatternSlots para replay
+/// - FindFirstObjectByType em vez de FindObjectOfType (Unity 2023+)
 /// </summary>
 public class PatternHighlightController : MonoBehaviour
 {
@@ -23,12 +27,43 @@ public class PatternHighlightController : MonoBehaviour
     [Tooltip("Referência ao GridManager para acessar slots")]
     [SerializeField] private GridManager _gridManager;
     
+    // Cache de slots para performance (O(1) lookup)
+    private Dictionary<int, GridSlotView> _slotCache = new Dictionary<int, GridSlotView>();
+    private bool _slotsCached = false;
+    
     // Coroutines ativas por slot (para cancelar se necessário)
     private Dictionary<int, Coroutine> _activeHighlights = new Dictionary<int, Coroutine>();
     
     private void Start()
     {
+        CacheSlots();
         SubscribeToEvents();
+    }
+    
+    /// <summary>
+    /// Cacheia todos os slots em um Dictionary para acesso O(1).
+    /// </summary>
+    private void CacheSlots()
+    {
+        if (_gridManager == null)
+        {
+            Debug.LogError("[PatternHighlightController] GridManager não atribuído!");
+            return;
+        }
+        
+        _slotCache.Clear();
+        var slots = _gridManager.GetComponentsInChildren<GridSlotView>();
+        
+        foreach (var slot in slots)
+        {
+            if (slot != null)
+            {
+                _slotCache[slot.SlotIndex] = slot;
+            }
+        }
+        
+        _slotsCached = true;
+        _config?.DebugLog($"[PatternHighlight] {_slotCache.Count} slots cacheados");
     }
     
     private void OnDestroy()
@@ -91,6 +126,42 @@ public class PatternHighlightController : MonoBehaviour
     }
     
     /// <summary>
+    /// API PÚBLICA: Destaca visualmente os slots de um padrão específico.
+    /// Usada pelo PatternVisualReplayController.
+    /// </summary>
+    public IEnumerator HighlightPatternSlots(PatternMatch match)
+    {
+        if (match == null || match.SlotIndices == null)
+        {
+            yield break;
+        }
+        
+        // Obter cor baseada em tier + decay
+        int tier = GetTierFromScore(match.BaseScore);
+        Color baseColor = _config.GetTierColor(tier);
+        Color finalColor = _config.ApplyDecayToColor(baseColor, match.DaysActive);
+        
+        _config?.DebugLog($"[PatternHighlight] Highlighting {match.DisplayName}: Tier {tier}, Color {finalColor}");
+        
+        // Aplicar highlight em cada slot do padrão (em paralelo)
+        List<Coroutine> activeCoroutines = new List<Coroutine>();
+        
+        foreach (int slotIndex in match.SlotIndices)
+        {
+            var coroutine = StartCoroutine(HighlightSlotCoroutine(slotIndex, finalColor));
+            activeCoroutines.Add(coroutine);
+        }
+        
+        // Aguardar todos os highlights terminarem
+        foreach (var coroutine in activeCoroutines)
+        {
+            yield return coroutine;
+        }
+        
+        _config?.DebugLog($"[PatternHighlight] Pattern {match.DisplayName} highlight concluído");
+    }
+    
+    /// <summary>
     /// Aplica highlight em um padrão específico.
     /// REMOVIDO: Levitação do grid (agora é por slot no AnalyzingPhase).
     /// </summary>
@@ -116,33 +187,34 @@ public class PatternHighlightController : MonoBehaviour
     }
     
     /// <summary>
-    /// Aplica highlight em um slot específico.
+    /// Aplica highlight em um slot específico (usa cache).
     /// </summary>
     private void HighlightSlot(int slotIndex, Color highlightColor)
     {
-        if (_gridManager == null)
+        StartCoroutine(HighlightSlotCoroutine(slotIndex, highlightColor));
+    }
+    
+    /// <summary>
+    /// Coroutine de highlight em um slot específico (versão cacheada).
+    /// </summary>
+    private IEnumerator HighlightSlotCoroutine(int slotIndex, Color highlightColor)
+    {
+        // Recachear se necessário
+        if (!_slotsCached || _slotCache.Count == 0)
         {
-            Debug.LogWarning("[PatternHighlightController] GridManager não atribuído!");
-            return;
+            CacheSlots();
         }
         
-        // Obter GridSlotView via GetSlotViewAtIndex (API correta)
-        var slots = _gridManager.GetComponentsInChildren<GridSlotView>();
-        GridSlotView slotView = null;
-        
-        foreach (var slot in slots)
+        // Buscar slot no cache (O(1))
+        if (!_slotCache.TryGetValue(slotIndex, out GridSlotView slotView))
         {
-            if (slot.SlotIndex == slotIndex)
-            {
-                slotView = slot;
-                break;
-            }
+            Debug.LogWarning($"[PatternHighlightController] SlotView não encontrado no cache para index {slotIndex}");
+            yield break;
         }
         
         if (slotView == null)
         {
-            Debug.LogWarning($"[PatternHighlightController] SlotView não encontrado para index {slotIndex}");
-            return;
+            yield break;
         }
         
         // Cancelar highlight anterior neste slot (se existir)
@@ -151,9 +223,11 @@ public class PatternHighlightController : MonoBehaviour
             StopCoroutine(oldCoroutine);
         }
         
-        // Iniciar novo highlight
-        Coroutine highlightCoroutine = StartCoroutine(HighlightSlotRoutine(slotView, highlightColor));
-        _activeHighlights[slotIndex] = highlightCoroutine;
+        // Executar animação de highlight
+        yield return HighlightSlotRoutine(slotView, highlightColor);
+        
+        // Remover do dicionário de highlights ativos
+        _activeHighlights.Remove(slotIndex);
     }
     
     /// <summary>
@@ -194,17 +268,18 @@ public class PatternHighlightController : MonoBehaviour
             yield return null;
         }
         
-        // Fade out suave
+        // Fade out suave (corrigido)
         float fadeElapsed = 0f;
-        float fadeDuration = 0.3f;
+        float fadeDuration = _config != null ? _config.highlightFadeDuration : 0.3f;
         
         while (fadeElapsed < fadeDuration)
         {
             fadeElapsed += Time.deltaTime;
-            float t = 1f - (fadeElapsed / fadeDuration);
+            float t = fadeElapsed / fadeDuration; // 0 ? 1
             
+            // Fade: 0.8 ? 0 (alpha)
             Color fadedColor = highlightColor;
-            fadedColor.a = Mathf.Lerp(0f, 0.8f, t);
+            fadedColor.a = Mathf.Lerp(0.8f, 0f, t);
             
             slotView.SetPatternHighlight(fadedColor, true);
             yield return null;
@@ -213,10 +288,7 @@ public class PatternHighlightController : MonoBehaviour
         // Limpar highlight
         slotView.ClearPatternHighlight();
         
-        // Remover do dicionário de highlights ativos
-        _activeHighlights.Remove(slotView.SlotIndex);
-        
-        _config.DebugLog($"Highlight finished for slot {slotView.SlotIndex}");
+        _config?.DebugLog($"Highlight finished for slot {slotView.SlotIndex}");
     }
     
     /// <summary>

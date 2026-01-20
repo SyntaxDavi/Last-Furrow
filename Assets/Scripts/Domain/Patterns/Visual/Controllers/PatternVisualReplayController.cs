@@ -43,7 +43,7 @@ public class PatternVisualReplayController : MonoBehaviour
         
         if (_highlightController == null)
         {
-            _highlightController = FindObjectOfType<PatternHighlightController>();
+            _highlightController = FindFirstObjectByType<PatternHighlightController>();
             if (_highlightController == null)
             {
                 Debug.LogWarning("[PatternVisualReplay] PatternHighlightController não encontrado na cena!");
@@ -52,7 +52,7 @@ public class PatternVisualReplayController : MonoBehaviour
         
         if (_textPopupController == null)
         {
-            _textPopupController = FindObjectOfType<PatternTextPopupController>();
+            _textPopupController = FindFirstObjectByType<PatternTextPopupController>();
             if (_textPopupController == null)
             {
                 Debug.LogWarning("[PatternVisualReplay] PatternTextPopupController não encontrado na cena!");
