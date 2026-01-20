@@ -72,12 +72,17 @@ public class PatternScoreCalculator
     /// <summary>
     /// Calcula o score de um único padrão.
     /// 
-    /// FÓRMULA:
+    /// FÓRMULA PADRÃO:
     /// score = baseScore × cropMultiplier × maturityBonus
     /// 
+    /// FÓRMULAS ESPECIAIS (Onda 3):
+    /// - Rainbow: score × diversityBonus (mais tipos = mais pontos)
+    /// - PerfectGrid: score × diversityBonus (mais tipos = mais pontos)
+    /// 
     /// Onde:
-    /// - cropMultiplier = avgCropValue / 5.0 (normalizado)
+    /// - cropMultiplier = avgCropValue / 10.0 (normalizado)
     /// - maturityBonus = 1 + 0.5 × (matureCrops / totalCrops)
+    /// - diversityBonus = 1 + 0.2 × (uniqueTypes - minRequired)
     /// </summary>
     public int CalculateSingle(PatternMatch match, IGridService gridService)
     {
@@ -90,7 +95,55 @@ public class PatternScoreCalculator
         score *= cropMultiplier;
         score *= maturityBonus;
         
+        // NOVO Onda 3: Fórmulas especiais para padrões de diversidade
+        if (match.PatternID == "RAINBOW_LINE" || match.PatternID == "PERFECT_GRID")
+        {
+            float diversityBonus = CalculateDiversityBonus(match);
+            score *= diversityBonus;
+            
+            Debug.Log($"[PatternScoreCalculator] {match.DisplayName}: diversityBonus = {diversityBonus:F2}x");
+        }
+        
         return Mathf.RoundToInt(score);
+    }
+    
+    /// <summary>
+    /// Calcula bonus de diversidade para padrões Rainbow e PerfectGrid.
+    /// 
+    /// FÓRMULA:
+    /// - Rainbow: bonus = 1 + 0.25 × (uniqueTypes - 3)
+    ///   - 3 tipos = 1.0x (mínimo)
+    ///   - 4 tipos = 1.25x
+    ///   - 5 tipos = 1.5x (máximo)
+    /// 
+    /// - PerfectGrid: bonus = 1 + 0.15 × (uniqueTypes - 4)
+    ///   - 4 tipos = 1.0x (mínimo)
+    ///   - 5 tipos = 1.15x
+    ///   - 6+ tipos = escala continua
+    /// </summary>
+    private float CalculateDiversityBonus(PatternMatch match)
+    {
+        if (match.CropIDs == null || match.CropIDs.Count == 0)
+            return 1f;
+        
+        // Contar tipos únicos
+        var uniqueCrops = new HashSet<CropID>(match.CropIDs);
+        int uniqueCount = uniqueCrops.Count;
+        
+        if (match.PatternID == "RAINBOW_LINE")
+        {
+            // Rainbow: mínimo 3 tipos, +25% por tipo extra
+            int extraTypes = Mathf.Max(0, uniqueCount - 3);
+            return 1f + (0.25f * extraTypes);
+        }
+        else if (match.PatternID == "PERFECT_GRID")
+        {
+            // PerfectGrid: mínimo 4 tipos, +15% por tipo extra
+            int extraTypes = Mathf.Max(0, uniqueCount - 4);
+            return 1f + (0.15f * extraTypes);
+        }
+        
+        return 1f;
     }
     
     /// <summary>
