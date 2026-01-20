@@ -20,20 +20,21 @@ using UnityEngine;
 /// FILOSOFIA: Detector é STATELESS.
 /// Não guarda histórico, não decide valor, não modifica estado.
 /// 
-/// ONDA 5: Padrões são instanciados dinamicamente a partir do PatternLibrary.
+/// ONDA 5.5: Usa IPatternFactory ao invés de reflexão (SOLID).
 /// </summary>
 public class PatternDetector
 {
     private readonly List<IGridPattern> _patterns;
     private readonly PatternLibrary _library;
+    private readonly IPatternFactory _factory;
     
     /// <summary>
-    /// Construtor da Onda 5: Recebe PatternLibrary e instancia padrões.
+    /// Construtor refatorado: Recebe IPatternFactory (Dependency Inversion).
     /// </summary>
-    /// <param name="library">ScriptableObject com definições de padrões</param>
-    public PatternDetector(PatternLibrary library)
+    public PatternDetector(PatternLibrary library, IPatternFactory factory)
     {
         _library = library;
+        _factory = factory;
         _patterns = new List<IGridPattern>();
         
         if (_library == null)
@@ -42,15 +43,20 @@ public class PatternDetector
             return;
         }
         
-        // Instanciar padrões dinamicamente baseado no PatternLibrary
+        if (_factory == null)
+        {
+            Debug.LogError("[PatternDetector] PatternFactory é NULL! Nenhum padrão será detectado.");
+            return;
+        }
+        
+        // Instanciar padrões usando factory (type-safe, sem reflexão)
         InitializePatternsFromLibrary();
         
-        Debug.Log($"[PatternDetector] ? Inicializado com {_patterns.Count} padrões (Onda 5)");
+        Debug.Log($"[PatternDetector] ? Inicializado com {_patterns.Count} padrões (Onda 5.5 - Factory)");
     }
     
     /// <summary>
-    /// Instancia IGridPattern implementations baseado no PatternLibrary.
-    /// Usa reflexão para criar instâncias dinamicamente.
+    /// Instancia IGridPattern implementations usando factory.
     /// </summary>
     private void InitializePatternsFromLibrary()
     {
@@ -68,60 +74,14 @@ public class PatternDetector
                 continue;
             }
             
-            // Criar instância do padrão via reflexão
-            IGridPattern pattern = CreatePatternInstance(definition);
+            // Usar factory ao invés de reflexão
+            IGridPattern pattern = _factory.CreatePattern(definition);
             
             if (pattern != null)
             {
                 _patterns.Add(pattern);
                 Debug.Log($"[PatternDetector] • {definition.PatternID} ({definition.DisplayName}) = {definition.BaseScore} pts");
             }
-        }
-    }
-    
-    /// <summary>
-    /// Cria instância de IGridPattern usando reflexão.
-    /// </summary>
-    private IGridPattern CreatePatternInstance(PatternDefinitionSO definition)
-    {
-        try
-        {
-            // Buscar tipo pelo nome da classe
-            System.Type type = System.Type.GetType(definition.ImplementationClassName);
-            
-            if (type == null)
-            {
-                Debug.LogError($"[PatternDetector] Classe não encontrada: {definition.ImplementationClassName}");
-                return null;
-            }
-            
-            // Verificar se tem construtor que recebe PatternDefinitionSO
-            var constructor = type.GetConstructor(new[] { typeof(PatternDefinitionSO) });
-            
-            if (constructor != null)
-            {
-                // Instanciar com PatternDefinitionSO
-                return (IGridPattern)constructor.Invoke(new object[] { definition });
-            }
-            else
-            {
-                // Fallback: tentar construtor sem parâmetros (compatibilidade Onda 1-4)
-                var defaultConstructor = type.GetConstructor(System.Type.EmptyTypes);
-                
-                if (defaultConstructor != null)
-                {
-                    Debug.LogWarning($"[PatternDetector] {definition.ImplementationClassName} usa construtor antigo (sem SO). Considere atualizar.");
-                    return (IGridPattern)defaultConstructor.Invoke(null);
-                }
-            }
-            
-            Debug.LogError($"[PatternDetector] Nenhum construtor válido encontrado para {definition.ImplementationClassName}");
-            return null;
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError($"[PatternDetector] Erro ao criar {definition.ImplementationClassName}: {ex.Message}");
-            return null;
         }
     }
     
