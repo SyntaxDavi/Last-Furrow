@@ -1,4 +1,4 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
@@ -8,11 +8,11 @@ using System.Collections.Generic;
 /// - Toggle: F1 (mostrar/esconder)
 /// 
 /// FUNCIONALIDADES:
-/// - Add Money (customiz·vel)
-/// - Deletar Save (recomeÁa imediatamente)
+/// - Add Money (customiz√°vel)
+/// - Deletar Save (recome√ßa imediatamente)
 /// - Add Vida
 /// - Desbloquear Todo Grid
-/// - Spawn Card EspecÌfica
+/// - Spawn Card Espec√≠fica
 /// - Limpar Grid
 /// 
 /// ARQUITETURA:
@@ -168,20 +168,35 @@ public class CheatManager : MonoBehaviour
         {
             CheatMatureAll();
         }
+        
+        GUILayout.Space(5);
+        GUI.color = Color.green;
+        if (GUILayout.Button("?? Plantar Auto (Qualquer Crop)"))
+        {
+            CheatAutoPlant();
+        }
+        GUI.color = Color.white;
     }
 
     private void DrawCardsSection(RunData run)
     {
         GUILayout.Label("?? CARTAS");
-        GUILayout.Label($"M„o: {run.Hand.Count}/{run.MaxHandSize}");
+        GUILayout.Label($"M√£o: {run.Hand.Count}/{run.MaxHandSize}");
 
         if (GUILayout.Button("Comprar 3 Cartas"))
         {
             _handSystem?.ProcessDailyDraw(run);
             Debug.Log("[Cheat] Cartas compradas");
         }
+        
+        GUI.color = Color.red;
+        if (GUILayout.Button("? Limpar Toda M√£o"))
+        {
+            CheatClearHand(run);
+        }
+        GUI.color = Color.white;
 
-        GUILayout.Label("Spawn R·pido:");
+        GUILayout.Label("Spawn R√°pido:");
         foreach (var cardID in _quickSpawnCardIDs)
         {
             if (GUILayout.Button($"+ {cardID}"))
@@ -205,8 +220,32 @@ public class CheatManager : MonoBehaviour
         if (GUILayout.Button("Salvar Agora"))
         {
             _saveManager?.SaveGame();
-            Debug.Log("[Cheat] Save forÁado");
+            Debug.Log("[Cheat] Save for√ßado");
         }
+        
+        GUILayout.Space(10);
+        GUILayout.Label("?? DEBUG");
+        
+        GUI.color = Color.cyan;
+        if (GUILayout.Button("?? Testar Debug Logs"))
+        {
+            TestDebugLogs();
+        }
+        GUI.color = Color.white;
+    }
+    
+    private void TestDebugLogs()
+    {
+        Debug.Log("========== TESTE DE DEBUG ==========");
+        Debug.Log("[Cheat] ‚úì Debug.Log funcionando!");
+        Debug.LogWarning("[Cheat] ‚ö†Ô∏è Debug.LogWarning funcionando!");
+        Debug.LogError("[Cheat] ‚ùå Debug.LogError funcionando!");
+        Debug.Log("====================================");
+        
+        Debug.Log($"[Cheat] AppCore.Instance: {(AppCore.Instance != null ? "OK" : "NULL")}");
+        Debug.Log($"[Cheat] SaveManager: {(_saveManager != null ? "OK" : "NULL")}");
+        Debug.Log($"[Cheat] GridService: {(_gridService != null ? "OK" : "NULL")}");
+        Debug.Log($"[Cheat] GameLibrary: {(AppCore.Instance?.GameLibrary != null ? "OK" : "NULL")}");
     }
     
     // ===== ONDA 4: Pattern Debug Section =====
@@ -215,23 +254,23 @@ public class CheatManager : MonoBehaviour
     {
         GUILayout.Label("?? PATTERNS (Onda 4)");
         
-        // Mostrar estatÌsticas de tracking
+        // Mostrar estat√≠sticas de tracking
         var tracking = AppCore.Instance?.PatternTracking;
         if (tracking != null)
         {
             int activeCount = tracking.GetActivePatternsCount();
-            GUILayout.Label($"Padrıes ativos: {activeCount}");
+            GUILayout.Label($"Padr√µes ativos: {activeCount}");
             GUILayout.Label($"Total detectados: {run.TotalPatternsDetected}");
-            GUILayout.Label($"Recorde di·rio: {run.HighestDailyPatternScore} pts");
+            GUILayout.Label($"Recorde di√°rio: {run.HighestDailyPatternScore} pts");
         }
         else
         {
-            GUILayout.Label("? PatternTracking n„o inicializado");
+            GUILayout.Label("? PatternTracking n√£o inicializado");
         }
         
         GUILayout.Space(5);
         
-        if (GUILayout.Button("?? Detectar Padrıes Agora"))
+        if (GUILayout.Button("?? Detectar Padr√µes Agora"))
         {
             CheatDetectPatterns();
         }
@@ -256,7 +295,7 @@ public class CheatManager : MonoBehaviour
     {
         if (_gridService == null)
         {
-            Debug.LogWarning("[Cheat] GridService n„o disponÌvel");
+            Debug.LogWarning("[Cheat] GridService n√£o dispon√≠vel");
             return;
         }
         
@@ -265,18 +304,18 @@ public class CheatManager : MonoBehaviour
         
         if (detector == null || calculator == null)
         {
-            Debug.LogWarning("[Cheat] Pattern System n„o inicializado");
+            Debug.LogWarning("[Cheat] Pattern System n√£o inicializado");
             return;
         }
         
         var matches = detector.DetectAll(_gridService);
-        Debug.Log($"[Cheat] ??????? DETEC«√O DE PADR’ES ???????");
-        Debug.Log($"[Cheat] Padrıes detectados: {matches.Count}");
+        Debug.Log($"[Cheat] ??????? DETEC√á√ÉO DE PADR√ïES ???????");
+        Debug.Log($"[Cheat] Padr√µes detectados: {matches.Count}");
         
         foreach (var match in matches)
         {
             string slots = string.Join(",", match.SlotIndices);
-            Debug.Log($"[Cheat] ï {match.DisplayName} (slots: {slots}) = {match.BaseScore} base pts");
+            Debug.Log($"[Cheat] ‚Ä¢ {match.DisplayName} (slots: {slots}) = {match.BaseScore} base pts");
         }
         
         int totalScore = calculator.CalculateTotal(matches, _gridService);
@@ -291,13 +330,13 @@ public class CheatManager : MonoBehaviour
         
         if (tracking == null || run == null)
         {
-            Debug.LogWarning("[Cheat] Tracking n„o disponÌvel");
+            Debug.LogWarning("[Cheat] Tracking n√£o dispon√≠vel");
             return;
         }
         
         Debug.Log($"[Cheat] ??????? PATTERN TRACKING STATUS ???????");
         Debug.Log($"[Cheat] Semana: {run.CurrentWeek} | Dia: {run.CurrentDay}");
-        Debug.Log($"[Cheat] Padrıes ativos: {tracking.GetActivePatternsCount()}");
+        Debug.Log($"[Cheat] Padr√µes ativos: {tracking.GetActivePatternsCount()}");
         
         if (run.ActivePatterns != null)
         {
@@ -306,13 +345,13 @@ public class CheatManager : MonoBehaviour
                 var data = kvp.Value;
                 float decay = Mathf.Pow(0.9f, data.DaysActive - 1);
                 string recreated = data.IsRecreated ? " [RECREATED]" : "";
-                Debug.Log($"[Cheat] ï {data.PatternID}: Dia {data.DaysActive} ({decay:P0} pts){recreated}");
+                Debug.Log($"[Cheat] ‚Ä¢ {data.PatternID}: Dia {data.DaysActive} ({decay:P0} pts){recreated}");
             }
         }
         
         if (run.BrokenPatternIDs != null && run.BrokenPatternIDs.Count > 0)
         {
-            Debug.Log($"[Cheat] Padrıes quebrados (d„o bonus): {string.Join(", ", run.BrokenPatternIDs)}");
+            Debug.Log($"[Cheat] Padr√µes quebrados (d√£o bonus): {string.Join(", ", run.BrokenPatternIDs)}");
         }
         
         Debug.Log($"[Cheat] ??????????????????????????????????????");
@@ -328,7 +367,7 @@ public class CheatManager : MonoBehaviour
     {
         if (_resolutionSystem == null)
         {
-            Debug.LogWarning("[Cheat] DailyResolutionSystem n„o disponÌvel");
+            Debug.LogWarning("[Cheat] DailyResolutionSystem n√£o dispon√≠vel");
             return;
         }
         
@@ -352,10 +391,10 @@ public class CheatManager : MonoBehaviour
             }
         }
 
-        // ForÁa refresh visual via SaveManager (dispara evento OnDataDirty)
+        // For√ßa refresh visual via SaveManager (dispara evento OnDataDirty)
         _saveManager?.SaveGame();
         
-        // Recarrega cena para aplicar mudanÁas
+        // Recarrega cena para aplicar mudan√ßas
         UnityEngine.SceneManagement.SceneManager.LoadScene(
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
         );
@@ -445,13 +484,13 @@ public class CheatManager : MonoBehaviour
         
         if (run.Hand.Count >= run.MaxHandSize)
         {
-            Debug.LogWarning("[Cheat] M„o cheia!");
+            Debug.LogWarning("[Cheat] M√£o cheia!");
             return;
         }
 
         if (!AppCore.Instance.GameLibrary.TryGetCard(new CardID(cardID), out CardData cardData))
         {
-            Debug.LogWarning($"[Cheat] Card n„o encontrada: {cardID}");
+            Debug.LogWarning($"[Cheat] Card n√£o encontrada: {cardID}");
             return;
         }
 
@@ -460,6 +499,150 @@ public class CheatManager : MonoBehaviour
         AppCore.Instance.Events.Player.TriggerCardAdded(instance);
 
         Debug.Log($"[Cheat] Card adicionada: {cardID}");
+    }
+    
+    private void CheatClearHand(RunData run)
+    {
+        if (run.Hand.Count == 0)
+        {
+            Debug.LogWarning("[Cheat] M√£o j√° est√° vazia!");
+            return;
+        }
+        
+        int clearedCount = run.Hand.Count;
+        run.Hand.Clear();
+        
+        _saveManager?.SaveGame();
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
+        );
+        
+        Debug.Log($"[Cheat] {clearedCount} cartas removidas da m√£o! Recarregando cena...");
+    }
+    
+    private void CheatAutoPlant()
+    {
+        Debug.Log("[Cheat] ========== INICIANDO PLANTAR AUTO ==========");
+        
+        if (_gridService == null)
+        {
+            Debug.LogError("[Cheat] ERRO: GridService √© NULL!");
+            return;
+        }
+        
+        var run = _saveManager.Data.CurrentRun;
+        if (run == null)
+        {
+            Debug.LogError("[Cheat] ERRO: RunData √© NULL!");
+            return;
+        }
+        
+        var library = AppCore.Instance?.GameLibrary;
+        if (library == null)
+        {
+            Debug.LogError("[Cheat] ERRO: GameLibrary n√£o dispon√≠vel!");
+            return;
+        }
+        
+        Debug.Log($"[Cheat] Total de slots no grid: {run.GridSlots.Length}");
+        Debug.Log($"[Cheat] Total de slot states: {run.SlotStates.Length}");
+        
+        int plantedCount = 0;
+        int unlockedCount = 0;
+        int emptyCount = 0;
+        
+        for (int i = 0; i < run.GridSlots.Length; i++)
+        {
+            var slotState = run.SlotStates[i];
+            var gridSlot = run.GridSlots[i];
+            
+            if (slotState.IsUnlocked) unlockedCount++;
+            if (gridSlot.IsEmpty) emptyCount++;
+            
+            if (slotState.IsUnlocked && gridSlot.IsEmpty)
+            {
+                string randomCropID = GetRandomCropID(library);
+                if (randomCropID != null)
+                {
+                    Debug.Log($"[Cheat] Plantando {randomCropID} no slot {i}");
+                    
+                    run.GridSlots[i] = new CropState(new CropID(randomCropID))
+                    {
+                        CurrentGrowth = 0,
+                        IsWatered = false,
+                        DaysMature = 0
+                    };
+                    plantedCount++;
+                }
+                else
+                {
+                    Debug.LogWarning($"[Cheat] Falha ao obter crop aleat√≥rio para slot {i}");
+                }
+            }
+            else
+            {
+                if (!slotState.IsUnlocked)
+                    Debug.Log($"[Cheat] Slot {i} BLOQUEADO");
+                if (!gridSlot.IsEmpty)
+                    Debug.Log($"[Cheat] Slot {i} J√Å OCUPADO com {gridSlot.CropID.Value}");
+            }
+        }
+        
+        Debug.Log($"[Cheat] Estat√≠sticas:");
+        Debug.Log($"[Cheat]   - Slots desbloqueados: {unlockedCount}");
+        Debug.Log($"[Cheat]   - Slots vazios: {emptyCount}");
+        Debug.Log($"[Cheat]   - Slots plantados: {plantedCount}");
+        
+        if (plantedCount > 0)
+        {
+            Debug.Log($"[Cheat] Salvando e recarregando cena...");
+            _saveManager?.SaveGame();
+            
+            UnityEngine.SceneManagement.SceneManager.LoadScene(
+                UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
+            );
+        }
+        else
+        {
+            Debug.LogWarning("[Cheat] ‚ö†Ô∏è NENHUM SLOT FOI PLANTADO!");
+            Debug.LogWarning($"[Cheat] Verifique: Slots desbloqueados={unlockedCount}, Slots vazios={emptyCount}");
+        }
+        
+        Debug.Log("[Cheat] ========== FIM PLANTAR AUTO ==========");
+    }
+    
+    private string GetRandomCropID(IGameLibrary library)
+    {
+        Debug.Log("[Cheat] Buscando crop aleat√≥rio...");
+        
+        // CORRE√á√ÉO: IDs corretos com prefixo "crop_"
+        var cropIDs = new string[] { "crop_corn", "crop_carrot" };
+        var validCropIDs = new System.Collections.Generic.List<string>();
+        
+        foreach (var cropID in cropIDs)
+        {
+            if (library.TryGetCrop(new CropID(cropID), out CropData cropData))
+            {
+                validCropIDs.Add(cropID);
+                Debug.Log($"[Cheat]   ‚úì Crop v√°lido encontrado: {cropID}");
+            }
+            else
+            {
+                Debug.LogWarning($"[Cheat]   ‚úó Crop N√ÉO encontrado: {cropID}");
+            }
+        }
+        
+        Debug.Log($"[Cheat] Total de crops v√°lidos: {validCropIDs.Count}");
+        
+        if (validCropIDs.Count == 0)
+        {
+            Debug.LogError("[Cheat] ERRO: Nenhum crop v√°lido encontrado no GameLibrary!");
+            return null;
+        }
+        
+        string selected = validCropIDs[Random.Range(0, validCropIDs.Count)];
+        Debug.Log($"[Cheat] Crop selecionado: {selected}");
+        return selected;
     }
 
     private void ResetSaveData()
