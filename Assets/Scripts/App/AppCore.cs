@@ -13,12 +13,8 @@ public class AppCore : MonoBehaviour
     public DailyHandSystem DailyHandSystem { get; private set; }
     public WeeklyGoalSystem WeeklyGoalSystem { get; private set; }
     public ShopService ShopService { get; private set; }
-    
-    // ⭐ NOVO: Pattern System (Onda 1)
     public PatternDetector PatternDetector { get; private set; }
     public PatternScoreCalculator PatternCalculator { get; private set; }
-    
-    // ⭐ NOVO: Pattern Tracking (Onda 4)
     public PatternTrackingService PatternTracking { get; private set; }
 
     [Header("Data")]
