@@ -1,84 +1,137 @@
-using System; // Necessário para Func e Action
+using System;
 using UnityEngine;
+using System.Collections;
 
+/// <summary>
+/// View de slot individual do Grid - Componente visual refatorado.
+/// 
+/// RESPONSABILIDADE:
+/// - Renderizar estado visual (sprites, cores)
+/// - Aplicar priority layered rendering (5 layers)
+/// - Hover feedback (highlight)
+/// - Drop validation via IDropValidator
+/// - Animações básicas (flash, pulse)
+/// 
+/// ARQUITETURA:
+/// - Recebe GridVisualContext via Initialize()
+/// - Usa IDropValidator para validação
+/// - Não conhece AppCore.Instance
+/// - Priority layers: Base ? Plant ? State ? GameState ? Hover
+/// 
+/// NÃO FAZ:
+/// - Decidir regras de jogo (IDropValidator faz)
+/// - Acessar GridService diretamente
+/// - Spawnar/destruir a si mesmo (GridManager faz)
+/// </summary>
 [RequireComponent(typeof(SpriteRenderer), typeof(BoxCollider2D))]
 public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 {
     [Header("Componentes Visuais")]
-    [SerializeField] private SpriteRenderer _baseRenderer;      // Chão (Muda de cor com água)
-    [SerializeField] private SpriteRenderer _plantRenderer;     // A planta (Muda sprite)
-    [SerializeField] private SpriteRenderer _highlightRenderer; // Overlay de Mouse (Liga/Desliga)
+    [SerializeField] private SpriteRenderer _baseRenderer;
+    [SerializeField] private SpriteRenderer _plantRenderer;
+    [SerializeField] private SpriteRenderer _highlightRenderer;
+    [SerializeField] private SpriteRenderer _gameStateOverlayRenderer;
 
-    [Header("Cores do Solo")]
-    [SerializeField] private Color _dryColor = Color.white;
-    [SerializeField] private Color _wetColor = new Color(0.6f, 0.6f, 1f); // Azulado
-
-    [Header("Cores de Highlight")]
-    [SerializeField] private Color _highlightColor = new Color(1f, 1f, 1f, 0.4f); // Branco transparente
-    [SerializeField] private Color _lockedColor = new Color(0.2f, 0.2f, 0.2f, 1f); // Escuro para bloqueado
-    [SerializeField] private Color _unlockableHighlightColor = new Color(0f, 1f, 0f, 0.3f); // Verde quando pode desbloquear
-
-    [Header("Interação")]
+    [Header("Interacao")]
     [SerializeField] private int _interactionPriority = 0;
 
-    private GridManager _gridManager;
+    [Header("Debug")]
+    [SerializeField] private bool _showDebugLogs = false;
+
     private GridVisualContext _context;
     private int _index;
-    public int SlotIndex => _index;
+    private bool _isLocked;
+    private bool _isInitialized;
     
+    public int SlotIndex => _index;
     public int InteractionPriority => _interactionPriority;
-
     public event Action<int, CardView> OnDropInteraction;
     
-    private void Awake() => ConfigureRenderers();
-
-    private bool _isLocked;
+    private void Awake()
+    {
+        ConfigureRenderers();
+    }
 
     /// <summary>
     /// Inicializa com GridVisualContext (injeção de dependências).
     /// </summary>
     public void Initialize(GridVisualContext context, int index)
     {
+        if (context == null)
+        {
+            Debug.LogError($"[GridSlotView {index}] Context null!");
+            return;
+        }
+
         _context = context;
         _index = index;
+        _isLocked = false;
+        _isInitialized = true;
 
+        ResetVisualState();
+        SubscribeToEvents();
+
+        if (_showDebugLogs)
+            Debug.Log($"[GridSlotView {_index}] Inicializado com contexto");
+    }
+
+    private void OnDestroy()
+    {
+        UnsubscribeFromEvents();
+    }
+
+    private void SubscribeToEvents()
+    {
+        if (_context != null && _context.GameStateEvents != null)
+        {
+            _context.GameStateEvents.OnStateChanged += HandleGameStateChanged;
+            
+            // Aplica estado inicial
+            HandleGameStateChanged(_context.GameStateManager.CurrentState);
+        }
+    }
+
+    private void UnsubscribeFromEvents()
+    {
+        if (_context != null && _context.GameStateEvents != null)
+        {
+            _context.GameStateEvents.OnStateChanged -= HandleGameStateChanged;
+        }
+    }
+
+    private void ResetVisualState()
+    {
         _plantRenderer.enabled = false;
         _highlightRenderer.enabled = false;
-        _baseRenderer.color = _dryColor;
-        _isLocked = false;
+        _gameStateOverlayRenderer.enabled = false;
+        _baseRenderer.color = _context.VisualConfig.dryColor;
     }
 
     /// <summary>
-    /// Inicializa sem contexto (legacy - compatibilidade temporária).
+    /// Define estado de bloqueio do slot.
     /// </summary>
-    public void Initialize(int index)
-    {
-        _index = index;
-
-        _plantRenderer.enabled = false;
-        _highlightRenderer.enabled = false;
-        _baseRenderer.color = _dryColor;
-        _isLocked = false;
-    }
-
     public void SetLockedState(bool isLocked)
     {
         _isLocked = isLocked;
+        
         if (_isLocked)
         {
-            _baseRenderer.color = _lockedColor;
+            _baseRenderer.color = _context.VisualConfig.lockedColor;
             _plantRenderer.enabled = false;
+            
+            if (_showDebugLogs)
+                Debug.Log($"[GridSlotView {_index}] Estado: LOCKED");
         }
-        // Se desbloqueado, a cor será setada pelo SetVisualState ou default dry
     }
 
-    // --- MÉTODO VISUAL (CHAMADO PELO CONTROLLER) ---
-
+    /// <summary>
+    /// Atualiza visual do slot (Manager Push pattern).
+    /// </summary>
     public void SetVisualState(Sprite plantSprite, bool isWatered)
     {
-        if (_isLocked) return; // Não mostra planta nem água se bloqueado
+        if (_isLocked) return;
 
-        // 1. Atualiza Planta
+        // Layer 1: Plant Sprite
         if (plantSprite != null)
         {
             _plantRenderer.sprite = plantSprite;
@@ -90,29 +143,55 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
             _plantRenderer.sprite = null;
         }
 
-        // 2. Atualiza Solo (Seco vs Molhado)
-        // Note que isso não interfere no Highlight, pois são renderers diferentes
-        _baseRenderer.color = isWatered ? _wetColor : _dryColor;
+        // Layer 0: Base Color (dry/wet)
+        _baseRenderer.color = isWatered 
+            ? _context.VisualConfig.wetColor 
+            : _context.VisualConfig.dryColor;
+
+        if (_showDebugLogs)
+            Debug.Log($"[GridSlotView {_index}] Visual: sprite={plantSprite != null}, water={isWatered}");
+    }
+
+    /// <summary>
+    /// Gerencia overlay de GameState (Layer 3).
+    /// </summary>
+    private void HandleGameStateChanged(GameState newState)
+    {
+        if (_isLocked) return;
+
+        bool isDisabled = (newState != GameState.Playing);
+        
+        if (_gameStateOverlayRenderer != null)
+        {
+            _gameStateOverlayRenderer.enabled = isDisabled;
+            
+            if (isDisabled)
+            {
+                _gameStateOverlayRenderer.color = _context.VisualConfig.disabledOverlay;
+            }
+        }
+
+        if (_showDebugLogs && isDisabled)
+            Debug.Log($"[GridSlotView {_index}] GameState overlay ativo: {newState}");
     }
 
     // --- INTERFACE IINTERACTABLE (HOVER) ---
 
     public void OnHoverEnter()
     {
-        // Apenas liga o overlay de brilho. Não mexe na cor do chão.
         if (_highlightRenderer != null)
         {
             _highlightRenderer.enabled = true;
-            
-            // Se bloqueado, mostra vermelho se não puder interagir?
-            // Deixa o hover padrão. O feedback de "pode desbloquear" virá do drag.
+            _highlightRenderer.color = _context.VisualConfig.validHover;
         }
     }
 
     public void OnHoverExit()
     {
         if (_highlightRenderer != null)
+        {
             _highlightRenderer.enabled = false;
+        }
     }
 
     public void OnClick()
@@ -120,69 +199,85 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         // Futuro: Abrir menu de detalhes
     }
 
-    public void Configure(GridManager manager, int index)
-    {
-        _gridManager = manager;
-        _index = index;
-    }
-
     // --- INTERFACE IDROPTARGET (DRAG & DROP) ---
 
     public bool CanReceive(IDraggable draggable)
     {
-        // 1. Verifica Estado Global
-        var currentState = AppCore.Instance.GameStateManager.CurrentState;
-        if (currentState != GameState.Playing)
+        if (!_isInitialized)
         {
-            // Pode estar em "Shopping" ou "Initialization"
-             Debug.Log($"[Slot {_index}] Recusado: Estado é {currentState}");
+            Debug.LogWarning($"[GridSlotView {_index}] CanReceive chamado antes de Initialize!");
             return false;
         }
 
-        // 2. Verifica Tipo
-        if (draggable is not CardView cardView) return false;
-
-        // 3. Verifica Lógica (Serviço)
-        bool logicResult = _gridManager.Service.CanReceiveCard(_index, cardView.Data);
-
-        if (!logicResult)
+        if (draggable is not CardView cardView)
         {
-             Debug.Log($"[Slot {_index}] Recusado: Regra de Jogo (Service retornou false)");
+            return false;
         }
 
-        return logicResult;
+        // Usa IDropValidator (desacoplado)
+        bool canDrop = _context.DropValidator.CanDrop(_index, cardView.Data);
+
+        if (!canDrop && _showDebugLogs)
+        {
+            string errorMsg = _context.DropValidator.GetErrorMessage();
+            Debug.Log($"[GridSlotView {_index}] Drop recusado: {errorMsg}");
+            
+            // Feedback visual de erro
+            StartCoroutine(FlashError());
+        }
+
+        return canDrop;
     }
 
     public void OnReceive(IDraggable draggable)
     {
         if (draggable is CardView cardView)
         {
-            // Passamos o CardView inteiro
             OnDropInteraction?.Invoke(SlotIndex, cardView);
             OnHoverExit();
         }
     }
 
+    /// <summary>
+    /// Flash vermelho quando ação inválida.
+    /// </summary>
+    private IEnumerator FlashError()
+    {
+        if (_highlightRenderer == null) yield break;
+
+        Color originalColor = _highlightRenderer.color;
+        _highlightRenderer.enabled = true;
+        _highlightRenderer.color = _context.VisualConfig.errorFlash;
+
+        yield return new WaitForSeconds(_context.VisualConfig.flashDuration);
+
+        _highlightRenderer.color = originalColor;
+        _highlightRenderer.enabled = false;
+    }
+
     // --- CONFIGURAÇÃO AUTOMÁTICA (SETUP) ---
-    // Mantive sua lógica de criar objetos caso eles não existam no inspector
+
     private void ConfigureRenderers()
     {
-        if (_baseRenderer == null) _baseRenderer = GetComponent<SpriteRenderer>();
+        if (_baseRenderer == null) 
+            _baseRenderer = GetComponent<SpriteRenderer>();
 
-        // Configura Planta
         if (_plantRenderer == null || _plantRenderer == _baseRenderer)
         {
             _plantRenderer = CreateChildSprite("PlantSprite", 1);
         }
 
-        // Configura Highlight (Novo)
         if (_highlightRenderer == null || _highlightRenderer == _baseRenderer)
         {
-            _highlightRenderer = CreateChildSprite("HighlightOverlay", 2);
-            _highlightRenderer.color = _highlightColor;
-
-            // O Highlight deve cobrir o slot, então usa o sprite do base se possível
+            _highlightRenderer = CreateChildSprite("HighlightOverlay", 3);
             _highlightRenderer.sprite = _baseRenderer.sprite;
+        }
+
+        if (_gameStateOverlayRenderer == null || _gameStateOverlayRenderer == _baseRenderer)
+        {
+            _gameStateOverlayRenderer = CreateChildSprite("GameStateOverlay", 2);
+            _gameStateOverlayRenderer.sprite = _baseRenderer.sprite;
+            _gameStateOverlayRenderer.enabled = false;
         }
     }
 
