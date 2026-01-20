@@ -26,14 +26,18 @@ public class PatternDetector
     
     public PatternDetector()
     {
-        // Onda 1: Padrões hardcoded (Onda 5 migrará para ScriptableObject)
+        // Onda 1 + 2: Padrões hardcoded (Onda 5 migrará para ScriptableObject)
         _patterns = new List<IGridPattern>
         {
-            new AdjacentPairPattern(),
-            new TrioLinePattern(),
-            new GridCornerPattern(),
-            new FullLinePattern(),
-            new GridCrossPattern()
+            // Tier 1 - Iniciante
+            new AdjacentPairPattern(),      // 5 pts
+            new TrioLinePattern(),          // 10 pts
+            new GridCornerPattern(),        // 8 pts
+            
+            // Tier 2 - Casual
+            new FullLinePattern(),          // 25 pts
+            new CheckerPattern(),           // 20 pts (NOVO - Onda 2)
+            new GridCrossPattern()          // 30 pts
         };
         
         Debug.Log($"[PatternDetector] Inicializado com {_patterns.Count} padrões registrados");

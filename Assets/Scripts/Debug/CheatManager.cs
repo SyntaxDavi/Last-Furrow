@@ -40,6 +40,7 @@ public class CheatManager : MonoBehaviour
     [SerializeField] private List<string> _quickSpawnCardIDs = new List<string>
     {
         "card_corn",
+        "card_carrot",
         "card_water",
         "card_fertilizer"
     };
