@@ -7,6 +7,10 @@ public class GrowGridStep : IFlowStep
     private readonly GameEvents _events;
     private readonly InputManager _input;
     private readonly RunData _runData;
+    
+    // HARDCODE: Reference to AnalyzingPhaseController
+    private AnalyzingPhaseController _analyzingController;
+    private bool _controllerCached;
 
     public GrowGridStep(IGridService gridService, GameEvents events, InputManager input, RunData runData)
     {
@@ -18,6 +22,31 @@ public class GrowGridStep : IFlowStep
 
     public IEnumerator Execute(FlowControl control)
     {
+        // HARDCODE: Chamar AnalyzingPhaseController ANTES de processar
+        if (!_controllerCached)
+        {
+            _analyzingController = Object.FindFirstObjectByType<AnalyzingPhaseController>();
+            _controllerCached = true;
+            
+            if (_analyzingController != null)
+            {
+                Debug.Log("[GrowGridStep] AnalyzingPhaseController encontrado!");
+            }
+            else
+            {
+                Debug.LogWarning("[GrowGridStep] AnalyzingPhaseController NÃO encontrado na cena!");
+            }
+        }
+        
+        // EXECUTAR ANÁLISE HARDCODE
+        if (_analyzingController != null)
+        {
+            Debug.Log("[GrowGridStep] === CHAMANDO ANALYZING PHASE (HARDCODE) ===");
+            yield return _analyzingController.AnalyzeGridHardcoded();
+            Debug.Log("[GrowGridStep] === ANALYZING PHASE CONCLUÍDA ===");
+        }
+        
+        // Processar crescimento normal (rápido, sem visual)
         for (int i = 0; i < _runData.GridSlots.Length; i++)
         {
             if (!_gridService.IsSlotUnlocked(i))

@@ -19,10 +19,10 @@ MonoBehaviour:
   pulseSpeed: 5
   highlightDuration: 3
   sequentialDelay: 0.5
-  highlightPulseSpeed: 1.33
-  highlightDelayBetween: 0.355
-  highlightFadeDuration: 1.55
-  analyzingDurationPerSlot: 0.098
+  highlightPulseSpeed: 9.66
+  highlightDelayBetween: 0.5
+  highlightFadeDuration: 2
+  analyzingDurationPerSlot: 0.05
   analyzingLevitationHeight: 0.05
   analyzingOnlyPlants: 1
   analyzingShowPulse: 1
@@ -36,8 +36,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   baseTextSize: 36
   scaleBonusPerTier: 1.2
-  breathingAmount: 0.0123
-  breathingSpeed: 0.172
+  breathingAmount: 0.05
+  breathingSpeed: 0.974
   plantReactionStrength: 0.0472
   harvestReactionStrength: 0.0491
   patternReactionStrength: 0.069
