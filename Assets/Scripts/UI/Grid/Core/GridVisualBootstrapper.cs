@@ -43,14 +43,12 @@ public class GridVisualBootstrapper : MonoBehaviour
         if (_showDebugLogs)
             Debug.Log("[GridVisualBootstrapper] Aguardando AppCore e GridService...");
 
-        // Espera AppCore estar pronto
         while (AppCore.Instance == null)
         {
             yield return null;
         }
 
-        // Espera GridService estar disponivel
-        while (AppCore.Instance.GetGridService() == null)
+        while (AppCore.Instance.GridService == null)
         {
             yield return null;
         }

@@ -9,11 +9,6 @@ public class GameplayBootstrapper : MonoBehaviour
     [SerializeField] private GridFeedbackController _feedbackController;
     [SerializeField] private HandManager _handManager;
 
-    // Campos antigos removidos em favor de GridConfiguration SO
-    // [Header("Level Data")] 
-    // private float _levelGridWidth = 5f; 
-    // private float _levelGridHeight = 7f;
-
     private IGridService _gridService;
 
     private void Awake()
@@ -45,7 +40,7 @@ public class GameplayBootstrapper : MonoBehaviour
            library,
            AppCore.Instance.GameStateManager,
            AppCore.Instance.GridConfiguration, // Injeção da Config
-           AppCore.Instance.PatternWeightConfig // ? NOVO: Injeção de pesos de padrões
+           AppCore.Instance.PatternWeightConfig 
        );
 
         // 2. Registra no Global (para DailyResolution, CheatManager, etc)
@@ -57,7 +52,8 @@ public class GameplayBootstrapper : MonoBehaviour
         // 4. Injeta nos consumidores da cena
         if (_gridManager != null)
         {
-            _gridManager.Configure(_gridService, library);
+            // REMOVIDO: GridVisualBootstrapper agora inicializa GridManager via Initialize()
+            // _gridManager.Configure(_gridService, library);
         }
 
         if (_feedbackController != null && _gridManager != null)

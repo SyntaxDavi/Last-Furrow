@@ -19,26 +19,42 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     [SerializeField] private Color _unlockableHighlightColor = new Color(0f, 1f, 0f, 0.3f); // Verde quando pode desbloquear
 
     [Header("Interação")]
-    [SerializeField] private int _interactionPriority = 0; // Grid = 0 (base)
+    [SerializeField] private int _interactionPriority = 0;
 
     private GridManager _gridManager;
+    private GridVisualContext _context;
     private int _index;
     public int SlotIndex => _index;
     
-    // IInteractable
     public int InteractionPriority => _interactionPriority;
 
-    // O Controller assina isso para executar "Soltei aqui!"
     public event Action<int, CardView> OnDropInteraction;
+    
     private void Awake() => ConfigureRenderers();
 
     private bool _isLocked;
 
+    /// <summary>
+    /// Inicializa com GridVisualContext (injeção de dependências).
+    /// </summary>
+    public void Initialize(GridVisualContext context, int index)
+    {
+        _context = context;
+        _index = index;
+
+        _plantRenderer.enabled = false;
+        _highlightRenderer.enabled = false;
+        _baseRenderer.color = _dryColor;
+        _isLocked = false;
+    }
+
+    /// <summary>
+    /// Inicializa sem contexto (legacy - compatibilidade temporária).
+    /// </summary>
     public void Initialize(int index)
     {
         _index = index;
 
-        // Garante estado visual limpo ao nascer
         _plantRenderer.enabled = false;
         _highlightRenderer.enabled = false;
         _baseRenderer.color = _dryColor;

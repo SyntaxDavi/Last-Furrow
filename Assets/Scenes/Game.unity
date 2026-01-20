@@ -1285,8 +1285,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 434515747}
-  - component: {fileID: 434515746}
   - component: {fileID: 434515748}
+  - component: {fileID: 434515749}
   m_Layer: 0
   m_Name: GridSystem
   m_TagString: Untagged
@@ -1294,21 +1294,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &434515746
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 434515745}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2efbf5538598a09479d478d46af4f9f6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _slotPrefab: {fileID: 2412386929584116462, guid: 28b8f0aacff53ce4ab77edbb5b825c91, type: 3}
-  _gridContainer: {fileID: 413033043}
-  _spacing: {x: 1.2, y: 1}
 --- !u!4 &434515747
 Transform:
   m_ObjectHideFlags: 0
@@ -1338,6 +1323,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+--- !u!114 &434515749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 434515745}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f571d8f33f2c5f4eb8859699cb592dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _slotPrefab: {fileID: 2412386929584116462, guid: 28b8f0aacff53ce4ab77edbb5b825c91, type: 3}
+  _gridContainer: {fileID: 413033043}
+  _spacing: {x: 1.5, y: 1.1}
+  _showDebugLogs: 1
 --- !u!1 &521356419
 GameObject:
   m_ObjectHideFlags: 0
@@ -2999,7 +3000,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _gameCamera: {fileID: 1512505979}
-  _gridManager: {fileID: 434515746}
+  _gridManager: {fileID: 0}
   _playerInteraction: {fileID: 1282445937}
   _feedbackController: {fileID: 1991846487}
   _handManager: {fileID: 1345890251}

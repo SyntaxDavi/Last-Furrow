@@ -41,7 +41,10 @@ public class AppCore : MonoBehaviour
     // O Controlador do Flow (Arraste na cena)
     public WeekendFlowController WeekendFlowController;
 
-    private IGridService _gridService; // Privado
+    private IGridService _gridService;
+    
+    // Propriedade publica para GridService (read-only)
+    public IGridService GridService => _gridService;
 
     [Header("Configuração")]
     [SerializeField] private string _firstSceneName = "Game";
