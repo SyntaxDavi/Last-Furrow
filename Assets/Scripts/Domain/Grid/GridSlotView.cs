@@ -412,5 +412,46 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     {
         return _highlightRenderer != null && _highlightRenderer.enabled;
     }
+    
+    /// <summary>
+    /// NOVO (ONDA 5.5): Verifica se o slot tem planta.
+    /// </summary>
+    public bool HasPlant()
+    {
+        // Verificar se _plantRenderer tem sprite atribuído
+        return _plantRenderer != null && _plantRenderer.sprite != null;
+    }
+    
+    /// <summary>
+    /// NOVO (ONDA 5.5): Trigger pulse rosa (analyzing pulse).
+    /// </summary>
+    public void TriggerAnalyzingPulse(Color pulseColor, float duration = 0.2f)
+    {
+        if (_highlightRenderer == null) return;
+        
+        StartCoroutine(AnalyzingPulseRoutine(pulseColor, duration));
+    }
+    
+    /// <summary>
+    /// Coroutine de analyzing pulse.
+    /// </summary>
+    private IEnumerator AnalyzingPulseRoutine(Color pulseColor, float duration)
+    {
+        if (_highlightRenderer == null) yield break;
+        
+        bool wasEnabled = _highlightRenderer.enabled;
+        Color originalColor = _highlightRenderer.color;
+        
+        // Ativar com cor de pulse
+        _highlightRenderer.enabled = true;
+        _highlightRenderer.color = pulseColor;
+        
+        yield return new WaitForSeconds(duration);
+        
+        // Restaurar estado original
+        _highlightRenderer.enabled = wasEnabled;
+        _highlightRenderer.color = originalColor;
+    }
 }
+
 

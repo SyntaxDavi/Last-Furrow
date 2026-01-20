@@ -15,6 +15,13 @@ using UnityEngine;
 /// Sleep ? Analyzing Phase (este controller) ? Pattern Detection ? Highlights ? Sinergia
 /// 
 /// FILOSOFIA: "O grid está sendo escaneado slot por slot"
+/// 
+/// ONDA 5.5 REFACTORED:
+/// - Cacheia slots (evita GetComponentsInChildren repetido)
+/// - Usa localPosition (funciona com hierarquia de Canvas)
+/// - Salva originalPosition de cada slot (reset correto)
+/// - Filtragem real de slots com plantas via GridSlotView.HasPlant()
+/// - Pulse rosa implementado via GridSlotView.TriggerAnalyzingPulse()
 /// </summary>
 public class AnalyzingPhaseController : MonoBehaviour
 {
@@ -30,25 +37,63 @@ public class AnalyzingPhaseController : MonoBehaviour
     [Range(0.05f, 1f)]
     [SerializeField] private float _durationPerSlot = 0.2f;
     
-    [Tooltip("Altura da levitação ao analisar")]
-    [Range(0.05f, 0.3f)]
+    [Tooltip("Altura da levitação ao analisar (local space)")]
+    [Range(0.05f, 0.5f)]
     [SerializeField] private float _levitationHeight = 0.1f;
     
     [Tooltip("Analisar apenas slots com plantas? (otimizado)")]
     [SerializeField] private bool _onlyPlantsSlots = true;
     
-    [Tooltip("Mostrar pulse rosa durante análise? (usa analyzing pulse do GridVisualConfig)")]
+    [Tooltip("Mostrar pulse rosa durante análise?")]
     [SerializeField] private bool _showAnalyzingPulse = true;
+    
+    // Cache de slots (performance)
+    private List<GridSlotView> _cachedSlots;
+    
+    // Posições originais (para reset correto)
+    private Dictionary<GridSlotView, Vector3> _originalPositions;
     
     // Estado
     private bool _isAnalyzing;
     private Coroutine _analyzingCoroutine;
     
+    private void Awake()
+    {
+        _originalPositions = new Dictionary<GridSlotView, Vector3>();
+    }
+    
     private void Start()
     {
-        // Subscribe to sleep button (ou evento customizado)
-        // TODO: Quando tiver evento de "antes de detect patterns", usar ele
-        // Por enquanto, será chamado manualmente via PatternHighlightController
+        // Cachear slots no Start (evita GC em runtime)
+        CacheSlots();
+    }
+    
+    /// <summary>
+    /// Cacheia slots para evitar GetComponentsInChildren repetido.
+    /// </summary>
+    private void CacheSlots()
+    {
+        if (_gridManager == null)
+        {
+            Debug.LogError("[AnalyzingPhaseController] GridManager não atribuído!");
+            return;
+        }
+        
+        _cachedSlots = new List<GridSlotView>();
+        var allSlots = _gridManager.GetComponentsInChildren<GridSlotView>();
+        
+        foreach (var slot in allSlots)
+        {
+            if (slot != null)
+            {
+                _cachedSlots.Add(slot);
+                
+                // Salvar posição original de cada slot
+                _originalPositions[slot] = slot.transform.localPosition;
+            }
+        }
+        
+        _config?.DebugLog($"[AnalyzingPhase] {_cachedSlots.Count} slots cacheados");
     }
     
     /// <summary>
@@ -60,6 +105,12 @@ public class AnalyzingPhaseController : MonoBehaviour
         {
             _config?.DebugLog("[AnalyzingPhase] Já está analisando, ignorando...");
             return;
+        }
+        
+        // Recachear slots se necessário
+        if (_cachedSlots == null || _cachedSlots.Count == 0)
+        {
+            CacheSlots();
         }
         
         if (_analyzingCoroutine != null)
@@ -78,23 +129,26 @@ public class AnalyzingPhaseController : MonoBehaviour
         _isAnalyzing = true;
         _config?.DebugLog("[AnalyzingPhase] INICIANDO análise dos slots...");
         
-        if (_gridManager == null)
+        // Obter slots para analisar (com filtro real)
+        var slotsToAnalyze = GetSlotsToAnalyze();
+        
+        if (slotsToAnalyze.Count == 0)
         {
-            Debug.LogError("[AnalyzingPhaseController] GridManager não atribuído!");
+            _config?.DebugLog("[AnalyzingPhase] Nenhum slot para analisar (filtro ativo)");
             _isAnalyzing = false;
             onComplete?.Invoke();
             yield break;
         }
-        
-        // Obter slots para analisar
-        var slotsToAnalyze = GetSlotsToAnalyze();
         
         _config?.DebugLog($"[AnalyzingPhase] Analisando {slotsToAnalyze.Count} slots...");
         
         // Analisar cada slot sequencialmente
         foreach (var slotView in slotsToAnalyze)
         {
-            yield return AnalyzeSingleSlot(slotView);
+            if (slotView != null)  // Safety check
+            {
+                yield return AnalyzeSingleSlot(slotView);
+            }
         }
         
         _isAnalyzing = false;
@@ -107,25 +161,29 @@ public class AnalyzingPhaseController : MonoBehaviour
     }
     
     /// <summary>
-    /// Retorna lista de slots para analisar.
+    /// Retorna lista de slots para analisar (com filtragem real).
     /// </summary>
     private List<GridSlotView> GetSlotsToAnalyze()
     {
         var slots = new List<GridSlotView>();
-        var allSlots = _gridManager.GetComponentsInChildren<GridSlotView>();
         
-        foreach (var slot in allSlots)
+        if (_cachedSlots == null) return slots;
+        
+        foreach (var slot in _cachedSlots)
         {
-            // Se configurado para apenas plantas, verificar
+            if (slot == null) continue;  // Safety check
+            
+            // Filtro real: apenas slots com plantas
             if (_onlyPlantsSlots)
             {
-                // TODO: GridSlotView precisa expor HasPlant() ou similar
-                // Por enquanto, vamos analisar todos os slots desbloqueados
-                // Quando GridSlotView tiver API, filtrar aqui
-                slots.Add(slot);
+                if (slot.HasPlant())
+                {
+                    slots.Add(slot);
+                }
             }
             else
             {
+                // Todos os slots
                 slots.Add(slot);
             }
         }
@@ -135,17 +193,31 @@ public class AnalyzingPhaseController : MonoBehaviour
     
     /// <summary>
     /// Analisa um único slot (levitação + pulse).
+    /// CORRIGIDO: Usa localPosition (funciona com Canvas/Grid hierarchy).
     /// </summary>
     private IEnumerator AnalyzeSingleSlot(GridSlotView slotView)
     {
         if (slotView == null) yield break;
         
         Transform slotTransform = slotView.transform;
-        Vector3 originalPos = slotTransform.position;
+        
+        // Usar posição original salva (mais robusto)
+        Vector3 originalLocalPos = _originalPositions.ContainsKey(slotView)
+            ? _originalPositions[slotView]
+            : slotTransform.localPosition;
         
         float halfDuration = _durationPerSlot * 0.5f;
         
-        // FASE 1: Subir (levitação)
+        // Trigger pulse rosa (se habilitado)
+        if (_showAnalyzingPulse && _config != null)
+        {
+            // Usar cor de analyzing pulse do GridVisualConfig
+            // TODO: GridVisualConfig precisa ter analyzingPulseColor
+            Color pulseColor = new Color(1f, 0.4f, 0.7f, 0.5f);  // Rosa placeholder
+            slotView.TriggerAnalyzingPulse(pulseColor, _durationPerSlot);
+        }
+        
+        // FASE 1: Subir (levitação) - USA LOCAL POSITION
         float elapsed = 0f;
         while (elapsed < halfDuration)
         {
@@ -156,14 +228,14 @@ public class AnalyzingPhaseController : MonoBehaviour
             float easedT = 1f - Mathf.Pow(1f - t, 2f);
             
             float offsetY = Mathf.Lerp(0f, _levitationHeight, easedT);
-            slotTransform.position = originalPos + Vector3.up * offsetY;
+            slotTransform.localPosition = originalLocalPos + Vector3.up * offsetY;
             
             yield return null;
         }
         
-        // FASE 2: Descer (retorno)
+        // FASE 2: Descer (retorno) - USA LOCAL POSITION
         elapsed = 0f;
-        Vector3 peakPos = slotTransform.position;
+        Vector3 peakLocalPos = slotTransform.localPosition;
         
         while (elapsed < halfDuration)
         {
@@ -173,23 +245,19 @@ public class AnalyzingPhaseController : MonoBehaviour
             // EaseIn para descida suave
             float easedT = Mathf.Pow(t, 2f);
             
-            slotTransform.position = Vector3.Lerp(peakPos, originalPos, easedT);
+            slotTransform.localPosition = Vector3.Lerp(peakLocalPos, originalLocalPos, easedT);
             
             yield return null;
         }
         
         // Garantir posição original
-        slotTransform.position = originalPos;
-        
-        // TODO: Se _showAnalyzingPulse = true, triggerar pulse rosa no slot
-        // Isso requer que GridSlotView exponha método de pulse
-        // Por enquanto, a levitação é suficiente
+        slotTransform.localPosition = originalLocalPos;
         
         _config?.DebugLog($"[AnalyzingPhase] Slot {slotView.SlotIndex} analisado");
     }
     
     /// <summary>
-    /// Para analyzing phase (se necessário cancelar).
+    /// Para analyzing phase (com reset suave).
     /// </summary>
     public void StopAnalyzing()
     {
@@ -201,27 +269,58 @@ public class AnalyzingPhaseController : MonoBehaviour
         
         _isAnalyzing = false;
         
-        // Resetar posições de todos os slots
-        ResetAllSlotPositions();
+        // Resetar posições de todos os slots (suavemente)
+        StartCoroutine(ResetAllSlotPositionsSmoothly());
     }
     
     /// <summary>
-    /// Reseta posições de todos os slots (cleanup).
+    /// Reseta posições de todos os slots (com Lerp suave).
     /// </summary>
-    private void ResetAllSlotPositions()
+    private IEnumerator ResetAllSlotPositionsSmoothly()
     {
-        if (_gridManager == null) return;
+        if (_cachedSlots == null) yield break;
         
-        var allSlots = _gridManager.GetComponentsInChildren<GridSlotView>();
+        float duration = 0.2f;
+        float elapsed = 0f;
         
-        foreach (var slot in allSlots)
+        // Salvar posições atuais
+        var currentPositions = new Dictionary<GridSlotView, Vector3>();
+        foreach (var slot in _cachedSlots)
         {
-            // Resetar posição local (assume que slots estão em posição fixa no grid)
-            slot.transform.localPosition = new Vector3(
-                slot.transform.localPosition.x,
-                0f,  // Y sempre 0 (sem offset)
-                slot.transform.localPosition.z
-            );
+            if (slot != null)
+            {
+                currentPositions[slot] = slot.transform.localPosition;
+            }
+        }
+        
+        // Lerp para original
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            
+            foreach (var slot in _cachedSlots)
+            {
+                if (slot != null && _originalPositions.ContainsKey(slot))
+                {
+                    slot.transform.localPosition = Vector3.Lerp(
+                        currentPositions[slot],
+                        _originalPositions[slot],
+                        t
+                    );
+                }
+            }
+            
+            yield return null;
+        }
+        
+        // Garantir posições finais
+        foreach (var slot in _cachedSlots)
+        {
+            if (slot != null && _originalPositions.ContainsKey(slot))
+            {
+                slot.transform.localPosition = _originalPositions[slot];
+            }
         }
     }
     
@@ -230,3 +329,4 @@ public class AnalyzingPhaseController : MonoBehaviour
         StopAnalyzing();
     }
 }
+

@@ -24,8 +24,8 @@ MonoBehaviour:
   unlockableHover: {r: 0, g: 1, b: 0, a: 0.3}
   errorFlash: {r: 1, g: 0, b: 0, a: 1}
   analyzingPulse: {r: 1, g: 0.4481132, b: 0.89019567, a: 0.6039216}
-  flashDuration: 0.279
-  pulseDuration: 0.67
+  flashDuration: 0.583
+  pulseDuration: 1.6
   stateOverlayOffset: 1
   gameStateOverlayOffset: 2
   hoverHighlightOffset: 3

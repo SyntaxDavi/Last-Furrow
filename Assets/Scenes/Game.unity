@@ -5459,6 +5459,7 @@ GameObject:
   - component: {fileID: 1726399247}
   - component: {fileID: 1726399246}
   - component: {fileID: 1726399245}
+  - component: {fileID: 1726399248}
   m_Layer: 0
   m_Name: PatternVisualSystem
   m_TagString: Untagged
@@ -5510,6 +5511,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1726399248
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1726399244}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc3492d0587395d48a8121ff18c624ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _config: {fileID: 11400000, guid: 0ce5f80d9d042f246974393c9aa66073, type: 2}
+  _gridManager: {fileID: 434515749}
+  _durationPerSlot: 1
+  _levitationHeight: 0.3
+  _onlyPlantsSlots: 1
+  _showAnalyzingPulse: 1
 --- !u!1 &1745695844
 GameObject:
   m_ObjectHideFlags: 0
