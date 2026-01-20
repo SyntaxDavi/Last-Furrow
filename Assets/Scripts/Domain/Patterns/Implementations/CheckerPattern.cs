@@ -24,13 +24,11 @@ using System.Collections.Generic;
 /// [??][??]  ? Não é alternado
 /// [??][??]
 /// </summary>
-public class CheckerPattern : IGridPattern
+public class CheckerPattern : BaseGridPattern
 {
-    public string PatternID => "CHECKER_2X2";
-    public string DisplayName => "Xadrez 2x2";
-    public int BaseScore => 20;
+    public CheckerPattern(PatternDefinitionSO definition) : base(definition) { }
     
-    public List<PatternMatch> DetectAll(IGridService gridService)
+    public override List<PatternMatch> DetectAll(IGridService gridService)
     {
         var matches = new List<PatternMatch>();
         var config = gridService.Config;
@@ -90,18 +88,13 @@ public class CheckerPattern : IGridPattern
         if (detectedCheckers.Contains(checkerKey))
             return;
         
+        
         detectedCheckers.Add(checkerKey);
         
         // Criar match
         var cropIDs = PatternHelper.CollectCropIDs(indices, gridService);
+        string desc = $"({topRow},{leftCol}) - {cropTopLeft.Value}/{cropTopRight.Value}";
         
-        matches.Add(PatternMatch.Create(
-            PatternID,
-            DisplayName,
-            indices,
-            BaseScore,
-            cropIDs,
-            $"({topRow},{leftCol}) - {cropTopLeft.Value}/{cropTopRight.Value}"
-        ));
+        matches.Add(CreateMatch(indices, cropIDs, desc));
     }
 }

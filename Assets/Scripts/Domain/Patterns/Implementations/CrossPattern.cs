@@ -21,12 +21,12 @@ using System.Collections.Generic;
 /// CENTROS VÁLIDOS (grid 5x5):
 /// - Qualquer slot que não esteja na borda (rows 1-3, cols 1-3)
 /// - Total de 9 posições possíveis para o centro
+/// 
+/// ONDA 5: Migrado para BaseGridPattern + PatternDefinitionSO
 /// </summary>
-public class GridCrossPattern : IGridPattern
+public class GridCrossPattern : BaseGridPattern
 {
-    public string PatternID => "CROSS";
-    public string DisplayName => "Cruz Simples";
-    public int BaseScore => 30;
+    public GridCrossPattern(PatternDefinitionSO definition) : base(definition) { }
     
     // Direções cardeais: Norte, Sul, Leste, Oeste
     private readonly int[,] _directions = new int[,]
@@ -37,7 +37,8 @@ public class GridCrossPattern : IGridPattern
         { 0, -1 }   // Oeste (col - 1)
     };
     
-    public List<PatternMatch> DetectAll(IGridService gridService)
+    
+    public override List<PatternMatch> DetectAll(IGridService gridService)
     {
         var matches = new List<PatternMatch>();
         var config = gridService.Config;
@@ -92,14 +93,8 @@ public class GridCrossPattern : IGridPattern
         
         // Criar match
         var cropIDs = PatternHelper.CollectCropIDs(indices, gridService);
+        string desc = $"Center ({centerRow},{centerCol})";
         
-        matches.Add(PatternMatch.Create(
-            PatternID,
-            DisplayName,
-            indices,
-            BaseScore,
-            cropIDs,
-            $"Center ({centerRow},{centerCol})"
-        ));
+        matches.Add(CreateMatch(indices, cropIDs, desc));
     }
 }

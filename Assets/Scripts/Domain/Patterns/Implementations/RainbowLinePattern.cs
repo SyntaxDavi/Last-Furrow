@@ -28,18 +28,16 @@ using System.Collections.Generic;
 /// NOTA: O score é calculado com fórmula especial no PatternScoreCalculator
 /// baseado no número de tipos únicos (diversityBonus).
 /// </summary>
-public class RainbowLinePattern : IGridPattern
+public class RainbowLinePattern : BaseGridPattern
 {
-    public string PatternID => "RAINBOW_LINE";
-    public string DisplayName => "Arco-íris";
-    public int BaseScore => 55;
+    public RainbowLinePattern(PatternDefinitionSO definition) : base(definition) { }
     
     /// <summary>
     /// Número mínimo de tipos de crops diferentes para contar como arco-íris.
     /// </summary>
     private const int MIN_UNIQUE_CROPS = 3;
     
-    public List<PatternMatch> DetectAll(IGridService gridService)
+    public override List<PatternMatch> DetectAll(IGridService gridService)
     {
         var matches = new List<PatternMatch>();
         var config = gridService.Config;
@@ -112,13 +110,7 @@ public class RainbowLinePattern : IGridPattern
             return;
         
         // Criar match com metadata de diversidade
-        matches.Add(PatternMatch.Create(
-            PatternID,
-            DisplayName,
-            indices,
-            BaseScore,
-            cropIDs,
-            $"{debugDesc} ({uniqueCrops.Count} tipos)"
-        ));
+        string desc = $"{debugDesc} ({uniqueCrops.Count} tipos)";
+        matches.Add(CreateMatch(indices, cropIDs, desc));
     }
 }

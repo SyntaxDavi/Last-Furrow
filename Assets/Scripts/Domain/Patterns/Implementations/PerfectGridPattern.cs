@@ -31,18 +31,16 @@ using System.Collections.Generic;
 /// [??][??][??][??][??]
 /// = 4 tipos diferentes, 25 slots = Grid Perfeito!
 /// </summary>
-public class PerfectGridPattern : IGridPattern
+public class PerfectGridPattern : BaseGridPattern
 {
-    public string PatternID => "PERFECT_GRID";
-    public string DisplayName => "Grid Perfeito";
-    public int BaseScore => 150;
+    public PerfectGridPattern(PatternDefinitionSO definition) : base(definition) { }
     
     /// <summary>
     /// Número mínimo de tipos de crops diferentes para Grid Perfeito.
     /// </summary>
     private const int MIN_UNIQUE_CROPS = 4;
     
-    public List<PatternMatch> DetectAll(IGridService gridService)
+    public override List<PatternMatch> DetectAll(IGridService gridService)
     {
         var matches = new List<PatternMatch>();
         var config = gridService.Config;
@@ -79,14 +77,8 @@ public class PerfectGridPattern : IGridPattern
             return matches;
         
         // Criar match
-        matches.Add(PatternMatch.Create(
-            PatternID,
-            DisplayName,
-            allIndices,
-            BaseScore,
-            cropIDs,
-            $"25 slots, {uniqueCrops.Count} tipos"
-        ));
+        string desc = $"25 slots, {uniqueCrops.Count} tipos";
+        matches.Add(CreateMatch(allIndices, cropIDs, desc));
         
         return matches;
     }
