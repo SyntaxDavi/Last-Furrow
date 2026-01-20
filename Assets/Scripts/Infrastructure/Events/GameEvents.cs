@@ -19,6 +19,9 @@ public class GameEvents
     public readonly UIEvents UI = new UIEvents();
     public readonly CameraEvents Camera = new CameraEvents();
     public readonly ProgressionEvents Progression = new ProgressionEvents();
+    
+    // ? NOVO: Pattern System Events (Onda 1)
+    public readonly PatternEvents Pattern = new PatternEvents();
 
     // Construtor (opcional, mas bom para clareza)
     public GameEvents() { }

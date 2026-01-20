@@ -13,6 +13,10 @@ public class AppCore : MonoBehaviour
     public DailyHandSystem DailyHandSystem { get; private set; }
     public WeeklyGoalSystem WeeklyGoalSystem { get; private set; }
     public ShopService ShopService { get; private set; }
+    
+    // ⭐ NOVO: Pattern System (Onda 1)
+    public PatternDetector PatternDetector { get; private set; }
+    public PatternScoreCalculator PatternCalculator { get; private set; }
 
     [Header("Data")]
     [SerializeField] private GameDatabaseSO _gameDatabase;
@@ -98,6 +102,11 @@ public class AppCore : MonoBehaviour
         DailyHandSystem = new DailyHandSystem(GameLibrary, EconomyService, new SeasonalCardStrategy(), Events.Player);
         WeeklyGoalSystem = new WeeklyGoalSystem(GameLibrary, Events.Progression, _progressionSettings);
         ShopService = new ShopService(EconomyService, SaveManager, GameLibrary, Events);
+        
+        // ⭐ NOVO: Pattern System (Onda 1)
+        PatternDetector = new PatternDetector();
+        PatternCalculator = new PatternScoreCalculator(GameLibrary);
+        Debug.Log("[AppCore] ✓ Pattern System inicializado (Detector + Calculator)");
 
         // Injeta RunIdentityContext (imutável) em TODAS as estratégias
         // Grid será adicionado depois (via SetGridService)
