@@ -62,14 +62,7 @@ public class FullLinePattern : BaseGridPattern
         // Criar match
         var cropIDs = PatternHelper.CollectCropIDs(indices, gridService);
         
-        matches.Add(PatternMatch.Create(
-            PatternID,
-            DisplayName,
-            indices,
-            BaseScore,
-            cropIDs,
-            $"Row {row}"
-        ));
+        matches.Add(CreateMatch(indices, cropIDs, $"Row {row}"));
     }
     
     private void TryDetectFullColumn(int col, int rows, int cols, IGridService gridService, List<PatternMatch> matches)
@@ -94,13 +87,6 @@ public class FullLinePattern : BaseGridPattern
         // Criar match
         var cropIDs = PatternHelper.CollectCropIDs(indices, gridService);
         
-        matches.Add(PatternMatch.Create(
-            PatternID,
-            DisplayName,
-            indices,
-            BaseScore,
-            cropIDs,
-            $"Column {col}"
-        ));
+        matches.Add(CreateMatch(indices, cropIDs, $"Column {col}"));
     }
 }

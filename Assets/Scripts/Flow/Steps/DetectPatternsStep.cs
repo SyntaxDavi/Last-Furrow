@@ -12,18 +12,19 @@ using UnityEngine;
 /// 4. AdvanceTimeStep
 /// 5. DailyDrawStep
 /// 
-/// RESPONSABILIDADES:
+/// RESPONSABILIDADES (ONDA 5.5 - Refatorado):
 /// - Chamar PatternDetector.DetectAll()
 /// - Chamar PatternTrackingService.UpdateActivePatterns() [ONDA 4]
-/// - Chamar PatternScoreCalculator.CalculateTotal()
+/// - Chamar PatternScoreCalculator.CalculateTotalWithMetadata() [ONDA 5.5]
+/// - Disparar eventos baseado na metadata (SRP) [ONDA 5.5]
 /// - Adicionar pontos ao RunData.CurrentWeeklyScore
 /// - Emitir evento OnPatternsDetected
 /// - Logs de debug verbosos
 /// 
-/// NOTA: Pontos de padrões são ADICIONADOS ao CurrentWeeklyScore,
-/// junto com os pontos de plantas (processados por WeeklyGoalSystem).
-/// O sistema atual já adiciona pontos por plantas vivas, então
-/// padrões são um BÔNUS adicional.
+/// MUDANÇAS vs Versão Original:
+/// - ? Calculator retorna metadata (não dispara eventos)
+/// - ? DetectPatternsStep dispara eventos baseado na metadata (SRP)
+/// - ? Segue Single Responsibility Principle
 /// </summary>
 public class DetectPatternsStep : IFlowStep
 {
@@ -33,7 +34,7 @@ public class DetectPatternsStep : IFlowStep
     private readonly RunData _runData;
     private readonly GameEvents _events;
     
-    // ? Tracking separado para UI/Debug (conforme solicitado)
+    // Tracking separado para UI/Debug
     private int _lastPatternScore;
     private int _lastPatternCount;
     
@@ -77,12 +78,38 @@ public class DetectPatternsStep : IFlowStep
         
         _lastPatternCount = matches.Count;
         
-        // 3. Calcular pontos (agora com decay aplicado via DaysActive)
+        // 3. ONDA 5.5: Calcular pontos COM METADATA (SOLID refactor)
         int points = 0;
+        PatternScoreTotalResult scoreResults = null;
+        
         if (matches.Count > 0)
         {
-            points = _calculator.CalculateTotal(matches, _gridService);
+            scoreResults = _calculator.CalculateTotalWithMetadata(matches, _gridService);
+            points = scoreResults.TotalScore;
+            
+            // 3.1: Disparar eventos para UI baseado na metadata (SRP)
+            foreach (var result in scoreResults.IndividualResults)
+            {
+                // Evento de decay aplicado
+                if (result.HasDecay)
+                {
+                    Debug.Log($"[DetectPatternsStep] Decay event: {result.Match.DisplayName} (Dia {result.DaysActive}, {result.DecayMultiplier:F2}x)");
+                    _events.Pattern.TriggerPatternDecayApplied(
+                        result.Match, 
+                        result.DaysActive, 
+                        result.DecayMultiplier
+                    );
+                }
+                
+                // Evento de recreation bonus
+                if (result.HasRecreationBonus)
+                {
+                    Debug.Log($"[DetectPatternsStep] Recreation event: {result.Match.DisplayName} (+10%)");
+                    _events.Pattern.TriggerPatternRecreated(result.Match);
+                }
+            }
         }
+        
         _lastPatternScore = points;
         
         Debug.Log($"[DetectPatternsStep] Total de pontos de padrões: {points}");
@@ -107,7 +134,7 @@ public class DetectPatternsStep : IFlowStep
         _events.Pattern.TriggerPatternsDetected(matches, points);
         
         // 7. Log summary
-        LogPatternSummary(matches, points);
+        LogPatternSummary(matches, points, scoreResults);
         
         Debug.Log("[DetectPatternsStep] ????????????????????????????????????????");
         
@@ -115,7 +142,7 @@ public class DetectPatternsStep : IFlowStep
         yield return new WaitForSeconds(0.2f);
     }
     
-    private void LogPatternSummary(List<PatternMatch> matches, int totalPoints)
+    private void LogPatternSummary(List<PatternMatch> matches, int totalPoints, PatternScoreTotalResult scoreResults)
     {
         if (matches.Count == 0)
         {
@@ -136,19 +163,28 @@ public class DetectPatternsStep : IFlowStep
                 grouped[match.DisplayName] = 0;
                 decayInfo[match.DisplayName] = 0;
             }
+            
             grouped[match.DisplayName]++;
             
             if (match.DaysActive > decayInfo[match.DisplayName])
+            {
                 decayInfo[match.DisplayName] = match.DaysActive;
+            }
         }
         
+        // Log agrupado
         foreach (var kvp in grouped)
         {
-            string plural = kvp.Value > 1 ? "s" : "";
-            string decay = decayInfo[kvp.Key] > 1 ? $" [Decay: Dia {decayInfo[kvp.Key]}]" : "";
-            Debug.Log($"  ? {kvp.Value}x {kvp.Key}{plural}{decay}");
+            string decayText = decayInfo[kvp.Key] > 1 ? $" (Decay: Dia {decayInfo[kvp.Key]})" : "";
+            Debug.Log($"[DetectPatternsStep]   ? {kvp.Value}x {kvp.Key}{decayText}");
         }
         
-        Debug.Log($"  ? TOTAL: {totalPoints} pontos de padrões ?");
+        // Log de sinergia se houver
+        if (scoreResults != null && matches.Count > 1)
+        {
+            Debug.Log($"[DetectPatternsStep]   ?? Sinergia: {scoreResults.ScoreBeforeSynergy} ? {totalPoints} ({scoreResults.SynergyMultiplier:F2}x)");
+        }
+        
+        Debug.Log($"[DetectPatternsStep] TOTAL: {totalPoints} pontos de padrões");
     }
 }

@@ -105,17 +105,24 @@ public class AppCore : MonoBehaviour
         WeeklyGoalSystem = new WeeklyGoalSystem(GameLibrary, Events.Progression, _progressionSettings);
         ShopService = new ShopService(EconomyService, SaveManager, GameLibrary, Events);
         
-        // ⭐ NOVO: Pattern System (Onda 5 - ScriptableObject)
+        // ⭐ NOVO: Pattern System (Onda 5.5 - SOLID Refactor)
         if (_patternLibrary == null)
         {
             Debug.LogError("[AppCore] PatternLibrary não atribuída! Pattern System não funcionará.");
         }
         
-        PatternDetector = new PatternDetector(_patternLibrary);
+        // Criar Factory (type-safe, sem reflexão)
+        var patternFactory = new PatternFactory();
+        
+        // Criar Detector com Factory (Dependency Inversion)
+        PatternDetector = new PatternDetector(_patternLibrary, patternFactory);
+        
+        // Criar Calculator com Library
         PatternCalculator = new PatternScoreCalculator(GameLibrary);
+        
         // NOTA: PatternTracking é inicializado depois, quando RunData estiver disponível
         // Ver InitializePatternTracking() chamado pelo RunManager ou GameplayBootstrapper
-        Debug.Log("[AppCore] ✓ Pattern System inicializado (Detector + Calculator)");
+        Debug.Log("[AppCore] ✓ Pattern System inicializado (Onda 5.5 - SOLID)");
 
         // Injeta RunIdentityContext (imutável) em TODAS as estratégias
         // Grid será adicionado depois (via SetGridService)
