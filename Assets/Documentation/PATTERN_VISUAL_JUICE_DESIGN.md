@@ -31,20 +31,20 @@
 ### HUD Atual (Baseado em Screenshot)
 ```
 ???????????????????????????????????????????????????????????????
-? ??????                              ????????????????????   ?
+? ??????                                ????????????????????   ?
 ?                                      ? Meta: 115 / 500  ?   ?
 ?                                      ? Dia 5 - Semana 1 ?   ?
 ?                                      ? $10              ?   ?
 ?                                      ????????????????????   ?
-?                                                              ?
-?           ???????????????????????    ????????????????????  ?
-?           ?                     ?    ? Padrões: +0      ?  ? ? ÁREA POP-UPS
-?           ?      GRID 5x5       ?    ? (0 detectados)   ?  ?
-?           ?                     ?    ?                  ?  ?
-?           ?     (Centro)        ?    ? [ESPAÇO LIVRE]   ?  ? ? Tradições (futuro)
-?           ?                     ?    ?                  ?  ?
-?           ???????????????????????    ????????????????????  ?
-?                                                              ?
+?                                                             ?
+?           ???????????????????????    ????????????????????   ?
+?           ?                     ?    ? Padrões: +0      ?   ? ? ÁREA POP-UPS
+?           ?      GRID 5x5       ?    ? (0 detectados)   ?   ?
+?           ?                     ?    ?                  ?   ?
+?           ?     (Centro)        ?    ? [ESPAÇO LIVRE]   ?   ? ? Tradições (futuro)
+?           ?                     ?    ?                  ?   ?
+?           ???????????????????????    ????????????????????   ?
+?                                                             ?
 ?                    ???????????????                          ?
 ?                    ?   [Cartas]  ?                          ?
 ?                    ???????????????                          ?
@@ -55,21 +55,21 @@
 ### Nova Organização Visual
 ```
 ???????????????????????????????????????????????????????????????
-? ?????? [Combo x3 ??]              ????????????????????   ? ? Combo aparece aqui
+? ?????? [Combo x3 ??]                  ????????????????????   ? ? Combo aparece aqui
 ?                                      ? Meta: 115 / 500  ?   ?
 ?                                      ? Dia 5 - Semana 1 ?   ?
 ?                                      ? $10              ?   ?
 ?                                      ????????????????????   ?
-?                                                              ?
-?           ???????????????????????    ????????????????????  ?
-?           ?  [? LINHA! ?]     ?    ? Padrões: +45     ?  ? ? Pop-up aqui
-?           ?      GRID 5x5       ?    ? (3 detectados)   ?  ?
-?           ?   (Com Highlight)   ?    ?                  ?  ?
-?           ?   [Aura Sinergia]   ?    ? [Tradições]      ?  ? ? Futuro
-?           ?                     ?    ?                  ?  ?
-?           ???????????????????????    ????????????????????  ?
-?                 ?                                            ?
-?          [Partículas]                                        ?
+?                                                             ?
+?           ???????????????????????    ????????????????????   ?
+?           ?  [? LINHA! ?]     ?   ? Padrões: +45     ?   ? ? Pop-up aqui
+?           ?      GRID 5x5       ?    ? (3 detectados)   ?   ?
+?           ?   (Com Highlight)   ?    ?                  ?   ?
+?           ?   [Aura Sinergia]   ?    ? [Tradições]      ?   ? ? Futuro
+?           ?                     ?    ?                  ?   ?
+?           ???????????????????????    ????????????????????   ?
+?                 ?                                           ?
+?          [Partículas]                                       ?
 ?                    ???????????????                          ?
 ?                    ?   [Cartas]  ?                          ?
 ?                    ???????????????                          ?
@@ -348,42 +348,104 @@ GameObject recreationPrefab
 ### Estrutura de Arquivos
 ```
 Assets/Scripts/UI/Patterns/Visual/
+??? Core/
+?   ??? PatternVisualConfig.cs         ? Configuração centralizada (SO)
+?   ??? VisualQueueSystem.cs           ? Fila de priorização de eventos
+?   ??? PatternObjectPool.cs           ? Pooling centralizado (pop-ups, partículas)
 ??? PatternHighlightController.cs      ? Highlights de slots
 ??? PatternTextPopupController.cs      ? Pop-ups "LINHA!"
-??? GridBreathingController.cs         ? Animação do grid
+??? GridBreathingController.cs         ? Animação do grid (com priority system)
 ??? FarmerDiaryPanel.cs                ? Tabela do fazendeiro
 ??? PatternComboCounter.cs             ? Combo display
 ??? PatternSynergyVisual.cs            ? Explosion + aura
-??? PatternParticleManager.cs          ? Gerenciador de partículas
+??? PatternParticleManager.cs          ? Gerenciador de partículas (pooling)
 ```
 
 ### Event-Driven (SOLID)
-Todos os componentes escutam `PatternEvents`:
-- `OnPatternsDetected(matches, totalPoints)` ? Trigger visuals
+Todos os componentes escutam `PatternEvents` e **SEMPRE fazem unsubscribe em OnDestroy/OnDisable**:
+
+```csharp
+private void OnEnable()
+{
+    AppCore.Instance?.Events.Pattern.OnPatternsDetected += HandlePatternsDetected;
+}
+
+private void OnDisable()
+{
+    if (AppCore.Instance != null)
+    {
+        AppCore.Instance.Events.Pattern.OnPatternsDetected -= HandlePatternsDetected;
+    }
+}
+```
+
+**Eventos:**
+- `OnPatternsDetected(matches, totalPoints)` ? Trigger visuals (via queue)
 - `OnPatternDecayApplied(match, days, multiplier)` ? Decay warning
 - `OnPatternRecreated(match)` ? Recreation celebration
 
-**Nenhum acoplamento direto entre componentes!**
+**?? CRITICAL:** Nenhum acoplamento direto entre componentes! Tudo via eventos.
 
 ---
 
 ## ?? PRIORIZAÇÃO DE IMPLEMENTAÇÃO
 
+### Sprint 0 - Fundação (1-2 horas) **[NOVO]**
+0.1. ? **PatternVisualConfig.cs** (ScriptableObject centralizado)
+0.2. ? **PatternObjectPool.cs** (Pooling system)
+0.3. ? **VisualQueueSystem.cs** (Event queue com prioridades)
+
+**Objetivo:** Infraestrutura sólida antes de features visuais.
+
+---
+
 ### Sprint 1 - Core Juice (2-3 horas)
 1. ? **PatternHighlightController** - Impacto visual máximo
+   - Integrar com VisualQueueSystem
+   - Usar PatternObjectPool para highlights temporários
+   - Implementar decay threshold
 2. ? **PatternTextPopupController** - Clareza de feedback
+   - Pooling de TextMeshPro prefabs
+   - Queue sequencial via VisualQueueSystem
 3. ? **GridBreathingController** - Vida ao grid
+   - Priority system (Pattern > Harvest > Plant)
+   - AnimationCurve customizável
+
+---
 
 ### Sprint 2 - Information Clarity (2-3 horas)
 4. ? **FarmerDiaryPanel** - Tabela do fazendeiro (new flow)
+   - Integrar PatternScoreTotalResult metadata
+   - ESC to close + confirmation button
 5. ? **Decay Warning Visual** - Integrar com highlights
+   - Threshold configurável (apenas padrões importantes)
+   - Gradiente sutil ? crítico
+
+---
 
 ### Sprint 3 - Polish & Special FX (2-3 horas)
 6. ? **PatternComboCounter** - Streak tracking
+   - Tracking em RunData
+   - Visual tiers (white ? gold ? purple)
 7. ? **PatternSynergyVisual** - Explosion + aura
+   - Intensidade escalável (2+ ? 4+ ? 6+)
+   - Pooling de particle systems
 8. ? **PatternParticleManager** - Sparkles stylized
+   - Performance budget system
+   - LOD scaling automático
 
-**Total estimado:** 6-9 horas de implementação
+---
+
+### Sprint 4 - Polish & Testing (1-2 horas) **[NOVO]**
+9. ? **Debug Mode** - Ferramentas de teste
+   - PatternVisualConfig debug flags
+   - Performance metrics overlay
+10. ? **Edge Case Testing** - Garantir robustez
+    - Combo persistence
+    - Decay + Recreation bonus
+    - Memory leak checks (profiler)
+
+**Total estimado:** 8-12 horas de implementação (com fundação + polish)
 
 ---
 
@@ -398,6 +460,294 @@ Todos os componentes escutam `PatternEvents`:
 
 ---
 
+## ?? CONSIDERAÇÕES CRÍTICAS & SOLUÇÕES
+
+### 1?? Visual Queue System - Evitar Sobrecarga Visual
+
+**PROBLEMA:** Múltiplos padrões detectados ao mesmo tempo = highlights + pop-ups + sinergia + partículas = confusão.
+
+**SOLUÇÃO: VisualQueueSystem.cs**
+```csharp
+public enum VisualEventPriority
+{
+    Critical = 0,    // Sinergia, Recreation Bonus
+    High = 1,        // Highlights de padrões Tier 3-4
+    Normal = 2,      // Pop-ups, Highlights Tier 1-2
+    Low = 3          // Partículas ambientais
+}
+
+// Enfileira eventos e processa sequencialmente
+public class VisualQueueSystem : MonoBehaviour
+{
+    private Queue<VisualEvent> _eventQueue;
+    private bool _isProcessing;
+    
+    public void Enqueue(VisualEvent visualEvent)
+    {
+        // Ordena por prioridade antes de enfileirar
+        // Critical events podem interromper Low priority
+    }
+    
+    private IEnumerator ProcessQueue()
+    {
+        // Processa sequencialmente com delays configuráveis
+        // Agrupa eventos similares (ex: 5 highlights ? 1 burst)
+    }
+}
+```
+
+**Benefícios:**
+- Evita explosão visual simultânea
+- Agrupa eventos similares (5 highlights ? 1 sequência fluida)
+- Jogador consegue processar informação
+
+---
+
+### 2?? Grid Breathing Priority System
+
+**PROBLEMA:** Plant + Harvest + Pattern trigger ao mesmo tempo = animação caótica.
+
+**SOLUÇÃO: Priority Queue na GridBreathingController**
+```csharp
+private enum ReactionPriority
+{
+    Pattern = 0,     // Prioridade máxima
+    Harvest = 1,     // Média
+    Plant = 2        // Baixa
+}
+
+private void TriggerReaction(ReactionType type)
+{
+    // Se já há reação ativa, só sobrescreve se priority maior
+    if (_activeReaction != null && type.Priority > _activeReaction.Priority)
+    {
+        return; // Ignora reação de menor prioridade
+    }
+    
+    // Cancela animação anterior suavemente
+    StopCurrentReaction();
+    StartCoroutine(PlayReaction(type));
+}
+```
+
+**Regra:** Pattern > Harvest > Plant. Padrão sempre "vence".
+
+---
+
+### 3?? Decay Visual Threshold
+
+**PROBLEMA:** Muitos padrões com decay ? grid vira "red mess" confuso.
+
+**SOLUÇÃO: Destacar apenas padrões importantes**
+```csharp
+[Header("Decay Visual Threshold")]
+bool onlyHighlightImportantDecay = true;
+int importantDecayThreshold = 30;        // Apenas padrões > 30pts
+int criticalDecayDaysThreshold = 4;      // Dia 4+ sempre mostra
+
+private bool ShouldShowDecayWarning(PatternMatch match)
+{
+    if (!onlyHighlightImportantDecay) return match.DaysActive > 1;
+    
+    // Mostra decay apenas se:
+    return match.BaseScore >= importantDecayThreshold ||  // Padrão valioso
+           match.DaysActive >= criticalDecayDaysThreshold; // Crítico
+}
+```
+
+**Benefício:** Foco visual apenas no que importa.
+
+---
+
+### 4?? Object Pooling Centralizado
+
+**PROBLEMA:** Instanciar/Destruir prefabs repetidamente = GC spikes.
+
+**SOLUÇÃO: PatternObjectPool.cs (Singleton)**
+```csharp
+public class PatternObjectPool : MonoBehaviour
+{
+    private Dictionary<string, Queue<GameObject>> _pools;
+    
+    [Header("Pre-Warm")]
+    int popupPoolSize = 5;
+    int particlePoolSize = 20;
+    
+    private void Awake()
+    {
+        // Pre-instancia objetos comuns
+        PreWarmPool("PopupText", popupPrefab, popupPoolSize);
+        PreWarmPool("Sparkles", sparklesPrefab, particlePoolSize);
+    }
+    
+    public GameObject Get(string poolKey)
+    {
+        // Retorna objeto ativo ou cria novo se pool vazio
+    }
+    
+    public void Return(string poolKey, GameObject obj)
+    {
+        // Desativa e retorna ao pool
+        obj.SetActive(false);
+        _pools[poolKey].Enqueue(obj);
+    }
+}
+```
+
+**Configurável no Inspector:**
+- Tamanhos de pool ajustáveis
+- Pre-warm opcional (spawn no Awake)
+- Auto-grow se pool esvaziar
+
+---
+
+### 5?? Memory Leak Prevention
+
+**PROBLEMA:** Event subscriptions não removidas = memory leaks.
+
+**SOLUÇÃO: Template padrão para TODOS os controllers**
+```csharp
+public class ExampleController : MonoBehaviour
+{
+    private void OnEnable()
+    {
+        SubscribeToEvents();
+    }
+    
+    private void OnDisable()
+    {
+        UnsubscribeFromEvents();
+    }
+    
+    private void OnDestroy()
+    {
+        // Double-check unsubscribe
+        UnsubscribeFromEvents();
+    }
+    
+    private void SubscribeToEvents()
+    {
+        if (AppCore.Instance?.Events?.Pattern != null)
+        {
+            AppCore.Instance.Events.Pattern.OnPatternsDetected += HandlePatterns;
+        }
+    }
+    
+    private void UnsubscribeFromEvents()
+    {
+        if (AppCore.Instance?.Events?.Pattern != null)
+        {
+            AppCore.Instance.Events.Pattern.OnPatternsDetected -= HandlePatterns;
+        }
+    }
+}
+```
+
+**? Checklist:** OnEnable ? Subscribe | OnDisable + OnDestroy ? Unsubscribe
+
+---
+
+### 6?? HUD Visual Hierarchy
+
+**PROBLEMA:** Combo + Pop-ups + Padrões + Sinergia ao mesmo tempo = overload.
+
+**SOLUÇÃO: Escalonamento de Importância**
+```
+Prioridade Visual (Z-order / Timing):
+1. Tabela do Fazendeiro (fullscreen, bloqueia tudo)
+2. Sinergia Aura (background layer, não obstrui)
+3. Pop-ups de Padrão (texto grande, centro-direita)
+4. Combo Counter (discreto, canto)
+5. Highlights (grid layer, integrado)
+6. Partículas (lowest, decorativo)
+```
+
+**Configuração Inspector:**
+```csharp
+[Header("Sorting Layers")]
+int highlightLayer = 5;
+int popupLayer = 10;
+int comboLayer = 8;
+int synergyLayer = 3;
+int particleLayer = 1;
+```
+
+**Regra:** Elementos que bloqueiam interação (Tabela) têm prioridade absoluta.
+
+---
+
+### 7?? Particle Performance Budget
+
+**PROBLEMA:** Combos + Sinergia + Recreation disparam 100+ partículas = framerate drop.
+
+**SOLUÇÃO: Budget System**
+```csharp
+[Header("Performance Budget")]
+int maxActiveParticles = 50;            // Hard limit
+int maxParticlesPerBurst = 20;          // Por evento
+float particleLOD = 1.0f;               // 1.0 = full, 0.5 = half
+
+private void SpawnParticles(int amount)
+{
+    // Respect budget
+    int currentActive = CountActiveParticles();
+    int available = maxActiveParticles - currentActive;
+    int toSpawn = Mathf.Min(amount, available);
+    
+    // LOD scaling
+    toSpawn = Mathf.RoundToInt(toSpawn * particleLOD);
+    
+    for (int i = 0; i < toSpawn; i++)
+    {
+        SpawnSingleParticle();
+    }
+}
+```
+
+**Configurável:** Ajustar budget se FPS < 30 (auto-scale opcional).
+
+---
+
+### 8?? Edge Cases - Combo & Sinergia
+
+**EDGE CASE 1:** Combo se mantém por dias sem padrões?
+- **FIX:** Combo reseta se `patternCount == 0` por 1 dia completo.
+
+**EDGE CASE 2:** Decay em sinergia múltipla mostra valores errados?
+- **FIX:** `PatternScoreTotalResult` já calcula corretamente (ScoreBeforeSynergy vs Total).
+
+**EDGE CASE 3:** Recreation bonus + Decay no mesmo padrão?
+- **FIX:** Bonus só aplica no primeiro dia (DaysActive == 1 && HasRecreationBonus).
+
+**EDGE CASE 4:** Grid breathing acumula pulses infinitamente?
+- **FIX:** Priority system cancela animação anterior antes de iniciar nova.
+
+---
+
+## ?? DEBUG MODE
+
+**PatternVisualConfig.cs (ScriptableObject centralizado)**
+```csharp
+[Header("Debug Mode")]
+public bool debugMode = false;
+public bool showTierColors = true;          // Mostra cor sem animação
+public bool logVisualEvents = false;        // Console logs de eventos
+public bool disablePooling = false;         // Força instanciar sempre (testar GC)
+public bool freezeAnimations = false;       // Pausa animações (testar estados)
+public bool showPerformanceMetrics = true;  // FPS, particle count, pool usage
+
+[Header("Visual Overrides (Debug)")]
+public bool forceDecayVisual = false;       // Testa Dia 4+ em qualquer padrão
+public int forceTierOverride = 0;           // 0 = normal, 1-4 = força tier
+```
+
+**Uso:**
+- **Cena de teste:** Ativa debugMode ? Spawna padrões com configurações específicas
+- **Performance profiling:** Desativa pooling ? Mede impact
+- **Visual tuning:** Freeze animations ? Ajusta cores/posições frame-a-frame
+
+---
+
 ## ?? FUTURO (Fora de Escopo)
 
 - Click em slot ? Mostra breakdown individual do padrão
@@ -408,6 +758,34 @@ Todos os componentes escutam `PatternEvents`:
 
 ---
 
-**Versão:** 1.0  
+**Versão:** 1.1  
 **Última Atualização:** 2026-01-20  
 **Status:** Ready for Implementation ??
+
+---
+
+## ?? CHANGELOG
+
+### v1.1 (2026-01-20) - Refinamento Arquitetural
+**Adicionado:**
+- ? Visual Queue System (priorização de eventos)
+- ? Grid Breathing Priority System (Pattern > Harvest > Plant)
+- ? Decay Visual Threshold (foco em padrões importantes)
+- ? Object Pooling Centralizado (PatternObjectPool)
+- ? Memory Leak Prevention (template de subscribe/unsubscribe)
+- ? HUD Visual Hierarchy (sorting layers)
+- ? Particle Performance Budget (LOD scaling)
+- ? Edge Cases documentados e solucionados
+- ? Debug Mode (PatternVisualConfig SO)
+- ? Sprint 0 (fundação) e Sprint 4 (polish/testing)
+
+**Melhorado:**
+- Estrutura de arquivos com pasta Core/ (config, queue, pooling)
+- Priorização de implementação (8-12h ao invés de 6-9h)
+- Event-driven architecture com checklist de cleanup
+- Considerações de performance e robustez
+
+### v1.0 (2026-01-20) - Versão Inicial
+- Design completo de 8 features visuais
+- HUD layout definido
+- Priorização em 3 sprints
