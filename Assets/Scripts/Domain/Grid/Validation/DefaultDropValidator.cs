@@ -43,10 +43,21 @@ public class DefaultDropValidator : IDropValidator
             return false;
         }
 
-        // Validação 2: Slot desbloqueado
-        if (!_gridService.IsSlotUnlocked(slotIndex))
+        // EXCEÇÃO: Carta de expansão pode ser usada em slots bloqueados
+        bool isExpansionCard = cardData.Type == CardType.Expansion;
+        bool isSlotLocked = !_gridService.IsSlotUnlocked(slotIndex);
+
+        if (isExpansionCard && isSlotLocked)
         {
-            _lastErrorMessage = "Este slot esta bloqueado. Desbloqueie primeiro.";
+            // Carta de expansão em slot bloqueado é válida
+            // GridService vai validar se pode desbloquear
+            return _gridService.CanReceiveCard(slotIndex, cardData);
+        }
+
+        // Validação 2: Slot desbloqueado (para cartas normais)
+        if (isSlotLocked)
+        {
+            _lastErrorMessage = "Este slot esta bloqueado. Use uma carta de expansao para desbloquear.";
             return false;
         }
 

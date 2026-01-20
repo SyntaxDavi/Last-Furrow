@@ -29,8 +29,9 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     [Header("Componentes Visuais")]
     [SerializeField] private SpriteRenderer _baseRenderer;
     [SerializeField] private SpriteRenderer _plantRenderer;
-    [SerializeField] private SpriteRenderer _highlightRenderer;
+    [SerializeField] private SpriteRenderer _stateOverlayRenderer;
     [SerializeField] private SpriteRenderer _gameStateOverlayRenderer;
+    [SerializeField] private SpriteRenderer _highlightRenderer;
 
     [Header("Interacao")]
     [SerializeField] private int _interactionPriority = 0;
@@ -89,6 +90,12 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
             // Aplica estado inicial
             HandleGameStateChanged(_context.GameStateManager.CurrentState);
         }
+
+        if (_context != null && _context.GridEvents != null)
+        {
+            // Escuta evento de análise (final do dia)
+            _context.GridEvents.OnAnalyzeSlot += HandleAnalyzeSlot;
+        }
     }
 
     private void UnsubscribeFromEvents()
@@ -96,6 +103,11 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         if (_context != null && _context.GameStateEvents != null)
         {
             _context.GameStateEvents.OnStateChanged -= HandleGameStateChanged;
+        }
+
+        if (_context != null && _context.GridEvents != null)
+        {
+            _context.GridEvents.OnAnalyzeSlot -= HandleAnalyzeSlot;
         }
     }
 
@@ -127,12 +139,13 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     /// <summary>
     /// Atualiza visual do slot (Manager Push pattern).
     /// </summary>
-    public void SetVisualState(Sprite plantSprite, bool isWatered)
+    public void SetVisualState(Sprite plantSprite, bool isWatered, bool isMature = false, bool isWithered = false)
     {
         if (_isLocked) return;
 
         // Layer 1: Plant Sprite
-        if (plantSprite != null)
+        bool hasPlant = plantSprite != null;
+        if (hasPlant)
         {
             _plantRenderer.sprite = plantSprite;
             _plantRenderer.enabled = true;
@@ -148,8 +161,35 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
             ? _context.VisualConfig.wetColor 
             : _context.VisualConfig.dryColor;
 
+        // Layer 2: State Overlay (mature/withered/planted)
+        if (hasPlant && _stateOverlayRenderer != null)
+        {
+            if (isMature)
+            {
+                // Verde forte - pronto para colher
+                _stateOverlayRenderer.enabled = true;
+                _stateOverlayRenderer.color = _context.VisualConfig.matureOverlay;
+            }
+            else if (isWithered)
+            {
+                // Amarelo - planta murcha
+                _stateOverlayRenderer.enabled = true;
+                _stateOverlayRenderer.color = _context.VisualConfig.witheredOverlay;
+            }
+            else
+            {
+                // Verde suave - tem algo plantado (crescendo)
+                _stateOverlayRenderer.enabled = true;
+                _stateOverlayRenderer.color = _context.VisualConfig.plantedOverlay;
+            }
+        }
+        else if (_stateOverlayRenderer != null)
+        {
+            _stateOverlayRenderer.enabled = false;
+        }
+
         if (_showDebugLogs)
-            Debug.Log($"[GridSlotView {_index}] Visual: sprite={plantSprite != null}, water={isWatered}");
+            Debug.Log($"[GridSlotView {_index}] Visual: plant={hasPlant}, water={isWatered}, mature={isMature}, withered={isWithered}");
     }
 
     /// <summary>
@@ -255,6 +295,35 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _highlightRenderer.enabled = false;
     }
 
+    /// <summary>
+    /// Pulse rosa/branco quando slot está sendo analisado (final do dia).
+    /// </summary>
+    private void HandleAnalyzeSlot(int slotIndex)
+    {
+        if (slotIndex != _index) return;
+
+        if (_showDebugLogs)
+            Debug.Log($"[GridSlotView {_index}] Analisando slot...");
+
+        StartCoroutine(PulseAnalyzing());
+    }
+
+    private IEnumerator PulseAnalyzing()
+    {
+        if (_highlightRenderer == null) yield break;
+
+        Color originalColor = _highlightRenderer.color;
+        bool wasEnabled = _highlightRenderer.enabled;
+
+        _highlightRenderer.enabled = true;
+        _highlightRenderer.color = _context.VisualConfig.analyzingPulse;
+
+        yield return new WaitForSeconds(_context.VisualConfig.pulseDuration);
+
+        _highlightRenderer.enabled = wasEnabled;
+        _highlightRenderer.color = originalColor;
+    }
+
     // --- CONFIGURAÇÃO AUTOMÁTICA (SETUP) ---
 
     private void ConfigureRenderers()
@@ -267,17 +336,24 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
             _plantRenderer = CreateChildSprite("PlantSprite", 1);
         }
 
-        if (_highlightRenderer == null || _highlightRenderer == _baseRenderer)
+        if (_stateOverlayRenderer == null || _stateOverlayRenderer == _baseRenderer)
         {
-            _highlightRenderer = CreateChildSprite("HighlightOverlay", 3);
-            _highlightRenderer.sprite = _baseRenderer.sprite;
+            _stateOverlayRenderer = CreateChildSprite("StateOverlay", 2);
+            _stateOverlayRenderer.sprite = _baseRenderer.sprite;
+            _stateOverlayRenderer.enabled = false;
         }
 
         if (_gameStateOverlayRenderer == null || _gameStateOverlayRenderer == _baseRenderer)
         {
-            _gameStateOverlayRenderer = CreateChildSprite("GameStateOverlay", 2);
+            _gameStateOverlayRenderer = CreateChildSprite("GameStateOverlay", 3);
             _gameStateOverlayRenderer.sprite = _baseRenderer.sprite;
             _gameStateOverlayRenderer.enabled = false;
+        }
+
+        if (_highlightRenderer == null || _highlightRenderer == _baseRenderer)
+        {
+            _highlightRenderer = CreateChildSprite("HighlightOverlay", 4);
+            _highlightRenderer.sprite = _baseRenderer.sprite;
         }
     }
 

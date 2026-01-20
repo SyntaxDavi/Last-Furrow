@@ -6,7 +6,6 @@ public class GameplayBootstrapper : MonoBehaviour
     [SerializeField] private GameCameraController _gameCamera;
     [SerializeField] private GridManager _gridManager;
     [SerializeField] private PlayerInteraction _playerInteraction;
-    [SerializeField] private GridFeedbackController _feedbackController;
     [SerializeField] private HandManager _handManager;
 
     private IGridService _gridService;
@@ -50,16 +49,7 @@ public class GameplayBootstrapper : MonoBehaviour
         _gridService.OnDataDirty += () => AppCore.Instance.SaveManager.SaveGame();
 
         // 4. Injeta nos consumidores da cena
-        if (_gridManager != null)
-        {
-            // REMOVIDO: GridVisualBootstrapper agora inicializa GridManager via Initialize()
-            // _gridManager.Configure(_gridService, library);
-        }
-
-        if (_feedbackController != null && _gridManager != null)
-        {
-            _feedbackController.Configure(_gridManager);
-        }
+        // GridManager agora é inicializado por GridVisualBootstrapper
 
         if (_handManager != null)
         {

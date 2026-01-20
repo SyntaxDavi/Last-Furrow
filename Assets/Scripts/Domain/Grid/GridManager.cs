@@ -243,13 +243,19 @@ public class GridManager : MonoBehaviour
 
         Sprite spriteToRender = null;
         bool isWatered = false;
+        bool isMature = false;
+        bool isWithered = false;
 
         if (state != null)
         {
-            isWatered = state.IsWatered; 
+            isWatered = state.IsWatered;
+            isWithered = state.IsWithered;
 
             if (state.CropID.IsValid) 
             {
+                // Planta está madura se atingiu os dias necessários
+                isMature = (state.CurrentGrowth >= state.DaysMature) && !isWithered;
+
                 if (_context.Library != null)
                 {
                     if (_context.Library.TryGetCrop(state.CropID, out var cropData))
@@ -268,9 +274,9 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        view.SetVisualState(spriteToRender, isWatered);
+        view.SetVisualState(spriteToRender, isWatered, isMature, isWithered);
 
         if (_showDebugLogs)
-            Debug.Log($"[GridManager] Slot {index}: sprite={spriteToRender != null}, water={isWatered}");
+            Debug.Log($"[GridManager] Slot {index}: sprite={spriteToRender != null}, water={isWatered}, mature={isMature}, withered={isWithered}");
     }
 }

@@ -33,6 +33,9 @@ public class GridVisualConfig : ScriptableObject
     [Tooltip("Overlay de planta murcha (amarelo claro seco)")]
     public Color witheredOverlay = new Color(1f, 1f, 0.7f, 0.3f);
     
+    [Tooltip("Overlay sutil quando tem planta crescendo (verde muito suave)")]
+    public Color plantedOverlay = new Color(0.5f, 1f, 0.5f, 0.15f);
+    
     [Tooltip("Overlay quando grid está desabilitado (Shopping/Weekend)")]
     public Color disabledOverlay = new Color(0.5f, 0.5f, 0.5f, 0.5f);
 
