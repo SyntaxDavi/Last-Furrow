@@ -1195,28 +1195,37 @@ Cada onda representa um **sprint completo e funcional**. Se precisar parar, o si
 
 ## 🌊 **ONDA 1: MVP FUNCIONAL (Sprint 1 - ~3-5 dias)**
 
+### **🏷️ STATUS: ✅ COMPLETA (2025-01-XX)**
+
+**Branch:** `feature/pattern-system-wave-1`  
+**Tag:** `wave-1-complete`  
+**Commit:** `feat(patterns): Core infrastructure + 5 padrões (Onda 1)`
+
 ### **🎯 Objetivo:**
 Sistema de detecção básico funcionando **sem decay**, com **5 padrões Tier 1-2**, integrado ao pipeline de resolução diária.
 
 ### **✅ Entregáveis:**
 
 #### **1.1 - Core Infrastructure**
-- [ ] `IGridPattern.cs` (interface base)
-- [ ] `PatternMatch.cs` (DTO simples, sem DaysActive ainda)
-- [ ] `PatternDetector.cs` (stateless, hardcoded patterns)
-- [ ] `PatternScoreCalculator.cs` (sem decay, fórmula básica)
-- [ ] `PatternEvents.cs` (event bus)
+- [x] `IGridPattern.cs` (interface base)
+- [x] `PatternMatch.cs` (DTO simples, sem DaysActive ainda)
+- [x] `PatternDetector.cs` (stateless, hardcoded patterns)
+- [x] `PatternScoreCalculator.cs` (sem decay, fórmula básica)
+- [x] `PatternEvents.cs` (event bus)
+- [x] `PatternHelper.cs` (utilitários de navegação 2D) ← ADICIONADO
 
 #### **1.2 - GameEvents Integration**
-- [ ] Adicionar `PatternEvents` em `GameEvents.cs`
-- [ ] Testar evento `OnPatternDetected`
+- [x] Adicionar `PatternEvents` em `GameEvents.cs`
+- [x] Testar evento `OnPatternDetected`
 
 #### **1.3 - 5 Padrões Essenciais (Tier 1-2)**
-- [ ] `AdjacentPairPattern.cs` (Par Adjacente - 5 pts)
-- [ ] `TrioLinePattern.cs` (Trio em Linha - 10 pts)
-- [ ] `CornerPattern.cs` (Cantinho - 8 pts)
-- [ ] `FullLinePattern.cs` (Linha Completa - 25 pts)
-- [ ] `CrossPattern.cs` (Cruz Simples - 30 pts)
+- [x] `AdjacentPairPattern.cs` (Par Adjacente - 5 pts)
+- [x] `TrioLinePattern.cs` (Trio em Linha - 10 pts)
+- [x] `GridCornerPattern.cs` (Cantinho - 8 pts) ← Renomeado para evitar conflito
+- [x] `FullLinePattern.cs` (Linha Completa - 25 pts)
+- [x] `GridCrossPattern.cs` (Cruz Simples - 30 pts) ← Renomeado para evitar conflito
+
+**NOTA:** `CornerPattern` e `CrossPattern` foram renomeados para `GridCornerPattern` e `GridCrossPattern` para evitar conflito com classes existentes em `UnlockPatterns/`.
 
 **Por que esses 5?**
 - Cobrem range de dificuldade (fácil → médio)
@@ -1225,9 +1234,66 @@ Sistema de detecção básico funcionando **sem decay**, com **5 padrões Tier 1
 - Score variado (5-30 pts) para testar cálculo
 
 #### **1.4 - DailyResolution Integration (CRÍTICO)**
-- [ ] Criar `DetectPatternsStep.cs` (novo IFlowStep)
-- [ ] Adicionar ao pipeline APÓS `GrowGridStep`
-- [ ] Testar ordem: Grow → Detect → Score → Advance
+- [x] Criar `DetectPatternsStep.cs` (novo IFlowStep)
+- [x] Adicionar ao pipeline APÓS `GrowGridStep`
+- [x] Testar ordem: Grow → Detect → Score → Advance
+
+#### **1.5 - AppCore Setup**
+- [x] Adicionar `PatternDetector` e `PatternScoreCalculator` ao AppCore
+- [x] Propriedades públicas para acesso
+
+#### **1.6 - Logs de Debug**
+- [x] Log cada padrão detectado (tipo, slots, score)
+- [x] Log score final com breakdown
+- [x] Log resumo agrupado por tipo
+
+#### **1.7 - BONUS (Adiantado da Onda 2)**
+- [x] Crop Value multiplier implementado
+- [x] Maturity bonus implementado
+- [x] Soft Cap de Sinergia logarítmica implementado
+
+### **🧪 Resultados do Playtest (10 dias):**
+```
+[PatternScoreCalculator] Sinergia (27 padrões): 1,95x
+[PatternScoreCalculator] === TOTAL: 728 pontos de padrões ===
+[DetectPatternsStep] Score semanal: 871 + 728 = 1599
+
+RESUMO DE PADRÕES:
+  ✓ 15x Par Adjacentes
+  ✓ 8x Trio em Linhas
+  ✓ 1x Cantinho
+  ✓ 2x Linha Completas
+  ✓ 1x Cruz Simples
+```
+
+### **📁 Arquivos Criados:**
+```
+Assets/Scripts/Domain/Patterns/
+├── Core/
+│   ├── IGridPattern.cs
+│   ├── PatternMatch.cs
+│   ├── PatternHelper.cs
+│   ├── PatternDetector.cs
+│   └── PatternScoreCalculator.cs
+├── Implementations/
+│   ├── AdjacentPairPattern.cs
+│   ├── TrioLinePattern.cs
+│   ├── GridCornerPattern.cs (CornerPattern.cs)
+│   ├── FullLinePattern.cs
+│   └── GridCrossPattern.cs (CrossPattern.cs)
+└── Events/
+    └── PatternEvents.cs
+
+Assets/Scripts/Flow/Steps/
+└── DetectPatternsStep.cs
+```
+
+### **📁 Arquivos Modificados:**
+- `Assets/Scripts/Infrastructure/Events/GameEvents.cs` - Adicionado PatternEvents
+- `Assets/Scripts/App/AppCore.cs` - Adicionado PatternDetector + PatternCalculator
+- `Assets/Scripts/Progression/DailyResolutionSystem.cs` - Adicionado DetectPatternsStep ao pipeline
+
+---
 
 **Detalhes do DetectPatternsStep:**
 ```csharp
@@ -1319,6 +1385,8 @@ Console:
 
 ## 🌊 **ONDA 2: FEEDBACK VISUAL + TIER 2 COMPLETO (Sprint 2 - ~2-3 dias)**
 
+### **🏷️ STATUS: ⏳ EM PROGRESSO**
+
 ### **🎯 Objetivo:**
 Adicionar **padrões restantes Tier 2** + **UI básica** (logs visuais, toast notification)
 
@@ -1335,10 +1403,10 @@ Adicionar **padrões restantes Tier 2** + **UI básica** (logs visuais, toast no
 **⚠️ Nota sobre UI:**
 > UI complexa (popup de padrões, tabela completa, animações) será documentada em **arquivo separado** (`PATTERN_UI_DESIGN.md`). Por enquanto, apenas feedback mínimo.
 
-#### **2.3 - Refinamento de Score**
-- [ ] Implementar formula de Crop Value
-- [ ] Implementar bonus de Maturity
-- [ ] Implementar Soft Cap de Sinergia
+#### **2.3 - Refinamento de Score** ✅ JÁ IMPLEMENTADO NA ONDA 1
+- [x] Implementar formula de Crop Value ← Feito na Onda 1
+- [x] Implementar bonus de Maturity ← Feito na Onda 1
+- [x] Implementar Soft Cap de Sinergia ← Feito na Onda 1
 
 ### **🧪 Critérios de Aceitação (Onda 2):**
 ```
