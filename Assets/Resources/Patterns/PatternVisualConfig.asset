@@ -16,9 +16,9 @@ MonoBehaviour:
   tier2Color: {r: 0.2, g: 0.8, b: 0.2, a: 1}
   tier3Color: {r: 1, g: 0.84, b: 0, a: 1}
   tier4Color: {r: 0.8, g: 0.2, b: 1, a: 1}
-  pulseSpeed: 0.73
-  highlightDuration: 2.46
-  sequentialDelay: 0.363
+  pulseSpeed: 5
+  highlightDuration: 3
+  sequentialDelay: 0.5
   highlightPulseSpeed: 1.33
   highlightDelayBetween: 0.355
   highlightFadeDuration: 1.55

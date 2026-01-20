@@ -1286,6 +1286,7 @@ GameObject:
   m_Component:
   - component: {fileID: 434515747}
   - component: {fileID: 434515749}
+  - component: {fileID: 434515750}
   m_Layer: 0
   m_Name: GridSystem
   m_TagString: Untagged
@@ -1325,6 +1326,20 @@ MonoBehaviour:
   _gridContainer: {fileID: 413033043}
   _spacing: {x: 1.5, y: 1.1}
   _showDebugLogs: 1
+--- !u!114 &434515750
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 434515745}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd2841ae6531b9f4089106d7864e5d00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _slotScanDelay: 0.001
+  _gridManager: {fileID: 434515749}
 --- !u!1 &521356419
 GameObject:
   m_ObjectHideFlags: 0
@@ -6436,6 +6451,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1823516973}
   - component: {fileID: 1823516974}
+  - component: {fileID: 1823516975}
   m_Layer: 0
   m_Name: PatternVisualControllers
   m_TagString: Untagged
@@ -6472,6 +6488,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _config: {fileID: 11400000, guid: 0ce5f80d9d042f246974393c9aa66073, type: 2}
   _gridManager: {fileID: 434515749}
+--- !u!114 &1823516975
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1823516972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d5c3a0db9dde9d4bb87156d6f16b81c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1825262039
 GameObject:
   m_ObjectHideFlags: 0

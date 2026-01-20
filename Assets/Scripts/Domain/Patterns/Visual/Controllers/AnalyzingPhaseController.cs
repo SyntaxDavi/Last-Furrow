@@ -1,359 +1,234 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 /// <summary>
-/// Controller responsável pela ANALYZING PHASE - animação de análise dos slots.
+/// HARDCODE BRUTO - FAZ FUNCIONAR PRIMEIRO!
 /// 
-/// RESPONSABILIDADE:
-/// - Animar slots individualmente (levitação) ao serem analisados
-/// - Passar apenas por slots com plantas (otimizado)
-/// - Timing configurável via Inspector
-/// - Triggerar antes da detection de padrões
-/// 
-/// FLOW:
-/// Sleep ? Analyzing Phase (este controller) ? Pattern Detection ? Highlights ? Sinergia
-/// 
-/// FILOSOFIA: "O grid está sendo escaneado slot por slot"
-/// 
-/// ONDA 5.5 REFACTORED:
-/// - Cacheia slots (evita GetComponentsInChildren repetido)
-/// - Usa localPosition (funciona com hierarquia de Canvas)
-/// - Salva originalPosition de cada slot (reset correto)
-/// - Filtragem real de slots com plantas via GridSlotView.HasPlant()
-/// - Pulse rosa implementado via GridSlotView.TriggerAnalyzingPulse()
+/// O QUE FAZ:
+/// 1. Passa por cada slot do grid
+/// 2. SE encontrar 2 crops LADO A LADO ? PARA
+/// 3. FAZ os 2 slots BRILHAREM (cor verde)
+/// 4. MOSTRA pop-up "ADJACENT PAIR! +5"
+/// 5. Continua...
 /// </summary>
 public class AnalyzingPhaseController : MonoBehaviour
 {
-    [Header("Configuration")]
-    [SerializeField] private PatternVisualConfig _config;
-    
-    [Header("Grid Reference")]
-    [Tooltip("Referência ao GridManager para acessar slots")]
+    [Header("HARDCODE Settings")]
+    [SerializeField] private float _delayPerSlot = 0.3f;
+    [SerializeField] private float _highlightDuration = 2f;
     [SerializeField] private GridManager _gridManager;
     
-    [Header("Analyzing Settings")]
-    [Tooltip("Tempo de análise por slot (segundos)")]
-    [Range(0.05f, 1f)]
-    [SerializeField] private float _durationPerSlot = 0.2f;
-    
-    [Tooltip("Altura da levitação ao analisar (local space)")]
-    [Range(0.05f, 0.5f)]
-    [SerializeField] private float _levitationHeight = 0.1f;
-    
-    [Tooltip("Analisar apenas slots com plantas? (otimizado)")]
-    [SerializeField] private bool _onlyPlantsSlots = true;
-    
-    [Tooltip("Mostrar pulse rosa durante análise?")]
-    [SerializeField] private bool _showAnalyzingPulse = true;
-    
-    // Cache de slots (performance)
-    private List<GridSlotView> _cachedSlots;
-    
-    // Posições originais (para reset correto)
-    private Dictionary<GridSlotView, Vector3> _originalPositions;
-    
-    // Estado
-    private bool _isAnalyzing;
-    private Coroutine _analyzingCoroutine;
-    
-    private void Awake()
-    {
-        _originalPositions = new Dictionary<GridSlotView, Vector3>();
-    }
+    // Pop-up hardcode
+    [SerializeField] private TextMeshProUGUI _popupText;
+    [SerializeField] private CanvasGroup _popupCanvasGroup;
     
     private void Start()
     {
-        // Cachear slots no Start (evita GC em runtime)
-        CacheSlots();
+        if (_popupCanvasGroup != null)
+        {
+            _popupCanvasGroup.alpha = 0f;
+        }
     }
     
     /// <summary>
-    /// Cacheia slots para evitar GetComponentsInChildren repetido.
+    /// HARDCODE: Passa por cada slot, detecta par adjacente, MOSTRA VISUAL.
     /// </summary>
-    private void CacheSlots()
+    public IEnumerator AnalyzeGridHardcoded()
     {
+        Debug.Log("=== HARDCODE: Iniciando análise ===");
+        
         if (_gridManager == null)
         {
-            Debug.LogError("[AnalyzingPhaseController] GridManager não atribuído!");
-            return;
-        }
-        
-        _cachedSlots = new List<GridSlotView>();
-        var allSlots = _gridManager.GetComponentsInChildren<GridSlotView>();
-        
-        foreach (var slot in allSlots)
-        {
-            if (slot != null)
-            {
-                _cachedSlots.Add(slot);
-                
-                // Salvar posição original de cada slot
-                _originalPositions[slot] = slot.transform.localPosition;
-            }
-        }
-        
-        _config?.DebugLog($"[AnalyzingPhase] {_cachedSlots.Count} slots cacheados");
-    }
-    
-    /// <summary>
-    /// Inicia analyzing phase (chamado externamente).
-    /// </summary>
-    public void StartAnalyzing(System.Action onComplete = null)
-    {
-        if (_isAnalyzing)
-        {
-            _config?.DebugLog("[AnalyzingPhase] Já está analisando, ignorando...");
-            return;
-        }
-        
-        // Recachear slots se necessário
-        if (_cachedSlots == null || _cachedSlots.Count == 0)
-        {
-            CacheSlots();
-        }
-        
-        if (_analyzingCoroutine != null)
-        {
-            StopCoroutine(_analyzingCoroutine);
-        }
-        
-        _analyzingCoroutine = StartCoroutine(AnalyzingRoutine(onComplete));
-    }
-    
-    /// <summary>
-    /// Coroutine principal de analyzing.
-    /// </summary>
-    private IEnumerator AnalyzingRoutine(System.Action onComplete)
-    {
-        _isAnalyzing = true;
-        _config?.DebugLog("[AnalyzingPhase] INICIANDO análise dos slots...");
-        
-        // Obter slots para analisar (com filtro real)
-        var slotsToAnalyze = GetSlotsToAnalyze();
-        
-        if (slotsToAnalyze.Count == 0)
-        {
-            _config?.DebugLog("[AnalyzingPhase] Nenhum slot para analisar (filtro ativo)");
-            _isAnalyzing = false;
-            onComplete?.Invoke();
+            Debug.LogError("GridManager NULL!");
             yield break;
         }
         
-        _config?.DebugLog($"[AnalyzingPhase] Analisando {slotsToAnalyze.Count} slots...");
+        // Pegar TODOS os slots
+        var allSlots = _gridManager.GetComponentsInChildren<GridSlotView>();
         
-        // Analisar cada slot sequencialmente
-        foreach (var slotView in slotsToAnalyze)
+        Debug.Log($"Total de slots: {allSlots.Length}");
+        
+        // Passar por cada slot
+        for (int i = 0; i < allSlots.Length; i++)
         {
-            if (slotView != null)  // Safety check
-            {
-                yield return AnalyzeSingleSlot(slotView);
-            }
-        }
-        
-        _isAnalyzing = false;
-        _config?.DebugLog("[AnalyzingPhase] ANÁLISE CONCLUÍDA!");
-        
-        // Callback para próxima fase
-        onComplete?.Invoke();
-        
-        _analyzingCoroutine = null;
-    }
-    
-    /// <summary>
-    /// Retorna lista de slots para analisar (com filtragem real).
-    /// </summary>
-    private List<GridSlotView> GetSlotsToAnalyze()
-    {
-        var slots = new List<GridSlotView>();
-        
-        if (_cachedSlots == null) return slots;
-        
-        foreach (var slot in _cachedSlots)
-        {
-            if (slot == null) continue;  // Safety check
+            var slot = allSlots[i];
             
-            // Filtro real: apenas slots com plantas
-            if (_onlyPlantsSlots)
+            if (slot == null) continue;
+            
+            Debug.Log($"Analisando slot {i} (Index: {slot.SlotIndex})");
+            
+            // Levitar slot atual (cosmético)
+            yield return LevitateSlot(slot);
+            
+            // HARDCODE: Verificar se TEM CROP neste slot
+            bool hasCrop = slot.HasPlant();
+            
+            if (hasCrop)
             {
-                if (slot.HasPlant())
+                Debug.Log($"  ? Slot {i} TEM CROP!");
+                
+                // HARDCODE: Verificar se próximo slot TAMBÉM tem crop (par horizontal)
+                if (i + 1 < allSlots.Length)
                 {
-                    slots.Add(slot);
+                    var nextSlot = allSlots[i + 1];
+                    
+                    if (nextSlot != null && nextSlot.HasPlant())
+                    {
+                        Debug.Log($"  ? PAR ADJACENTE ENCONTRADO! Slots {i} e {i+1}");
+                        
+                        // FAZER BRILHAR OS 2 SLOTS (VERDE)
+                        StartCoroutine(HighlightSlotHardcoded(slot, Color.green));
+                        StartCoroutine(HighlightSlotHardcoded(nextSlot, Color.green));
+                        
+                        // MOSTRAR POP-UP
+                        StartCoroutine(ShowPopupHardcoded("ADJACENT PAIR!\n+5 pontos"));
+                        
+                        // PARAR aqui por um tempo (para player ver)
+                        yield return new WaitForSeconds(_highlightDuration);
+                        
+                        // Pular próximo slot (já foi processado)
+                        i++;
+                    }
                 }
             }
-            else
-            {
-                // Todos os slots
-                slots.Add(slot);
-            }
+            
+            // Delay antes do próximo slot
+            yield return new WaitForSeconds(_delayPerSlot);
         }
         
-        return slots;
+        Debug.Log("=== HARDCODE: Análise concluída ===");
     }
     
     /// <summary>
-    /// Analisa um único slot (levitação + pulse).
-    /// CORRIGIDO: Usa localPosition (funciona com Canvas/Grid hierarchy).
+    /// HARDCODE: Levita slot (cosmético).
     /// </summary>
-    private IEnumerator AnalyzeSingleSlot(GridSlotView slotView)
+    private IEnumerator LevitateSlot(GridSlotView slot)
     {
-        if (slotView == null) yield break;
-        
-        Transform slotTransform = slotView.transform;
-        
-        // Usar posição original salva (mais robusto)
-        Vector3 originalLocalPos = _originalPositions.ContainsKey(slotView)
-            ? _originalPositions[slotView]
-            : slotTransform.localPosition;
-        
-        float halfDuration = _durationPerSlot * 0.5f;
-        
-        // Trigger pulse rosa (se habilitado)
-        if (_showAnalyzingPulse && _config != null)
-        {
-            // Usar cor de analyzing pulse do GridVisualConfig
-            // TODO: GridVisualConfig precisa ter analyzingPulseColor
-            Color pulseColor = new Color(1f, 0.4f, 0.7f, 0.5f);  // Rosa placeholder
-            slotView.TriggerAnalyzingPulse(pulseColor, _durationPerSlot);
-        }
-        
-        // FASE 1: Subir (levitação) - USA LOCAL POSITION
-        float elapsed = 0f;
-        while (elapsed < halfDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / halfDuration;
-            
-            // EaseOut para subida suave
-            float easedT = 1f - Mathf.Pow(1f - t, 2f);
-            
-            float offsetY = Mathf.Lerp(0f, _levitationHeight, easedT);
-            slotTransform.localPosition = originalLocalPos + Vector3.up * offsetY;
-            
-            yield return null;
-        }
-        
-        // FASE 2: Descer (retorno) - USA LOCAL POSITION
-        elapsed = 0f;
-        Vector3 peakLocalPos = slotTransform.localPosition;
-        
-        while (elapsed < halfDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / halfDuration;
-            
-            // EaseIn para descida suave
-            float easedT = Mathf.Pow(t, 2f);
-            
-            slotTransform.localPosition = Vector3.Lerp(peakLocalPos, originalLocalPos, easedT);
-            
-            yield return null;
-        }
-        
-        // Garantir posição original
-        slotTransform.localPosition = originalLocalPos;
-        
-        _config?.DebugLog($"[AnalyzingPhase] Slot {slotView.SlotIndex} analisado");
-    }
-    
-    /// <summary>
-    /// Para analyzing phase (com reset suave).
-    /// </summary>
-    public void StopAnalyzing()
-    {
-        if (_analyzingCoroutine != null)
-        {
-            StopCoroutine(_analyzingCoroutine);
-            _analyzingCoroutine = null;
-        }
-        
-        _isAnalyzing = false;
-        
-        // CORREÇÃO: Verificar se GameObject está ativo antes de iniciar coroutine
-        // OnDestroy pode chamar isso quando GameObject já está inativo
-        if (gameObject.activeInHierarchy)
-        {
-            // Resetar posições de todos os slots (suavemente)
-            StartCoroutine(ResetAllSlotPositionsSmoothly());
-        }
-        else
-        {
-            // Se GameObject inativo, resetar imediatamente (sem animação)
-            ResetAllSlotPositionsImmediate();
-        }
-    }
-    
-    /// <summary>
-    /// Reseta posições de todos os slots IMEDIATAMENTE (sem animação).
-    /// Usado quando GameObject está inativo (OnDestroy).
-    /// </summary>
-    private void ResetAllSlotPositionsImmediate()
-    {
-        if (_cachedSlots == null) return;
-        
-        foreach (var slot in _cachedSlots)
-        {
-            if (slot != null && _originalPositions.ContainsKey(slot))
-            {
-                slot.transform.localPosition = _originalPositions[slot];
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Reseta posições de todos os slots (com Lerp suave).
-    /// </summary>
-    private IEnumerator ResetAllSlotPositionsSmoothly()
-    {
-        if (_cachedSlots == null) yield break;
-        
+        Vector3 originalPos = slot.transform.localPosition;
         float duration = 0.2f;
-        float elapsed = 0f;
+        float height = 0.1f;
         
-        // Salvar posições atuais
-        var currentPositions = new Dictionary<GridSlotView, Vector3>();
-        foreach (var slot in _cachedSlots)
+        // Subir
+        float elapsed = 0f;
+        while (elapsed < duration / 2f)
         {
-            if (slot != null)
-            {
-                currentPositions[slot] = slot.transform.localPosition;
-            }
+            elapsed += Time.deltaTime;
+            float t = elapsed / (duration / 2f);
+            
+            slot.transform.localPosition = originalPos + Vector3.up * (height * t);
+            yield return null;
         }
         
-        // Lerp para original
+        // Descer
+        elapsed = 0f;
+        while (elapsed < duration / 2f)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / (duration / 2f);
+            
+            slot.transform.localPosition = Vector3.Lerp(originalPos + Vector3.up * height, originalPos, t);
+            yield return null;
+        }
+        
+        slot.transform.localPosition = originalPos;
+    }
+    
+    /// <summary>
+    /// HARDCODE: Faz slot BRILHAR por X segundos.
+    /// </summary>
+    private IEnumerator HighlightSlotHardcoded(GridSlotView slot, Color color)
+    {
+        float duration = _highlightDuration;
+        float elapsed = 0f;
+        
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / duration;
             
-            foreach (var slot in _cachedSlots)
-            {
-                if (slot != null && _originalPositions.ContainsKey(slot))
-                {
-                    slot.transform.localPosition = Vector3.Lerp(
-                        currentPositions[slot],
-                        _originalPositions[slot],
-                        t
-                    );
-                }
-            }
+            // Pulse (pingpong alpha)
+            float t = Mathf.PingPong(elapsed * 2f, 1f);
+            Color pulsedColor = color;
+            pulsedColor.a = Mathf.Lerp(0.3f, 0.8f, t);
+            
+            // Aplicar
+            slot.SetPatternHighlight(pulsedColor, true);
             
             yield return null;
         }
         
-        // Garantir posições finais
-        foreach (var slot in _cachedSlots)
+        // Fade out
+        float fadeElapsed = 0f;
+        float fadeDuration = 0.3f;
+        
+        while (fadeElapsed < fadeDuration)
         {
-            if (slot != null && _originalPositions.ContainsKey(slot))
-            {
-                slot.transform.localPosition = _originalPositions[slot];
-            }
+            fadeElapsed += Time.deltaTime;
+            float t = fadeElapsed / fadeDuration;
+            
+            Color fadedColor = color;
+            fadedColor.a = Mathf.Lerp(0.8f, 0f, t);
+            
+            slot.SetPatternHighlight(fadedColor, true);
+            yield return null;
         }
+        
+        // Limpar
+        slot.ClearPatternHighlight();
     }
     
-    private void OnDestroy()
+    /// <summary>
+    /// HARDCODE: Mostra pop-up de texto na tela.
+    /// </summary>
+    private IEnumerator ShowPopupHardcoded(string text)
     {
-        StopAnalyzing();
+        if (_popupText == null || _popupCanvasGroup == null)
+        {
+            Debug.LogWarning("Pop-up não configurado no Inspector!");
+            yield break;
+        }
+        
+        Debug.Log($"POP-UP: {text}");
+        
+        // Configurar texto
+        _popupText.text = text;
+        _popupText.color = Color.green;
+        
+        // Fade IN
+        float fadeInDuration = 0.3f;
+        float elapsed = 0f;
+        
+        while (elapsed < fadeInDuration)
+        {
+            elapsed += Time.deltaTime;
+            _popupCanvasGroup.alpha = elapsed / fadeInDuration;
+            yield return null;
+        }
+        
+        _popupCanvasGroup.alpha = 1f;
+        
+        // HOLD
+        yield return new WaitForSeconds(1.5f);
+        
+        // Fade OUT
+        float fadeOutDuration = 0.3f;
+        elapsed = 0f;
+        
+        while (elapsed < fadeOutDuration)
+        {
+            elapsed += Time.deltaTime;
+            _popupCanvasGroup.alpha = 1f - (elapsed / fadeOutDuration);
+            yield return null;
+        }
+        
+        _popupCanvasGroup.alpha = 0f;
+    }
+    
+    /// <summary>
+    /// Método público para iniciar análise (chamar externamente).
+    /// </summary>
+    public void StartAnalyzing()
+    {
+        StartCoroutine(AnalyzeGridHardcoded());
     }
 }
-
