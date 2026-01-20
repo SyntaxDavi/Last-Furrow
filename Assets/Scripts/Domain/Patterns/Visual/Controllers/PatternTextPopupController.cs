@@ -11,8 +11,17 @@ using TMPro;
 /// - Animações: Scale up + Fade in/out (MANUAL - sem DOTween)
 /// 
 /// CONFIGURAÇÃO:
-/// - TextMeshPro (World Space com Canvas Group)
-/// - Duração, offset e estilo via PatternVisualConfig
+/// - TextMeshProUGUI (anexado ao mesmo GameObject ou filhos)
+/// - CanvasGroup para fade
+/// - Segue o mesmo padrão do PatternScoreHUDView
+/// 
+/// SETUP NO UNITY:
+/// 1. Criar GameObject vazio no MainPanel: "PatternVisualSystem"
+/// 2. Anexar este script
+/// 3. Adicionar filhos com TextMeshProUGUI:
+///    - "PatternNameText" (grande, centralizado)
+///    - "PatternScoreText" (menor, abaixo do nome)
+/// 4. CanvasGroup no GameObject principal
 /// 
 /// COMPORTAMENTO:
 /// - Texto aparece DURANTE o highlight dos slots
@@ -24,9 +33,14 @@ public class PatternTextPopupController : MonoBehaviour
     [Header("Configuration")]
     [SerializeField] private PatternVisualConfig _config;
     
-    [Header("Text Components")]
+    [Header("Text References (como PatternScoreHUDView)")]
+    [Tooltip("Texto do nome do padrão (ex: 'LINHA!')")]
     [SerializeField] private TextMeshProUGUI _patternNameText;
+    
+    [Tooltip("Texto do score (ex: '+15')")]
     [SerializeField] private TextMeshProUGUI _scoreText;
+    
+    [Tooltip("CanvasGroup para fade in/out")]
     [SerializeField] private CanvasGroup _canvasGroup;
     
     [Header("Animation Settings")]
@@ -47,12 +61,19 @@ public class PatternTextPopupController : MonoBehaviour
         // Validações
         if (_config == null)
         {
-            Debug.LogError("[PatternTextPopup] PatternVisualConfig não atribuído!");
+            Debug.LogWarning("[PatternTextPopup] PatternVisualConfig não atribuído! Procurando...");
+            _config = Resources.Load<PatternVisualConfig>("Patterns/PatternVisualConfig");
         }
         
         if (_patternNameText == null)
         {
-            Debug.LogError("[PatternTextPopup] TextMeshPro não atribuído!");
+            Debug.LogError("[PatternTextPopup] PatternNameText não atribuído! Procurando em filhos...");
+            _patternNameText = transform.Find("PatternNameText")?.GetComponent<TextMeshProUGUI>();
+        }
+        
+        if (_scoreText == null)
+        {
+            Debug.LogWarning("[PatternTextPopup] ScoreText não atribuído (opcional)");
         }
         
         if (_canvasGroup == null)
@@ -74,7 +95,11 @@ public class PatternTextPopupController : MonoBehaviour
     /// </summary>
     public IEnumerator ShowPatternName(PatternMatch match)
     {
-        if (_patternNameText == null) yield break;
+        if (_patternNameText == null)
+        {
+            Debug.LogError("[PatternTextPopup] PatternNameText é NULL! Configure no Inspector.");
+            yield break;
+        }
         
         _config?.DebugLog($"[PatternTextPopup] Mostrando nome: {match.DisplayName}");
         
@@ -95,7 +120,7 @@ public class PatternTextPopupController : MonoBehaviour
         
         _patternNameText.color = tierColor;
         
-        // Esconder score text se existir
+        // Esconder score text por padrão
         if (_scoreText != null)
         {
             _scoreText.gameObject.SetActive(false);
@@ -110,7 +135,11 @@ public class PatternTextPopupController : MonoBehaviour
     /// </summary>
     public IEnumerator ShowPatternScore(PatternMatch match, PatternScoreResult scoreResult)
     {
-        if (_scoreText == null) yield break;
+        if (_scoreText == null)
+        {
+            _config?.DebugLog("[PatternTextPopup] ScoreText não configurado, pulando...");
+            yield break;
+        }
         
         _config?.DebugLog($"[PatternTextPopup] Mostrando score: +{scoreResult.FinalScore}");
         
@@ -226,4 +255,5 @@ public class PatternTextPopupController : MonoBehaviour
         gameObject.SetActive(false);
     }
 }
+
 
