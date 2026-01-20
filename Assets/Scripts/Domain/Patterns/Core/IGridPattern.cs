@@ -7,7 +7,7 @@ using System.Collections.Generic;
 /// - Definir geometria do padrão
 /// - Validar slots (locked, withered, continuidade)
 /// - Retornar PatternMatch se válido
-/// - Declarar BaseScore (valor fixo)
+/// - Usar PatternDefinitionSO para metadados
 /// 
 /// NÃO DEVE:
 /// - Calcular score final (isso é PatternScoreCalculator)
@@ -17,23 +17,26 @@ using System.Collections.Generic;
 /// 
 /// PRINCÍPIO:
 /// "Padrões dizem 'sou válido?', não 'quanto valho?'"
+/// 
+/// ONDA 5: Padrões agora recebem PatternDefinitionSO no construtor.
 /// </summary>
 public interface IGridPattern
 {
     /// <summary>
     /// ID estável do padrão (ex: "ADJACENT_PAIR", "FULL_LINE").
-    /// Usado para SaveData e tracking. NUNCA use nomes exibidos ou nomes de classe.
+    /// Vem do PatternDefinitionSO configurado no Inspector.
     /// </summary>
     string PatternID { get; }
     
     /// <summary>
     /// Nome legível para UI/Debug (ex: "Par Adjacente", "Linha Completa").
-    /// Pode ser localizado no futuro.
+    /// Vem do PatternDefinitionSO configurado no Inspector.
     /// </summary>
     string DisplayName { get; }
     
     /// <summary>
-    /// Pontuação base fixa do padrão. Sem lógica, apenas valor.
+    /// Pontuação base fixa do padrão.
+    /// Vem do PatternDefinitionSO configurado no Inspector.
     /// Toda matemática de multiplicadores fica no PatternScoreCalculator.
     /// </summary>
     int BaseScore { get; }
