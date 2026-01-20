@@ -92,7 +92,7 @@ public class PatternHighlightController : MonoBehaviour
     
     /// <summary>
     /// Aplica highlight em um padrão específico.
-    /// NOVO: Grid "levita" ligeiramente ao analisar cada padrão.
+    /// REMOVIDO: Levitação do grid (agora é por slot no AnalyzingPhase).
     /// </summary>
     private void HighlightPattern(PatternMatch match)
     {
@@ -108,79 +108,11 @@ public class PatternHighlightController : MonoBehaviour
         
         _config.DebugLog($"Highlighting {match.DisplayName}: Tier {tier}, Decay {match.DaysActive}, Color {finalColor}");
         
-        // NOVO: Trigger levitação do grid (efeito de análise)
-        TriggerGridLevitation();
-        
         // Aplicar highlight em cada slot do padrão
         foreach (int slotIndex in match.SlotIndices)
         {
             HighlightSlot(slotIndex, finalColor);
         }
-    }
-    
-    /// <summary>
-    /// NOVO: Faz o grid "voar" ligeiramente (efeito de análise).
-    /// </summary>
-    private void TriggerGridLevitation()
-    {
-        if (_gridManager == null) return;
-        
-        // Pegar GridBreathingController do grid
-        var breathing = _gridManager.GetComponent<GridBreathingController>();
-        if (breathing != null)
-        {
-            // Trigger levitação via método público (vou adicionar)
-            StartCoroutine(LevitateGridRoutine());
-        }
-    }
-    
-    /// <summary>
-    /// Coroutine de levitação do grid (subida + descida suave).
-    /// </summary>
-    private IEnumerator LevitateGridRoutine()
-    {
-        if (_gridManager == null) yield break;
-        
-        Transform gridTransform = _gridManager.transform;
-        Vector3 originalPos = gridTransform.position;
-        float levitateHeight = 0.15f;  // Ajustável
-        float duration = 0.3f;
-        
-        // Subir
-        float elapsed = 0f;
-        while (elapsed < duration * 0.5f)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / (duration * 0.5f);
-            
-            // EaseOut para subida suave
-            float easedT = 1f - Mathf.Pow(1f - t, 2f);
-            
-            float offsetY = Mathf.Lerp(0f, levitateHeight, easedT);
-            gridTransform.position = originalPos + Vector3.up * offsetY;
-            
-            yield return null;
-        }
-        
-        // Descer
-        elapsed = 0f;
-        Vector3 peakPos = gridTransform.position;
-        
-        while (elapsed < duration * 0.5f)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / (duration * 0.5f);
-            
-            // EaseIn para descida suave
-            float easedT = Mathf.Pow(t, 2f);
-            
-            gridTransform.position = Vector3.Lerp(peakPos, originalPos, easedT);
-            
-            yield return null;
-        }
-        
-        // Garantir posição original
-        gridTransform.position = originalPos;
     }
     
     /// <summary>

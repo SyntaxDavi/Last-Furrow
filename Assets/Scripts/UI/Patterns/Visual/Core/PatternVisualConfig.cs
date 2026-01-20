@@ -44,6 +44,21 @@ public class PatternVisualConfig : ScriptableObject
     [Range(0.05f, 0.5f)]
     public float sequentialDelay = 0.15f;
     
+    [Header("=== ANALYZING PHASE (ONDA 5.5) ===")]
+    [Tooltip("Duração da análise por slot (segundos)")]
+    [Range(0.05f, 1f)]
+    public float analyzingDurationPerSlot = 0.2f;
+    
+    [Tooltip("Altura da levitação durante análise")]
+    [Range(0.05f, 0.3f)]
+    public float analyzingLevitationHeight = 0.1f;
+    
+    [Tooltip("Analisar apenas slots com plantas? (otimizado)")]
+    public bool analyzingOnlyPlants = true;
+    
+    [Tooltip("Mostrar pulse rosa durante análise?")]
+    public bool analyzingShowPulse = true;
+    
     [Header("=== DECAY VISUAL ===")]
     [Tooltip("Apenas destacar decay em padrões importantes?")]
     public bool onlyHighlightImportantDecay = true;
