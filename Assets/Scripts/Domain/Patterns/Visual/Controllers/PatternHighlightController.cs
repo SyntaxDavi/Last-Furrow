@@ -3,20 +3,22 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Controller responsável por highlights de slots quando padrões são detectados.
+/// Controller responsável APENAS por animações visuais de highlights.
 /// 
-/// RESPONSABILIDADE:
-/// - Escutar evento OnPatternsDetected
-/// - Aplicar cores baseadas em Tier + Decay
-/// - Animação de pulse nos slots
-/// - API pública para PatternVisualReplayController
+/// RESPONSABILIDADE (SOLID - ONDA 5.5 REFACTORED):
+/// - Escutar evento OnPatternSlotCompleted (scanner incremental)
+/// - Aplicar cores e animações de pulse
+/// - ZERO lógica de negócio (tier, score, etc vem nos dados)
 /// 
-/// FILOSOFIA: Mostra VISUALMENTE quais slots formam padrões.
+/// FILOSOFIA:
+/// - Apenas UI/Visual
+/// - Recebe dados prontos (PatternMatch com tier/cor calculados)
+/// - Sistema de cleanup para evitar vazamento entre dias
 /// 
-/// ONDA 5.5 REFACTORED:
-/// - Cache de slots em Dictionary (performance)
-/// - Método público HighlightPatternSlots para replay
-/// - FindFirstObjectByType em vez de FindObjectOfType (Unity 2023+)
+/// ANTI-PATTERN REMOVIDO:
+/// - ? Não escuta OnPatternsDetected (lógica antiga)
+/// - ? Não calcula tier/score
+/// - ? Não usa VisualQueueSystem (scanner já faz isso)
 /// </summary>
 public class PatternHighlightController : MonoBehaviour
 {
@@ -31,8 +33,8 @@ public class PatternHighlightController : MonoBehaviour
     private Dictionary<int, GridSlotView> _slotCache = new Dictionary<int, GridSlotView>();
     private bool _slotsCached = false;
     
-    // Coroutines ativas por slot (para cancelar se necessário)
-    private Dictionary<int, Coroutine> _activeHighlights = new Dictionary<int, Coroutine>();
+    // Coroutines ativas (para cleanup/cancelamento)
+    private List<Coroutine> _activeCoroutines = new List<Coroutine>();
     
     private void Start()
     {
@@ -69,13 +71,20 @@ public class PatternHighlightController : MonoBehaviour
     private void OnDestroy()
     {
         UnsubscribeFromEvents();
+        StopAllHighlights(); // Cleanup ao destruir
+    }
+    
+    private void OnDisable()
+    {
+        StopAllHighlights(); // Cleanup ao desabilitar
     }
     
     private void SubscribeToEvents()
     {
         if (AppCore.Instance?.Events?.Pattern != null)
         {
-            AppCore.Instance.Events.Pattern.OnPatternsDetected += OnPatternsDetected;
+            // ONDA 5.5: Escutar APENAS OnPatternSlotCompleted (scanner incremental)
+            AppCore.Instance.Events.Pattern.OnPatternSlotCompleted += OnPatternSlotCompleted;
         }
     }
     
@@ -83,172 +92,101 @@ public class PatternHighlightController : MonoBehaviour
     {
         if (AppCore.Instance?.Events?.Pattern != null)
         {
-            AppCore.Instance.Events.Pattern.OnPatternsDetected -= OnPatternsDetected;
+            AppCore.Instance.Events.Pattern.OnPatternSlotCompleted -= OnPatternSlotCompleted;
         }
     }
     
     /// <summary>
-    /// Event handler: Padrões detectados.
+    /// ONDA 5.5 (NOVO): Event handler quando scanner incremental encontra padrão.
+    /// APENAS VISUAL - recebe dados prontos, não calcula nada.
     /// </summary>
-    private void OnPatternsDetected(List<PatternMatch> matches, int totalPoints)
+    private void OnPatternSlotCompleted(PatternMatch match)
     {
-        if (matches == null || matches.Count == 0) return;
+        if (match == null || match.SlotIndices == null)
+        {
+            return;
+        }
+        
         if (_config == null)
         {
             Debug.LogWarning("[PatternHighlightController] Config não atribuído!");
             return;
         }
         
-        _config.DebugLog($"Highlighting {matches.Count} patterns");
+        // Obter cor baseada em tier + decay (cálculo centralizado no config)
+        int tier = GetTierFromScore(match.BaseScore);
+        Color baseColor = _config.GetTierColor(tier);
+        Color finalColor = _config.ApplyDecayToColor(baseColor, match.DaysActive);
         
-        // Enfileirar highlights sequencialmente via VisualQueueSystem
-        for (int i = 0; i < matches.Count; i++)
-        {
-            PatternMatch match = matches[i];
-            
-            // Determinar prioridade baseada em Tier
-            int tier = GetTierFromScore(match.BaseScore);
-            VisualEventPriority priority = tier >= 3 
-                ? VisualEventPriority.High 
-                : VisualEventPriority.Normal;
-            
-            // Criar evento visual
-            var visualEvent = new VisualEvent(
-                VisualEventType.Highlight,
-                priority,
-                () => HighlightPattern(match),
-                match
-            );
-            
-            // Enfileirar
-            VisualQueueSystem.Instance?.Enqueue(visualEvent);
-        }
+        _config?.DebugLog($"[PatternHighlight] Destacando {match.DisplayName} (Tier {tier})");
+        
+        // Aplicar highlight em todos os slots do padrão (paralelo)
+        StartCoroutine(HighlightPatternSlots(match, finalColor));
     }
     
     /// <summary>
-    /// API PÚBLICA: Destaca visualmente os slots de um padrão específico.
-    /// Usada pelo PatternVisualReplayController.
+    /// Destaca visualmente os slots de um padrão específico.
+    /// Todos os slots piscam JUNTOS (em paralelo).
     /// </summary>
-    public IEnumerator HighlightPatternSlots(PatternMatch match)
+    private IEnumerator HighlightPatternSlots(PatternMatch match, Color highlightColor)
     {
         if (match == null || match.SlotIndices == null)
         {
             yield break;
         }
         
-        // Obter cor baseada em tier + decay
-        int tier = GetTierFromScore(match.BaseScore);
-        Color baseColor = _config.GetTierColor(tier);
-        Color finalColor = _config.ApplyDecayToColor(baseColor, match.DaysActive);
-        
-        _config?.DebugLog($"[PatternHighlight] Highlighting {match.DisplayName}: Tier {tier}, Color {finalColor}");
-        
-        // Aplicar highlight em cada slot do padrão (em paralelo)
-        List<Coroutine> activeCoroutines = new List<Coroutine>();
-        
-        foreach (int slotIndex in match.SlotIndices)
-        {
-            var coroutine = StartCoroutine(HighlightSlotCoroutine(slotIndex, finalColor));
-            activeCoroutines.Add(coroutine);
-        }
-        
-        // Aguardar todos os highlights terminarem
-        foreach (var coroutine in activeCoroutines)
-        {
-            yield return coroutine;
-        }
-        
-        _config?.DebugLog($"[PatternHighlight] Pattern {match.DisplayName} highlight concluído");
-    }
-    
-    /// <summary>
-    /// Aplica highlight em um padrão específico.
-    /// REMOVIDO: Levitação do grid (agora é por slot no AnalyzingPhase).
-    /// </summary>
-    private void HighlightPattern(PatternMatch match)
-    {
-        if (match == null || match.SlotIndices == null) return;
-        
-        // Obter cor baseada em tier + decay
-        int tier = GetTierFromScore(match.BaseScore);
-        Color baseColor = _config.GetTierColor(tier);
-        Color finalColor = _config.ApplyDecayToColor(baseColor, match.DaysActive);
-        
-        // Verificar se deve mostrar decay warning
-        bool showDecay = _config.ShouldShowDecayWarning(match.BaseScore, match.DaysActive);
-        
-        _config.DebugLog($"Highlighting {match.DisplayName}: Tier {tier}, Decay {match.DaysActive}, Color {finalColor}");
-        
-        // Aplicar highlight em cada slot do padrão
-        foreach (int slotIndex in match.SlotIndices)
-        {
-            HighlightSlot(slotIndex, finalColor);
-        }
-    }
-    
-    /// <summary>
-    /// Aplica highlight em um slot específico (usa cache).
-    /// </summary>
-    private void HighlightSlot(int slotIndex, Color highlightColor)
-    {
-        StartCoroutine(HighlightSlotCoroutine(slotIndex, highlightColor));
-    }
-    
-    /// <summary>
-    /// Coroutine de highlight em um slot específico (versão cacheada).
-    /// </summary>
-    private IEnumerator HighlightSlotCoroutine(int slotIndex, Color highlightColor)
-    {
         // Recachear se necessário
         if (!_slotsCached || _slotCache.Count == 0)
         {
             CacheSlots();
         }
         
-        // Buscar slot no cache (O(1))
-        if (!_slotCache.TryGetValue(slotIndex, out GridSlotView slotView))
+        List<Coroutine> slotCoroutines = new List<Coroutine>();
+        
+        // Iniciar highlight em cada slot (paralelo)
+        foreach (int slotIndex in match.SlotIndices)
         {
-            Debug.LogWarning($"[PatternHighlightController] SlotView não encontrado no cache para index {slotIndex}");
-            yield break;
+            if (_slotCache.TryGetValue(slotIndex, out GridSlotView slotView))
+            {
+                var coroutine = StartCoroutine(HighlightSlotRoutine(slotView, highlightColor));
+                slotCoroutines.Add(coroutine);
+                _activeCoroutines.Add(coroutine); // Track para cleanup
+            }
+            else
+            {
+                Debug.LogWarning($"[PatternHighlight] Slot {slotIndex} não encontrado no cache");
+            }
         }
         
-        if (slotView == null)
+        // Aguardar todos os highlights terminarem
+        foreach (var coroutine in slotCoroutines)
         {
-            yield break;
+            yield return coroutine;
+            _activeCoroutines.Remove(coroutine); // Remover após concluir
         }
         
-        // Cancelar highlight anterior neste slot (se existir)
-        if (_activeHighlights.TryGetValue(slotIndex, out Coroutine oldCoroutine))
-        {
-            StopCoroutine(oldCoroutine);
-        }
-        
-        // Executar animação de highlight
-        yield return HighlightSlotRoutine(slotView, highlightColor);
-        
-        // Remover do dicionário de highlights ativos
-        _activeHighlights.Remove(slotIndex);
+        _config?.DebugLog($"[PatternHighlight] Padrão {match.DisplayName} concluído");
     }
     
     /// <summary>
     /// Coroutine de highlight com pulse animation.
-    /// USA A NOVA API DO GRIDSLOTVIEW (SetPatternHighlight).
+    /// USA A API DO GRIDSLOTVIEW (SetPatternHighlight).
     /// </summary>
     private IEnumerator HighlightSlotRoutine(GridSlotView slotView, Color highlightColor)
     {
         if (slotView == null) yield break;
         
         float elapsed = 0f;
-        float duration = _config.highlightDuration;
-        float pulseSpeed = _config.pulseSpeed;
+        float duration = _config != null ? _config.highlightDuration : 1.5f;
+        float pulseSpeed = _config != null ? _config.pulseSpeed : 2f;
         
-        _config.DebugLog($"Highlighting slot {slotView.SlotIndex} for {duration}s with color {highlightColor}");
+        _config?.DebugLog($"[PatternHighlight] Slot {slotView.SlotIndex} pulsando por {duration}s");
         
-        // Pulse animation com cor modulada
+        // FASE 1: Pulse animation
         while (elapsed < duration)
         {
             // Debug: freeze animations
-            if (_config.freezeAnimations)
+            if (_config != null && _config.freezeAnimations)
             {
                 yield return null;
                 continue;
@@ -257,27 +195,26 @@ public class PatternHighlightController : MonoBehaviour
             // PingPong para pulse
             float t = Mathf.PingPong(elapsed * pulseSpeed, 1f);
             
-            // Modular alpha ou intensidade
+            // Modular alpha
             Color pulsedColor = highlightColor;
             pulsedColor.a = Mathf.Lerp(0.3f, 0.8f, t);
             
-            // Aplicar via API pública
+            // Aplicar via API
             slotView.SetPatternHighlight(pulsedColor, true);
             
             elapsed += Time.deltaTime;
             yield return null;
         }
         
-        // Fade out suave (corrigido)
+        // FASE 2: Fade out
         float fadeElapsed = 0f;
         float fadeDuration = _config != null ? _config.highlightFadeDuration : 0.3f;
         
         while (fadeElapsed < fadeDuration)
         {
             fadeElapsed += Time.deltaTime;
-            float t = fadeElapsed / fadeDuration; // 0 ? 1
+            float t = fadeElapsed / fadeDuration;
             
-            // Fade: 0.8 ? 0 (alpha)
             Color fadedColor = highlightColor;
             fadedColor.a = Mathf.Lerp(0.8f, 0f, t);
             
@@ -288,17 +225,53 @@ public class PatternHighlightController : MonoBehaviour
         // Limpar highlight
         slotView.ClearPatternHighlight();
         
-        _config?.DebugLog($"Highlight finished for slot {slotView.SlotIndex}");
+        _config?.DebugLog($"[PatternHighlight] Slot {slotView.SlotIndex} concluído");
+    }
+    
+    /// <summary>
+    /// CLEANUP: Para todas as animações em andamento.
+    /// Chamado ao fim do dia ou ao desabilitar controller.
+    /// PREVINE vazamento de animações entre dias.
+    /// </summary>
+    public void StopAllHighlights()
+    {
+        Debug.Log("[PatternHighlight] Parando todas as animações (cleanup)");
+        
+        // Parar todas as coroutines ativas
+        foreach (var coroutine in _activeCoroutines)
+        {
+            if (coroutine != null)
+            {
+                StopCoroutine(coroutine);
+            }
+        }
+        
+        _activeCoroutines.Clear();
+        
+        // Limpar highlights visuais de todos os slots
+        if (_slotCache != null)
+        {
+            foreach (var kvp in _slotCache)
+            {
+                if (kvp.Value != null)
+                {
+                    kvp.Value.ClearPatternHighlight();
+                }
+            }
+        }
+        
+        Debug.Log("[PatternHighlight] Cleanup concluído");
     }
     
     /// <summary>
     /// Determina tier baseado no score base do padrão.
+    /// (Helper simples - lógica real está no PatternVisualConfig)
     /// </summary>
     private int GetTierFromScore(int baseScore)
     {
-        if (baseScore >= 80) return 4;  // Tier 4: 80-150 pts
-        if (baseScore >= 35) return 3;  // Tier 3: 35-60 pts
-        if (baseScore >= 15) return 2;  // Tier 2: 15-35 pts
-        return 1;                        // Tier 1: 5-15 pts
+        if (baseScore >= 80) return 4;
+        if (baseScore >= 35) return 3;
+        if (baseScore >= 15) return 2;
+        return 1;
     }
 }

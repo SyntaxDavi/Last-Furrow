@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// IFlowStep que detecta padrões no grid e adiciona pontos à meta semanal.
+/// IFlowStep que detecta padrões no grid usando DUAL-SCAN architecture.
 /// 
 /// POSIÇÃO NO PIPELINE:
 /// 1. GrowGridStep (plantas crescem/murcham)
@@ -12,19 +12,21 @@ using UnityEngine;
 /// 4. AdvanceTimeStep
 /// 5. DailyDrawStep
 /// 
-/// RESPONSABILIDADES (ONDA 5.5 - Refatorado):
-/// - [LÓGICA] Chamar PatternDetector.DetectAll()
-/// - [LÓGICA] Chamar PatternTrackingService.UpdateActivePatterns()
-/// - [LÓGICA] Chamar PatternScoreCalculator.CalculateTotalWithMetadata()
-/// - [LÓGICA] Disparar eventos baseado na metadata (SRP)
-/// - [LÓGICA] Adicionar pontos ao RunData.CurrentWeeklyScore
-/// - [VISUAL] Chamar PatternVisualReplayController.PlayReplay()
-/// - Logs de debug verbosos
+/// RESPONSABILIDADES (ONDA 5.5 - DUAL-SCAN):
+/// - [FASE 1] Verificação Inteira (GridFullVerification)
+///   - Detecta todos os padrões de uma vez
+///   - Calcula pontos e atualiza tracking
+///   - Armazena no PatternDetectionCache
+/// 
+/// - [FASE 2] Verificação Incremental (GridSlotScanner)
+///   - Itera slots desbloqueados sequencialmente
+///   - Dispara OnPatternSlotCompleted para cada padrão
+///   - UI escuta e anima (highlights, pop-ups)
 /// 
 /// ARQUITETURA (SOLID):
-/// - Lógica de negócio separada de apresentação visual
-/// - Visual controller é OPCIONAL (pode ser null)
-/// - Cache de referências para performance
+/// - Lógica separada de visual
+/// - Cache cleanup para evitar vazamento entre dias
+/// - Scanner incrementa é OPCIONAL (pode desabilitar)
 /// </summary>
 public class DetectPatternsStep : IFlowStep
 {
@@ -34,9 +36,10 @@ public class DetectPatternsStep : IFlowStep
     private readonly RunData _runData;
     private readonly GameEvents _events;
     
-    // Cache de visual controller (performance)
-    private PatternVisualReplayController _visualReplayController;
-    private bool _visualControllerInitialized;
+    // ONDA 5.5: Novo sistema dual-scan
+    private GridFullVerification _fullVerification;
+    private GridSlotScanner _slotScanner;
+    private bool _slotScannerInitialized;
     
     // Tracking separado para UI/Debug
     private int _lastPatternScore;
@@ -57,32 +60,25 @@ public class DetectPatternsStep : IFlowStep
         _calculator = calculator;
         _runData = runData;
         _events = events;
+        
+        // Criar verificação completa
+        var trackingService = AppCore.Instance?.PatternTracking;
+        _fullVerification = new GridFullVerification(gridService, detector, trackingService);
     }
 
     public IEnumerator Execute(FlowControl control)
     {
         Debug.Log("[DetectPatternsStep] ???????????????????????????????????????");
-        Debug.Log("[DetectPatternsStep] ===== FASE 1: LÓGICA (SEM VISUAL) =====");
+        Debug.Log("[DetectPatternsStep] ===== FASE 1: VERIFICAÇÃO INTEIRA =====");
         
-        // 1. Detectar padrões
-        List<PatternMatch> matches = _detector.DetectAll(_gridService);
-        Debug.Log($"[DetectPatternsStep] {matches.Count} padrões detectados");
-        
-        // 2. ONDA 4: Atualizar tracking (decay, identidade, etc)
-        var trackingService = AppCore.Instance.PatternTracking;
-        if (trackingService != null)
-        {
-            matches = trackingService.UpdateActivePatterns(matches);
-            Debug.Log($"[DetectPatternsStep] Tracking atualizado - padrões com DaysActive preenchido");
-        }
-        else
-        {
-            Debug.LogWarning("[DetectPatternsStep] PatternTrackingService não disponível - decay não será aplicado");
-        }
+        // FASE 1: Scan completo (lógica pura, sem visual)
+        List<PatternMatch> matches = _fullVerification.Scan();
         
         _lastPatternCount = matches.Count;
         
-        // 3. ONDA 5.5: Calcular pontos COM METADATA (SOLID refactor)
+        Debug.Log($"[DetectPatternsStep] {matches.Count} padrões detectados e armazenados no cache");
+        
+        // Calcular pontos COM METADATA
         int points = 0;
         PatternScoreTotalResult scoreResults = null;
         
@@ -91,13 +87,12 @@ public class DetectPatternsStep : IFlowStep
             scoreResults = _calculator.CalculateTotalWithMetadata(matches, _gridService);
             points = scoreResults.TotalScore;
             
-            // 3.1: Disparar eventos para UI baseado na metadata (SRP)
+            // Disparar eventos para UI baseado na metadata
             foreach (var result in scoreResults.IndividualResults)
             {
-                // Evento de decay aplicado
                 if (result.HasDecay)
                 {
-                    Debug.Log($"[DetectPatternsStep] Decay event: {result.Match.DisplayName} (Dia {result.DaysActive}, {result.DecayMultiplier:F2}x)");
+                    Debug.Log($"[DetectPatternsStep] Decay: {result.Match.DisplayName} (Dia {result.DaysActive}, {result.DecayMultiplier:F2}x)");
                     _events.Pattern.TriggerPatternDecayApplied(
                         result.Match, 
                         result.DaysActive, 
@@ -105,10 +100,9 @@ public class DetectPatternsStep : IFlowStep
                     );
                 }
                 
-                // Evento de recreation bonus
                 if (result.HasRecreationBonus)
                 {
-                    Debug.Log($"[DetectPatternsStep] Recreation event: {result.Match.DisplayName} (+10%)");
+                    Debug.Log($"[DetectPatternsStep] Recreation: {result.Match.DisplayName} (+10%)");
                     _events.Pattern.TriggerPatternRecreated(result.Match);
                 }
             }
@@ -116,16 +110,16 @@ public class DetectPatternsStep : IFlowStep
         
         _lastPatternScore = points;
         
-        Debug.Log($"[DetectPatternsStep] Total de pontos de padrões: {points}");
+        Debug.Log($"[DetectPatternsStep] Total de pontos: {points}");
         
-        // 4. Atualizar HighestDailyPatternScore
+        // Atualizar HighestDailyPatternScore
         if (points > _runData.HighestDailyPatternScore)
         {
             _runData.HighestDailyPatternScore = points;
-            Debug.Log($"[DetectPatternsStep] ? Novo recorde diário de padrões: {points}!");
+            Debug.Log($"[DetectPatternsStep] ? Novo recorde diário: {points}!");
         }
         
-        // 5. Adicionar à meta semanal
+        // Adicionar à meta semanal
         if (points > 0)
         {
             int scoreBefore = _runData.CurrentWeeklyScore;
@@ -134,54 +128,62 @@ public class DetectPatternsStep : IFlowStep
             Debug.Log($"[DetectPatternsStep] Score semanal: {scoreBefore} + {points} = {_runData.CurrentWeeklyScore}");
         }
         
-        // 6. Emitir evento (UI pode reagir)
+        // Emitir evento legado (UI antiga pode reagir)
         _events.Pattern.TriggerPatternsDetected(matches, points);
         
-        // 7. Log summary
+        // Log summary
         LogPatternSummary(matches, points, scoreResults);
         
-        Debug.Log("[DetectPatternsStep] ===== FASE 2: VISUAL (ANIMAÇÃO) =====");
+        Debug.Log("[DetectPatternsStep] ===== FASE 2: SCAN INCREMENTAL (VISUAL) =====");
         
-        // 8. VISUAL: Reproduzir animações dos padrões detectados
+        // FASE 2: Scan incremental (slot-por-slot, dispara animações)
         if (matches.Count > 0)
         {
-            yield return PlayVisualReplay(matches, scoreResults);
+            yield return PlayIncrementalScan();
+        }
+        else
+        {
+            Debug.Log("[DetectPatternsStep] Nenhum padrão para animar, pulando scan incremental");
         }
         
         Debug.Log("[DetectPatternsStep] ???????????????????????????????????????");
         
-        // 9. Delay final para feedback
+        // Delay final
         yield return new WaitForSeconds(0.2f);
+        
+        // CLEANUP: Limpar cache ao fim da verificação
+        PatternDetectionCache.Instance?.Clear();
+        Debug.Log("[DetectPatternsStep] Cache limpo (prevenindo vazamento entre dias)");
     }
     
     /// <summary>
-    /// Reproduz visualmente os padrões detectados (se controller disponível).
-    /// Cacheia referência para evitar FindObjectOfType repetido.
+    /// Executa scan incremental (slot-por-slot) para animações.
+    /// Cacheia referência ao GridSlotScanner para performance.
     /// </summary>
-    private IEnumerator PlayVisualReplay(List<PatternMatch> matches, PatternScoreTotalResult scoreResults)
+    private IEnumerator PlayIncrementalScan()
     {
-        // Lazy initialization do visual controller (primeira chamada)
-        if (!_visualControllerInitialized)
+        // Lazy initialization do scanner (primeira chamada)
+        if (!_slotScannerInitialized)
         {
-            _visualReplayController = Object.FindFirstObjectByType<PatternVisualReplayController>();
-            _visualControllerInitialized = true;
+            _slotScanner = Object.FindFirstObjectByType<GridSlotScanner>();
+            _slotScannerInitialized = true;
             
-            if (_visualReplayController == null)
+            if (_slotScanner == null)
             {
-                Debug.LogWarning("[DetectPatternsStep] PatternVisualReplayController não encontrado na cena - animações desabilitadas");
+                Debug.LogWarning("[DetectPatternsStep] GridSlotScanner não encontrado - animações desabilitadas");
             }
             else
             {
-                Debug.Log("[DetectPatternsStep] PatternVisualReplayController cacheado com sucesso");
+                Debug.Log("[DetectPatternsStep] GridSlotScanner cacheado");
             }
         }
         
-        // Executar replay se controller disponível
-        if (_visualReplayController != null)
+        // Executar scan se disponível
+        if (_slotScanner != null)
         {
-            Debug.Log($"[DetectPatternsStep] Iniciando replay visual de {matches.Count} padrões...");
-            yield return _visualReplayController.PlayReplay(matches, scoreResults);
-            Debug.Log("[DetectPatternsStep] Replay visual concluído");
+            Debug.Log("[DetectPatternsStep] Iniciando scan incremental...");
+            yield return _slotScanner.ScanSequentially();
+            Debug.Log("[DetectPatternsStep] Scan incremental concluído");
         }
     }
     
@@ -189,15 +191,14 @@ public class DetectPatternsStep : IFlowStep
     {
         if (matches.Count == 0)
         {
-            Debug.Log("[DetectPatternsStep] Nenhum padrão encontrado neste turno.");
+            Debug.Log("[DetectPatternsStep] Nenhum padrão encontrado neste turno");
             return;
         }
         
         Debug.Log("[DetectPatternsStep] --- RESUMO DE PADRÕES ---");
         
-        // Agrupar por tipo para log mais limpo
         var grouped = new Dictionary<string, int>();
-        var decayInfo = new Dictionary<string, int>(); // Maior DaysActive por tipo
+        var decayInfo = new Dictionary<string, int>();
         
         foreach (var match in matches)
         {
@@ -215,19 +216,17 @@ public class DetectPatternsStep : IFlowStep
             }
         }
         
-        // Log agrupado
         foreach (var kvp in grouped)
         {
             string decayText = decayInfo[kvp.Key] > 1 ? $" (Decay: Dia {decayInfo[kvp.Key]})" : "";
-            Debug.Log($"[DetectPatternsStep]   ? {kvp.Value}x {kvp.Key}{decayText}");
+            Debug.Log($"[DetectPatternsStep]   • {kvp.Value}x {kvp.Key}{decayText}");
         }
         
-        // Log de sinergia se houver
         if (scoreResults != null && matches.Count > 1)
         {
-            Debug.Log($"[DetectPatternsStep]   ?? Sinergia: {scoreResults.ScoreBeforeSynergy} ? {totalPoints} ({scoreResults.SynergyMultiplier:F2}x)");
+            Debug.Log($"[DetectPatternsStep]   ? Sinergia: {scoreResults.ScoreBeforeSynergy} ? {totalPoints} ({scoreResults.SynergyMultiplier:F2}x)");
         }
         
-        Debug.Log($"[DetectPatternsStep] TOTAL: {totalPoints} pontos de padrões");
+        Debug.Log($"[DetectPatternsStep] TOTAL: {totalPoints} pontos");
     }
 }
