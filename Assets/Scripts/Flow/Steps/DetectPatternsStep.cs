@@ -13,18 +13,18 @@ using UnityEngine;
 /// 5. DailyDrawStep
 /// 
 /// RESPONSABILIDADES (ONDA 5.5 - Refatorado):
-/// - Chamar PatternDetector.DetectAll()
-/// - Chamar PatternTrackingService.UpdateActivePatterns() [ONDA 4]
-/// - Chamar PatternScoreCalculator.CalculateTotalWithMetadata() [ONDA 5.5]
-/// - Disparar eventos baseado na metadata (SRP) [ONDA 5.5]
-/// - Adicionar pontos ao RunData.CurrentWeeklyScore
-/// - Emitir evento OnPatternsDetected
+/// - [LÓGICA] Chamar PatternDetector.DetectAll()
+/// - [LÓGICA] Chamar PatternTrackingService.UpdateActivePatterns()
+/// - [LÓGICA] Chamar PatternScoreCalculator.CalculateTotalWithMetadata()
+/// - [LÓGICA] Disparar eventos baseado na metadata (SRP)
+/// - [LÓGICA] Adicionar pontos ao RunData.CurrentWeeklyScore
+/// - [VISUAL] Chamar PatternVisualReplayController.PlayReplay()
 /// - Logs de debug verbosos
 /// 
-/// MUDANÇAS vs Versão Original:
-/// - ? Calculator retorna metadata (não dispara eventos)
-/// - ? DetectPatternsStep dispara eventos baseado na metadata (SRP)
-/// - ? Segue Single Responsibility Principle
+/// ARQUITETURA (SOLID):
+/// - Lógica de negócio separada de apresentação visual
+/// - Visual controller é OPCIONAL (pode ser null)
+/// - Cache de referências para performance
 /// </summary>
 public class DetectPatternsStep : IFlowStep
 {
@@ -33,6 +33,10 @@ public class DetectPatternsStep : IFlowStep
     private readonly PatternScoreCalculator _calculator;
     private readonly RunData _runData;
     private readonly GameEvents _events;
+    
+    // Cache de visual controller (performance)
+    private PatternVisualReplayController _visualReplayController;
+    private bool _visualControllerInitialized;
     
     // Tracking separado para UI/Debug
     private int _lastPatternScore;
@@ -57,8 +61,8 @@ public class DetectPatternsStep : IFlowStep
 
     public IEnumerator Execute(FlowControl control)
     {
-        Debug.Log("[DetectPatternsStep] ????????????????????????????????????????");
-        Debug.Log("[DetectPatternsStep] Iniciando detecção de padrões...");
+        Debug.Log("[DetectPatternsStep] ???????????????????????????????????????");
+        Debug.Log("[DetectPatternsStep] ===== FASE 1: LÓGICA (SEM VISUAL) =====");
         
         // 1. Detectar padrões
         List<PatternMatch> matches = _detector.DetectAll(_gridService);
@@ -118,7 +122,7 @@ public class DetectPatternsStep : IFlowStep
         if (points > _runData.HighestDailyPatternScore)
         {
             _runData.HighestDailyPatternScore = points;
-            Debug.Log($"[DetectPatternsStep] ?? Novo recorde diário de padrões: {points}!");
+            Debug.Log($"[DetectPatternsStep] ? Novo recorde diário de padrões: {points}!");
         }
         
         // 5. Adicionar à meta semanal
@@ -136,10 +140,49 @@ public class DetectPatternsStep : IFlowStep
         // 7. Log summary
         LogPatternSummary(matches, points, scoreResults);
         
-        Debug.Log("[DetectPatternsStep] ????????????????????????????????????????");
+        Debug.Log("[DetectPatternsStep] ===== FASE 2: VISUAL (ANIMAÇÃO) =====");
         
-        // 8. Delay visual pequeno para feedback
+        // 8. VISUAL: Reproduzir animações dos padrões detectados
+        if (matches.Count > 0)
+        {
+            yield return PlayVisualReplay(matches, scoreResults);
+        }
+        
+        Debug.Log("[DetectPatternsStep] ???????????????????????????????????????");
+        
+        // 9. Delay final para feedback
         yield return new WaitForSeconds(0.2f);
+    }
+    
+    /// <summary>
+    /// Reproduz visualmente os padrões detectados (se controller disponível).
+    /// Cacheia referência para evitar FindObjectOfType repetido.
+    /// </summary>
+    private IEnumerator PlayVisualReplay(List<PatternMatch> matches, PatternScoreTotalResult scoreResults)
+    {
+        // Lazy initialization do visual controller (primeira chamada)
+        if (!_visualControllerInitialized)
+        {
+            _visualReplayController = Object.FindObjectOfType<PatternVisualReplayController>();
+            _visualControllerInitialized = true;
+            
+            if (_visualReplayController == null)
+            {
+                Debug.LogWarning("[DetectPatternsStep] PatternVisualReplayController não encontrado na cena - animações desabilitadas");
+            }
+            else
+            {
+                Debug.Log("[DetectPatternsStep] PatternVisualReplayController cacheado com sucesso");
+            }
+        }
+        
+        // Executar replay se controller disponível
+        if (_visualReplayController != null)
+        {
+            Debug.Log($"[DetectPatternsStep] Iniciando replay visual de {matches.Count} padrões...");
+            yield return _visualReplayController.PlayReplay(matches, scoreResults);
+            Debug.Log("[DetectPatternsStep] Replay visual concluído");
+        }
     }
     
     private void LogPatternSummary(List<PatternMatch> matches, int totalPoints, PatternScoreTotalResult scoreResults)
