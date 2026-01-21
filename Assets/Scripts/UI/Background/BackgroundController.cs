@@ -8,19 +8,23 @@ using System.Collections.Generic;
 /// - Spawnar chão base (grama/terra)
 /// - Spawnar props individuais (pedras, árvores, arbustos)
 /// - Manter pixel perfect (PPU=32)
+/// - MODO AUTO: Calcula tamanho da câmera automaticamente
 /// 
 /// USO:
 /// 1. Atribua sprite do chão
-/// 2. Adicione props na lista com posições
+/// 2. Marque "Auto Fit Camera" para preencher tela inteira
 /// 3. Play = ambiente spawna automaticamente
 /// </summary>
 public class BackgroundController : MonoBehaviour
 {
     [Header("Chão Base")]
-    [Tooltip("Sprite do chão (grama, terra) - Tiled")]
+    [Tooltip("Sprite do chão (grama, terra)")]
     [SerializeField] private Sprite _groundSprite;
     
-    [Tooltip("Tamanho do chão em unidades")]
+    [Tooltip("AUTO: Preenche tela inteira | MANUAL: usa Ground Size")]
+    [SerializeField] private bool _autoFitCamera = true;
+    
+    [Tooltip("(Apenas se Auto Fit desligado) Tamanho manual")]
     [SerializeField] private Vector2 _groundSize = new Vector2(12f, 8f);
 
     [Header("Props Decorativos (Pedras, Árvores)")]
@@ -33,9 +37,11 @@ public class BackgroundController : MonoBehaviour
 
     private SpriteRenderer _groundRenderer;
     private List<SpriteRenderer> _spawnedProps = new List<SpriteRenderer>();
+    private Camera _mainCamera;
 
     private void Start()
     {
+        _mainCamera = Camera.main;
         SpawnEnvironment();
     }
 
@@ -57,11 +63,42 @@ public class BackgroundController : MonoBehaviour
         _groundRenderer.sprite = _groundSprite;
         _groundRenderer.sortingLayerName = "Background";
         _groundRenderer.sortingOrder = -100;
-        _groundRenderer.drawMode = SpriteDrawMode.Tiled;
-        _groundRenderer.size = _groundSize;
+
+        // ? MODO AUTO: Calcula tamanho exato da câmera
+        if (_autoFitCamera && _mainCamera != null)
+        {
+            Vector2 cameraSize = CalculateCameraSize();
+            _groundRenderer.drawMode = SpriteDrawMode.Sliced;
+            _groundRenderer.size = cameraSize;
+            
+            Debug.Log($"[BackgroundController] AUTO-FIT: Camera size = {cameraSize}");
+        }
+        else
+        {
+            // MODO MANUAL: Usa valor do Inspector
+            _groundRenderer.drawMode = SpriteDrawMode.Tiled;
+            _groundRenderer.size = _groundSize;
+        }
 
         if (_groundSprite.texture.filterMode != FilterMode.Point)
             _groundSprite.texture.filterMode = FilterMode.Point;
+    }
+    
+    /// <summary>
+    /// Calcula tamanho da câmera em unidades Unity.
+    /// </summary>
+    private Vector2 CalculateCameraSize()
+    {
+        if (_mainCamera == null)
+        {
+            Debug.LogWarning("[BackgroundController] Camera não encontrada! Usando tamanho padrão.");
+            return new Vector2(12f, 8f);
+        }
+
+        float height = _mainCamera.orthographicSize * 2f;
+        float width = height * _mainCamera.aspect;
+        
+        return new Vector2(width, height);
     }
 
     private void SpawnProps()

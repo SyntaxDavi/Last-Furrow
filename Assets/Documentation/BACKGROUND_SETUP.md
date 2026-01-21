@@ -25,7 +25,7 @@ Edit ? Project Settings ? Tags and Layers:
 
 ### 2. Setup na Cena
 
-1. **Criar GameObject**: `Environment`
+	1. **Criar GameObject**: `Environment`
 2. **Add Component**: `BackgroundController`
 3. **Atribuir**:
    - Ground Sprite: seu sprite de chão tileable

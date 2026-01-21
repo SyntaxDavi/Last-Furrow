@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 22a55c8c55edca74280e3f8c302d3858, type: 3}
   m_Name: GridVisualConfig
   m_EditorClassIdentifier: 
-  dryColor: {r: 0.8207547, g: 0.5216941, b: 0.33681917, a: 1}
-  wetColor: {r: 0.6, g: 0.9207424, b: 1, a: 1}
-  lockedColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
+  dryColor: {r: 0.9150943, g: 0.5947463, b: 0.40143287, a: 1}
+  wetColor: {r: 0.5471698, g: 0.25870353, b: 0.17808829, a: 1}
+  lockedColor: {r: 0.21698111, g: 0.08495015, b: 0.108348094, a: 1}
   matureOverlay: {r: 0.3314347, g: 0.5283019, b: 0.3314347, a: 0.6862745}
   witheredOverlay: {r: 1, g: 1, b: 0.7, a: 0.3}
   plantedOverlay: {r: 0.5, g: 1, b: 0.5, a: 0.15}
