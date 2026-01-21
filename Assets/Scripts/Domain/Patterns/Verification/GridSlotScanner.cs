@@ -23,7 +23,7 @@ public class GridSlotScanner : MonoBehaviour
 {
     [Header("Configuration")]
     [Tooltip("Pausa entre verificação de slots (segundos)")]
-    [Range(0f, 0.1f)]
+    [Range(0f, 0.5f)]  // EXPANDIDO: Permite de instantâneo (0) até mais lento (0.5s)
     [SerializeField] private float _slotScanDelay = 0.001f;
     
     [Header("Dependencies")]

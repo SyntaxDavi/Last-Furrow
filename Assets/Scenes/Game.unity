@@ -1341,6 +1341,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _slotScanDelay: 0.1
   _gridManager: {fileID: 434515749}
+  _uiManager: {fileID: 0}
 --- !u!114 &434515752
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2017,7 +2018,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -370, y: 323}
+  m_AnchoredPosition: {x: -251, y: 377}
   m_SizeDelta: {x: 340, y: 110}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &621747702
@@ -2998,7 +2999,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _config: {fileID: 11400000, guid: 0ce5f80d9d042f246974393c9aa66073, type: 2}
   _gridManager: {fileID: 434515749}
-  _popupController: {fileID: 0}
+  _uiManager: {fileID: 0}
 --- !u!4 &880657817
 Transform:
   m_ObjectHideFlags: 0
@@ -3784,7 +3785,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 1453.473}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -473.43, y: 397.28}
+  m_AnchoredPosition: {x: -474, y: 377}
   m_SizeDelta: {x: 520.11, y: 161.06}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1152418916
@@ -3834,8 +3835,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 60
-  m_fontSizeBase: 60
+  m_fontSize: 50
+  m_fontSizeBase: 50
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

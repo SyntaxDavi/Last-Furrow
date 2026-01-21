@@ -22,33 +22,33 @@ public class PatternVisualConfig : ScriptableObject
     
     [Header("=== ANALYZING PHASE ===")]
     [Tooltip("Delay entre cada slot analisado")]
-    [Range(0f, 1f)]
+    [Range(0f, 2f)]  // EXPANDIDO: Máxima flexibilidade (0 = instantâneo, 2s = muito lento)
     public float analyzingSlotDelay = 0.1f;
     
     [Tooltip("Altura da levitação dos slots")]
-    [Range(0.05f, 0.3f)]
+    [Range(0.05f, 0.5f)]  // EXPANDIDO: Permite levitações mais altas
     public float levitationHeight = 0.1f;
     
     [Tooltip("Duração da levitação")]
-    [Range(0.1f, 0.5f)]
+    [Range(0.05f, 1f)]  // EXPANDIDO: Mais rápido (0.05s) ou mais lento (1s)
     public float levitationDuration = 0.2f;
     
     [Header("=== HIGHLIGHT ===")]
     [Tooltip("Duração do highlight")]
-    [Range(0.5f, 3f)]
+    [Range(0.1f, 5f)]  // EXPANDIDO: Super rápido (0.1s) até muito lento (5s)
     public float highlightDuration = 2f;
     
     [Tooltip("Velocidade do pulse")]
-    [Range(1f, 5f)]
+    [Range(1f, 10f)]  // EXPANDIDO: Permite pulso muito rápido
     public float highlightPulseSpeed = 2f;
     
     [Tooltip("Duração do fade out")]
-    [Range(0.1f, 1f)]
+    [Range(0.05f, 2f)]  // EXPANDIDO: Fade instantâneo até longo
     public float highlightFadeOutDuration = 0.3f;
     
     [Header("=== POPUP ===")]
     [Tooltip("Duração total da animação do popup")]
-    [Range(0.5f, 3f)]
+    [Range(0.3f, 5f)]  // EXPANDIDO: Muito rápido (0.3s) ou muito lento (5s)
     public float popupAnimationDuration = 1.5f;
     
     [Tooltip("Escala inicial do popup")]
@@ -56,7 +56,7 @@ public class PatternVisualConfig : ScriptableObject
     public float popupStartScale = 0.5f;
     
     [Tooltip("Escala final do popup")]
-    [Range(1f, 2f)]
+    [Range(0.5f, 3f)]  // EXPANDIDO: Permite popups maiores
     public float popupEndScale = 1f;
     
     [Header("=== GRID BREATHING ===")]
