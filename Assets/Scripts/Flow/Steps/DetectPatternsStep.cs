@@ -137,6 +137,7 @@ public class DetectPatternsStep : IFlowStep
         Debug.Log("[DetectPatternsStep] ===== FASE 2: SCAN INCREMENTAL (VISUAL) =====");
         
         // FASE 2: Scan incremental (slot-por-slot, dispara animações)
+        // ONDA 6.0: Agora AGUARDA as animações terminarem (yield return)
         if (matches.Count > 0)
         {
             yield return PlayIncrementalScan();

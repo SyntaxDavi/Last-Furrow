@@ -30,6 +30,9 @@ public class GridSlotScanner : MonoBehaviour
     [Tooltip("GridManager para acessar slots")]
     [SerializeField] private GridManager _gridManager;
     
+    [Tooltip("UIManager para aguardar popups terminarem")]
+    [SerializeField] private PatternUIManager _uiManager;
+    
     // HashSet para evitar disparar mesmo padrão múltiplas vezes
     private HashSet<PatternMatch> _patternsAlreadyTriggered = new HashSet<PatternMatch>();
     
@@ -46,6 +49,16 @@ public class GridSlotScanner : MonoBehaviour
         {
             Debug.LogError("[GridSlotScanner] GridManager não atribuído!");
             yield break;
+        }
+        
+        // Cachear UIManager se não atribuído
+        if (_uiManager == null)
+        {
+            _uiManager = Object.FindFirstObjectByType<PatternUIManager>();
+            if (_uiManager == null)
+            {
+                Debug.LogWarning("[GridSlotScanner] PatternUIManager não encontrado, popups não aguardarão");
+            }
         }
         
         if (PatternDetectionCache.Instance == null)
@@ -91,8 +104,14 @@ public class GridSlotScanner : MonoBehaviour
             {
                 if (!_patternsAlreadyTriggered.Contains(pattern))
                 {
-                    // Disparar evento
+                    // Disparar evento (para highlights e outros listeners)
                     AppCore.Instance?.Events.Pattern.TriggerPatternSlotCompleted(pattern);
+                    
+                    // ONDA 6.0: Aguardar popup terminar (pipeline sincronizado)
+                    if (_uiManager != null)
+                    {
+                        yield return _uiManager.ShowPatternPopupRoutine(pattern);
+                    }
                     
                     _patternsAlreadyTriggered.Add(pattern);
                     patternsTriggered++;
