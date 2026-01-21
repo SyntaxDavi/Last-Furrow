@@ -101,6 +101,14 @@ public class AnalyzingPhaseController : MonoBehaviour
                         // Adicionar à lista
                         foundPatterns.Add(foundPattern);
                         totalPoints += foundPattern.BaseScore;
+                        
+                        // UI atualiza contador ENQUANTO popup aparece
+                        int newTotalScore = runData.CurrentWeeklyScore + totalPoints;
+                        events.Pattern.TriggerScoreIncremented(
+                            foundPattern.BaseScore,  // Pontos deste padrão
+                            newTotalScore,           // Novo total (previsão)
+                            runData.WeeklyGoalTarget // Meta
+                        );
 
                         // Disparar evento para highlights/popup
                         events.Pattern.TriggerPatternSlotCompleted(foundPattern);

@@ -22,8 +22,9 @@ public class GridSlotScanner : MonoBehaviour
 
     /// <summary>
     /// Escaneia grid slot-por-slot usando UniTask (Async/Await).
+    /// ONDA 6.4: Recebe RunData para disparar pontos incrementais.
     /// </summary>
-    public async UniTask ScanSequentially()
+    public async UniTask ScanSequentially(RunData runData, GameEvents events)
     {
         Debug.Log("[GridSlotScanner] ========== INICIANDO SCAN INCREMENTAL ==========");
 
@@ -81,13 +82,26 @@ public class GridSlotScanner : MonoBehaviour
             {
                 if (!_patternsAlreadyTriggered.Contains(pattern))
                 {
+
+                    int accumulatedPoints = 0;
+                    foreach (var p in _patternsAlreadyTriggered)
+                    {
+                        accumulatedPoints += p.BaseScore;
+                    }
+                    accumulatedPoints += pattern.BaseScore; 
+                    
+                    int newTotalScore = runData.CurrentWeeklyScore + accumulatedPoints;
+                    events.Pattern.TriggerScoreIncremented(
+                        pattern.BaseScore,
+                        newTotalScore,
+                        runData.WeeklyGoalTarget
+                    );
+                    
+                    // Disparar evento de padrão completo (para highlights)
                     AppCore.Instance?.Events.Pattern.TriggerPatternSlotCompleted(pattern);
 
                     if (_uiManager != null)
                     {
-                        // ONDA 6.0: TRUQUE DE COMPATIBILIDADE
-                        // Se o ShowPatternPopupRoutine ainda retorna IEnumerator, convertemos para UniTask
-                        // Se você já atualizou o UIManager para UniTask, tire o ".ToUniTask(this)"
                         await _uiManager.ShowPatternPopupRoutine(pattern);
                     }
 

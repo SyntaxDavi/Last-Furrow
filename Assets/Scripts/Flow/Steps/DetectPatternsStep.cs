@@ -119,8 +119,8 @@ public class DetectPatternsStep : IFlowStep
     {
         if (_slotScanner != null)
         {
-            // O Scanner também precisa retornar UniTask
-            await _slotScanner.ScanSequentially();
+            // ONDA 6.4: Passa RunData e Events para disparar pontos incrementais
+            await _slotScanner.ScanSequentially(_runData, _events);
         }
         else
         {

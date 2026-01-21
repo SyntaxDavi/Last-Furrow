@@ -56,6 +56,12 @@ public class PatternEvents
     /// </summary>
     public event Action<PatternMatch> OnPatternRecreated;
     
+    /// <summary>
+    /// Permite UI atualizar contador em tempo real (durante análise do grid).
+    /// Parâmetros: (pontos adicionados, novo score total, meta)
+    /// </summary>
+    public event Action<int, int, int> OnScoreIncremented;
+    
     // --- Triggers ---
     
     public void TriggerPatternsDetected(List<PatternMatch> matches, int totalPoints)
@@ -91,5 +97,10 @@ public class PatternEvents
     public void TriggerPatternRecreated(PatternMatch match)
     {
         OnPatternRecreated?.Invoke(match);
+    }
+    
+    public void TriggerScoreIncremented(int pointsAdded, int newTotal, int goal)
+    {
+        OnScoreIncremented?.Invoke(pointsAdded, newTotal, goal);
     }
 }
