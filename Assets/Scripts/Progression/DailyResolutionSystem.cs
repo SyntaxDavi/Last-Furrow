@@ -4,20 +4,26 @@ using Cysharp.Threading.Tasks;
 
 public class DailyResolutionSystem : MonoBehaviour
 {
-    // ONDA 6.1: Dependency Injection via Context Pattern
+    // ONDA 6.2: Builder Pattern + Context Pattern
     private DailyResolutionContext _logicContext;
     private DailyVisualContext _visualContext;
+    private IDailyFlowBuilder _pipelineBuilder;  // ? Builder injetado
     
     private bool _isInitialized = false;
     private bool _isProcessing = false;
 
     /// <summary>
     /// Injeção de Dependências Explícita (chamado pelo AppCore após scene load).
+    /// ONDA 6.2: Agora recebe Builder Pattern para construção do pipeline.
     /// </summary>
-    public void Construct(DailyResolutionContext logicContext, DailyVisualContext visualContext)
+    public void Construct(
+        DailyResolutionContext logicContext, 
+        DailyVisualContext visualContext,
+        IDailyFlowBuilder pipelineBuilder)  // ? Builder injetado
     {
         _logicContext = logicContext;
         _visualContext = visualContext;
+        _pipelineBuilder = pipelineBuilder;
 
         _isInitialized = true;
 
@@ -28,12 +34,18 @@ public class DailyResolutionSystem : MonoBehaviour
             _isInitialized = false;
         }
         
+        if (_pipelineBuilder == null)
+        {
+            Debug.LogError("[DailyResolution] FATAL: PipelineBuilder é NULL!");
+            _isInitialized = false;
+        }
+        
         if (_visualContext == null || !_visualContext.IsValid())
         {
             Debug.LogWarning("[DailyResolution] VisualContext inválido (Modo Headless ou faltam referências)");
         }
         
-        Debug.Log($"[DailyResolution] ? Construct OK - Visual Valid: {_visualContext?.IsValid()}");
+        Debug.Log($"[DailyResolution] ? Construct OK - Builder: {_pipelineBuilder?.GetType().Name}");
     }
 
     public void StartEndDaySequence()
@@ -58,32 +70,12 @@ public class DailyResolutionSystem : MonoBehaviour
         _logicContext.Events.Time.TriggerResolutionStarted();
 
         var flowControl = new FlowControl();
-        var pipeline = new List<IFlowStep>
-        {
-            // GrowGridStep recebe controller visual via construtor
-            new GrowGridStep(
-                _logicContext.GridService, 
-                _logicContext.Events, 
-                _logicContext.InputManager, 
-                runData, 
-                _visualContext.Analyzer  
-            ),
-            
-            // DetectPatternsStep recebe scanner visual via construtor
-            new DetectPatternsStep(
-                _logicContext.GridService,
-                _logicContext.PatternDetector,
-                _logicContext.PatternCalculator,
-                _logicContext.PatternTracking, 
-                runData,
-                _logicContext.Events,
-                _visualContext.Scanner  
-            ),
-
-            new CalculateScoreStep(_logicContext.GoalSystem, _logicContext.RunManager, runData, _logicContext.Events.Progression),
-            new AdvanceTimeStep(_logicContext.RunManager, _logicContext.SaveManager),
-            new DailyDrawStep(_logicContext.HandSystem, _logicContext.RunManager, runData)
-        };
+        
+        // ONDA 6.2: Builder Pattern - Sistema NÃO conhece steps específicos
+        // Builder constrói pipeline baseado em contextos
+        var pipeline = _pipelineBuilder.BuildPipeline(_logicContext, _visualContext, runData);
+        
+        Debug.Log($"[DailyResolution] Executando pipeline: {pipeline.Count} steps");
 
         foreach (var step in pipeline)
         {

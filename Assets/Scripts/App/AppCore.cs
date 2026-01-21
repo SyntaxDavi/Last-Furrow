@@ -297,11 +297,14 @@ public class AppCore : MonoBehaviour
             sceneScanner,
             uiManager
         );
+        
+        // 5. ONDA 6.2: Criar Pipeline Builder (Factory Pattern)
+        var pipelineBuilder = new DailyPipelineBuilder();
 
-        // 5. Injetar AMBOS contextos no sistema
-        DailyResolutionSystem.Construct(logicContext, visualContext);
+        // 6. Injetar TODOS contextos + Builder no sistema
+        DailyResolutionSystem.Construct(logicContext, visualContext, pipelineBuilder);
 
-        Debug.Log($"[AppCore] ✓ DailySystem Construct OK - Visual Valid: {visualContext.IsValid()}");
+        Debug.Log($"[AppCore] ✓ DailySystem Construct OK - Builder: {pipelineBuilder.GetType().Name}");
     }
 
     public void UnregisterGridService()
