@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using TMPro;
 
 /// <summary>
 /// HARDCODE BRUTAÇO - FAZ TUDO EM UMA PANCADA!
@@ -10,7 +9,7 @@ using TMPro;
 /// 2. CRESCE a planta (ProcessNightCycle)
 /// 3. SE encontrar 2 crops LADO A LADO ? PARA
 /// 4. FAZ os 2 slots BRILHAREM (verde)
-/// 5. MOSTRA pop-up "ADJACENT PAIR! +5"
+/// 5. MOSTRA pop-up usando PatternTextPopupController
 /// 6. Continua...
 /// 
 /// LEVITAÇÃO + CRESCIMENTO + DETECÇÃO + POPUP = TUDO JUNTO!
@@ -22,16 +21,25 @@ public class AnalyzingPhaseController : MonoBehaviour
     [SerializeField] private float _highlightDuration = 2f;
     [SerializeField] private GridManager _gridManager;
     
-    // Pop-up hardcode
-    [SerializeField] private TextMeshProUGUI _popupText;
-    [SerializeField] private CanvasGroup _popupCanvasGroup;
+    [Header("Pattern Popup")]
+    [SerializeField] private PatternTextPopupController _patternPopup;
     
-    private void Start()
+    private void Awake()
     {
-        if (_popupCanvasGroup != null)
+        Debug.Log("[AnalyzingPhase] ========== AWAKE ==========");
+        
+        if (_patternPopup == null)
         {
-            _popupCanvasGroup.alpha = 0f;
+            Debug.LogWarning("[AnalyzingPhase] PatternTextPopupController não atribuído! Procurando...");
+            _patternPopup = FindObjectOfType<PatternTextPopupController>();
+            Debug.Log($"[AnalyzingPhase] PatternPopup encontrado? {_patternPopup != null}");
         }
+        else
+        {
+            Debug.Log($"[AnalyzingPhase] PatternPopup JÁ atribuído");
+        }
+        
+        Debug.Log("[AnalyzingPhase] ========== AWAKE CONCLUÍDO ==========");
     }
     
     /// <summary>
@@ -39,35 +47,47 @@ public class AnalyzingPhaseController : MonoBehaviour
     /// </summary>
     public IEnumerator AnalyzeAndGrowGrid(IGridService gridService, GameEvents events, RunData runData)
     {
+        Debug.Log("====================================================================");
         Debug.Log("=== HARDCODE MEGA: Iniciando análise COMPLETA ===");
+        Debug.Log("====================================================================");
         
         if (_gridManager == null)
         {
-            Debug.LogError("GridManager NULL!");
+            Debug.LogError("? GridManager NULL!");
             yield break;
         }
+        
+        // DEBUG: Verificar se PatternTextPopupController está configurado
+        Debug.Log($"?? UI CONFIG CHECK:");
+        Debug.Log($"   _patternPopup = {(_patternPopup != null ? "? OK" : "? NULL")}");
         
         // Pegar TODOS os slots
         var allSlots = _gridManager.GetComponentsInChildren<GridSlotView>();
         
-        Debug.Log($"Total de slots: {allSlots.Length}");
+        Debug.Log($"?? Total de slots no grid: {allSlots.Length}");
         
         // Passar por cada slot
         for (int i = 0; i < allSlots.Length; i++)
         {
             var slot = allSlots[i];
             
-            if (slot == null) continue;
+            if (slot == null)
+            {
+                Debug.LogWarning($"?? Slot {i} é NULL, pulando...");
+                continue;
+            }
             
             int slotIndex = slot.SlotIndex;
             
             // Verificar se está desbloqueado
             if (!gridService.IsSlotUnlocked(slotIndex))
             {
+                Debug.Log($"?? Slot {i} (Index: {slotIndex}) está BLOQUEADO, pulando...");
                 continue;
             }
             
-            Debug.Log($"?? Analisando slot {i} (Index: {slotIndex})");
+            Debug.Log($"??????????????????????????????????????????");
+            Debug.Log($"?? ANALISANDO SLOT {i} (Index: {slotIndex})");
             
             // EVENTO: Slot sendo analisado
             events.Grid.TriggerAnalyzeSlot(slotIndex);
@@ -75,50 +95,95 @@ public class AnalyzingPhaseController : MonoBehaviour
             // LEVITAR slot atual (cosmético)
             StartCoroutine(LevitateSlot(slot));
             
-            // CRESCER/PROCESSAR SLOT (lógica de jogo)
-            gridService.ProcessNightCycleForSlot(slotIndex);
+            // ?? VERIFICAR DADOS REAIS (não visual!), pois plantas ainda não cresceram visualmente
+            var slotData = gridService.GetSlotReadOnly(slotIndex);
+            bool hasCrop = slotData != null && slotData.CropID.IsValid;
             
-            // HARDCODE: Verificar se TEM CROP APÓS PROCESSAMENTO
-            bool hasCrop = slot.HasPlant();
+            Debug.Log($"   ?? Slot {i} tem crop nos DADOS? {(hasCrop ? "? SIM (" + slotData.CropID.ToString() + ")" : "? NÃO")}");
             
             if (hasCrop)
             {
-                Debug.Log($"  ? Slot {i} TEM CROP!");
+                Debug.Log($"   ? SLOT {i} TEM CROP! Verificando adjacente...");
+                
+                // FAZER BRILHAR SLOT ATUAL (TIER 1 - PRATA)
+                Color tier1Color = new Color(0.75f, 0.75f, 0.75f, 1f); // Prata
+                Debug.Log($"   ?? Aplicando brilho TIER 1 (prata) no slot {i}");
+                StartCoroutine(HighlightSlotHardcoded(slot, tier1Color));
                 
                 // HARDCODE: Verificar se próximo slot TAMBÉM tem crop (par horizontal)
                 if (i + 1 < allSlots.Length)
                 {
                     var nextSlot = allSlots[i + 1];
-                    int nextSlotIndex = nextSlot != null ? nextSlot.SlotIndex : -1;
                     
-                    if (nextSlot != null && gridService.IsSlotUnlocked(nextSlotIndex) && nextSlot.HasPlant())
+                    if (nextSlot == null)
                     {
-                        Debug.Log($"  ?? PAR ADJACENTE ENCONTRADO! Slots {i} e {i+1}");
+                        Debug.LogWarning($"   ?? Próximo slot ({i+1}) é NULL");
+                    }
+                    else
+                    {
+                        int nextSlotIndex = nextSlot.SlotIndex;
+                        bool nextIsUnlocked = gridService.IsSlotUnlocked(nextSlotIndex);
+                        var nextSlotData = gridService.GetSlotReadOnly(nextSlotIndex);
+                        bool nextHasCrop = nextSlotData != null && nextSlotData.CropID.IsValid; // Verificar dados reais!
                         
-                        // FAZER BRILHAR OS 2 SLOTS (VERDE)
-                        StartCoroutine(HighlightSlotHardcoded(slot, Color.green));
-                        StartCoroutine(HighlightSlotHardcoded(nextSlot, Color.green));
+                        Debug.Log($"   ?? PRÓXIMO SLOT {i+1}:");
+                        Debug.Log($"      - Index: {nextSlotIndex}");
+                        Debug.Log($"      - Desbloqueado? {(nextIsUnlocked ? "? SIM" : "? NÃO")}");
+                        Debug.Log($"      - Tem crop nos DADOS? {(nextHasCrop ? "? SIM (" + nextSlotData.CropID.ToString() + ")" : "? NÃO")}");
                         
-                        // MOSTRAR POP-UP
-                        StartCoroutine(ShowPopupHardcoded("ADJACENT PAIR!\n+5 pontos"));
-                        
-                        // PARAR aqui por um tempo (para player ver)
-                        yield return new WaitForSeconds(_highlightDuration);
+                        if (nextIsUnlocked && nextHasCrop)
+                        {
+                            Debug.Log($"");
+                            Debug.Log($"?????? PAR ADJACENTE ENCONTRADO! Slots {i} e {i+1} ??????");
+                            Debug.Log($"");
+                            
+                            // FAZER BRILHAR OS 2 SLOTS (VERDE - mais vibrante)
+                            Color adjacentColor = new Color(0f, 1f, 0f, 1f); // Verde vibrante
+                            Debug.Log($"   ?? Aplicando brilho VERDE VIBRANTE nos slots {i} e {i+1}");
+                            StartCoroutine(HighlightSlotHardcoded(slot, adjacentColor));
+                            StartCoroutine(HighlightSlotHardcoded(nextSlot, adjacentColor));
+                            
+                            // MOSTRAR POP-UP usando PatternTextPopupController
+                            if (_patternPopup != null)
+                            {
+                                Debug.Log($"   ?? Mostrando popup através do PatternTextPopupController...");
+                                // Criar PatternMatch temporário para o popup
+                                var tempMatch = CreateTempPatternMatch("Par Adjacente", 5);
+                                StartCoroutine(_patternPopup.ShowPatternName(tempMatch));
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"   ?? PatternTextPopupController não disponível!");
+                            }
+                            
+                            // NÃO PARAR - deixar as animações rodarem em paralelo
+                            Debug.Log($"   ? Continuando imediatamente (animações em paralelo)");
                         
                         // Pular próximo slot (já foi processado visualmente)
-                        // MAS ainda precisa crescer!
+                        Debug.Log($"   ?? Pulando para slot {i+2} (próximo par já foi analisado)");
                         i++;
-                        events.Grid.TriggerAnalyzeSlot(nextSlotIndex);
-                        gridService.ProcessNightCycleForSlot(nextSlotIndex);
+                            
+                            Debug.Log($"   ? Par adjacente processado completamente!");
+                        }
+                        else
+                        {
+                            Debug.Log($"   ?? Próximo slot NÃO forma par adjacente");
+                        }
                     }
+                }
+                else
+                {
+                    Debug.Log($"   ?? Slot {i} é o último, não há próximo para verificar");
                 }
             }
             
-            // Delay antes do próximo slot
-            yield return new WaitForSeconds(_delayPerSlot);
+            // Delay reduzido antes do próximo slot (apenas para não sobrecarregar)
+            yield return null; // Apenas um frame
         }
         
+        Debug.Log("====================================================================");
         Debug.Log("=== HARDCODE MEGA: Análise COMPLETA concluída ===");
+        Debug.Log("====================================================================");
     }
     
     /// <summary>
@@ -162,12 +227,21 @@ public class AnalyzingPhaseController : MonoBehaviour
     /// </summary>
     private IEnumerator HighlightSlotHardcoded(GridSlotView slot, Color color)
     {
-        if (slot == null) yield break;
+        if (slot == null)
+        {
+            Debug.LogError("? HighlightSlotHardcoded: slot é NULL!");
+            yield break;
+        }
         
         float duration = _highlightDuration;
         float elapsed = 0f;
         
-        Debug.Log($"?? Brilhando slot {slot.SlotIndex} em {color}");
+        Debug.Log($"?? HighlightSlotHardcoded INICIADO:");
+        Debug.Log($"   - Slot Index: {slot.SlotIndex}");
+        Debug.Log($"   - Cor: {color}");
+        Debug.Log($"   - Duração: {duration}s");
+        
+        int frameCount = 0;
         
         while (elapsed < duration)
         {
@@ -181,8 +255,17 @@ public class AnalyzingPhaseController : MonoBehaviour
             // Aplicar
             slot.SetPatternHighlight(pulsedColor, true);
             
+            // Debug a cada 30 frames
+            frameCount++;
+            if (frameCount % 30 == 0)
+            {
+                Debug.Log($"   ?? Frame {frameCount}: alpha={pulsedColor.a:F2}, elapsed={elapsed:F2}s");
+            }
+            
             yield return null;
         }
+        
+        Debug.Log($"   ?? Pulse concluído, iniciando fade out...");
         
         // Fade out
         float fadeElapsed = 0f;
@@ -202,52 +285,29 @@ public class AnalyzingPhaseController : MonoBehaviour
         
         // Limpar
         slot.ClearPatternHighlight();
+        Debug.Log($"   ? Highlight concluído e limpo para slot {slot.SlotIndex}");
     }
     
+    
+    
     /// <summary>
-    /// HARDCODE: Mostra pop-up de texto na tela.
+    /// Cria um PatternMatch temporário para testes/hardcoded.
     /// </summary>
-    private IEnumerator ShowPopupHardcoded(string text)
+    private PatternMatch CreateTempPatternMatch(string displayName, int baseScore)
     {
-        if (_popupText == null || _popupCanvasGroup == null)
-        {
-            Debug.LogWarning("?? Pop-up não configurado no Inspector!");
-            yield break;
-        }
+        // Usar o factory method do PatternMatch
+        var match = PatternMatch.Create(
+            patternID: "TEMP_" + displayName.ToUpper().Replace(" ", "_"),
+            displayName: displayName,
+            slotIndices: new System.Collections.Generic.List<int>(),
+            baseScore: baseScore,
+            cropIDs: new System.Collections.Generic.List<CropID>(),
+            debugDescription: "Hardcoded test pattern"
+        );
         
-        Debug.Log($"?? POP-UP: {text}");
+        // Configurar tracking data inicial
+        match.SetTrackingData(daysActive: 1, hasRecreationBonus: false);
         
-        // Configurar texto
-        _popupText.text = text;
-        _popupText.color = Color.green;
-        
-        // Fade IN
-        float fadeInDuration = 0.3f;
-        float elapsed = 0f;
-        
-        while (elapsed < fadeInDuration)
-        {
-            elapsed += Time.deltaTime;
-            _popupCanvasGroup.alpha = elapsed / fadeInDuration;
-            yield return null;
-        }
-        
-        _popupCanvasGroup.alpha = 1f;
-        
-        // HOLD
-        yield return new WaitForSeconds(1.5f);
-        
-        // Fade OUT
-        float fadeOutDuration = 0.3f;
-        elapsed = 0f;
-        
-        while (elapsed < fadeOutDuration)
-        {
-            elapsed += Time.deltaTime;
-            _popupCanvasGroup.alpha = 1f - (elapsed / fadeOutDuration);
-            yield return null;
-        }
-        
-        _popupCanvasGroup.alpha = 0f;
+        return match;
     }
 }

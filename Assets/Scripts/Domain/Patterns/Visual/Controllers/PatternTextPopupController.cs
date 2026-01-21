@@ -58,22 +58,38 @@ public class PatternTextPopupController : MonoBehaviour
     
     private void Awake()
     {
+        Debug.Log("[PatternTextPopup] ========== AWAKE INICIADO ==========");
+        
         // Validações
         if (_config == null)
         {
             Debug.LogWarning("[PatternTextPopup] PatternVisualConfig não atribuído! Procurando...");
             _config = Resources.Load<PatternVisualConfig>("Patterns/PatternVisualConfig");
+            Debug.Log($"[PatternTextPopup] Config encontrado? {_config != null}");
         }
         
         if (_patternNameText == null)
         {
             Debug.LogError("[PatternTextPopup] PatternNameText não atribuído! Procurando em filhos...");
             _patternNameText = transform.Find("PatternNameText")?.GetComponent<TextMeshProUGUI>();
+            Debug.Log($"[PatternTextPopup] PatternNameText encontrado? {_patternNameText != null}");
+            if (_patternNameText != null)
+            {
+                Debug.Log($"[PatternTextPopup] PatternNameText.gameObject.name: {_patternNameText.gameObject.name}");
+            }
+        }
+        else
+        {
+            Debug.Log($"[PatternTextPopup] PatternNameText JÁ atribuído: {_patternNameText.gameObject.name}");
         }
         
         if (_scoreText == null)
         {
             Debug.LogWarning("[PatternTextPopup] ScoreText não atribuído (opcional)");
+        }
+        else
+        {
+            Debug.Log($"[PatternTextPopup] ScoreText atribuído: {_scoreText.gameObject.name}");
         }
         
         if (_canvasGroup == null)
@@ -84,10 +100,20 @@ public class PatternTextPopupController : MonoBehaviour
                 Debug.LogWarning("[PatternTextPopup] CanvasGroup não encontrado, adicionando...");
                 _canvasGroup = gameObject.AddComponent<CanvasGroup>();
             }
+            Debug.Log($"[PatternTextPopup] CanvasGroup configurado");
         }
+        else
+        {
+            Debug.Log($"[PatternTextPopup] CanvasGroup JÁ atribuído");
+        }
+        
+        Debug.Log($"[PatternTextPopup] GameObject.name: {gameObject.name}");
+        Debug.Log($"[PatternTextPopup] GameObject.activeSelf: {gameObject.activeSelf}");
         
         // Estado inicial: invisível
         HideImmediate();
+        
+        Debug.Log("[PatternTextPopup] ========== AWAKE CONCLUÍDO ==========");
     }
     
     /// <summary>
@@ -95,27 +121,36 @@ public class PatternTextPopupController : MonoBehaviour
     /// </summary>
     public IEnumerator ShowPatternName(PatternMatch match)
     {
+        Debug.Log($"[PatternTextPopup] ========== ShowPatternName INICIADO ==========");
+        Debug.Log($"[PatternTextPopup] Match: {match?.DisplayName ?? "NULL"}");
+        
         if (_patternNameText == null)
         {
             Debug.LogError("[PatternTextPopup] PatternNameText é NULL! Configure no Inspector.");
             yield break;
         }
         
+        Debug.Log($"[PatternTextPopup] PatternNameText OK");
+        
         _config?.DebugLog($"[PatternTextPopup] Mostrando nome: {match.DisplayName}");
         
         // Configurar texto
         _patternNameText.text = match.DisplayName.ToUpper();
+        Debug.Log($"[PatternTextPopup] Texto configurado: '{_patternNameText.text}'");
         
         // Calcular Tier baseado no BaseScore
         int tier = CalculateTier(match.BaseScore);
+        Debug.Log($"[PatternTextPopup] Tier calculado: {tier}");
         
         // Cor baseada no Tier
         Color tierColor = _config != null ? _config.GetTierColor(tier) : Color.white;
+        Debug.Log($"[PatternTextPopup] Cor: {tierColor}");
         
         // Aplicar decay na cor se necessário
         if (_config != null && match.DaysActive > 1)
         {
             tierColor = _config.ApplyDecayToColor(tierColor, match.DaysActive);
+            Debug.Log($"[PatternTextPopup] Cor com decay: {tierColor}");
         }
         
         _patternNameText.color = tierColor;
@@ -124,10 +159,14 @@ public class PatternTextPopupController : MonoBehaviour
         if (_scoreText != null)
         {
             _scoreText.gameObject.SetActive(false);
+            Debug.Log($"[PatternTextPopup] ScoreText escondido");
         }
         
+        Debug.Log($"[PatternTextPopup] Iniciando AnimatePopup...");
         // Animar
         yield return AnimatePopup();
+        
+        Debug.Log($"[PatternTextPopup] ========== ShowPatternName CONCLUÍDO ==========");
     }
     
     /// <summary>
@@ -193,14 +232,22 @@ public class PatternTextPopupController : MonoBehaviour
     /// </summary>
     private IEnumerator AnimatePopup()
     {
+        Debug.Log($"[PatternTextPopup] AnimatePopup INICIADO");
+        Debug.Log($"[PatternTextPopup] GameObject.name: {gameObject.name}");
+        Debug.Log($"[PatternTextPopup] CanvasGroup: {_canvasGroup != null}");
+        
         // Estado inicial
         transform.localScale = Vector3.one * _startScale;
         _canvasGroup.alpha = 0f;
         gameObject.SetActive(true);
         
+        Debug.Log($"[PatternTextPopup] Estado inicial: scale={_startScale}, alpha=0, active=true");
+        
         // FASE 1: Fade in + Scale up (25% da duração)
         float fadeInDuration = _animationDuration * 0.25f;
         float elapsed = 0f;
+        
+        Debug.Log($"[PatternTextPopup] FASE 1: Fade In ({fadeInDuration}s)");
         
         while (elapsed < fadeInDuration)
         {
@@ -220,13 +267,18 @@ public class PatternTextPopupController : MonoBehaviour
         _canvasGroup.alpha = 1f;
         transform.localScale = Vector3.one * _endScale;
         
+        Debug.Log($"[PatternTextPopup] Fade In completo: alpha=1, scale={_endScale}");
+        
         // FASE 2: Hold (50% da duração)
         float holdDuration = _animationDuration * 0.5f;
+        Debug.Log($"[PatternTextPopup] FASE 2: Hold ({holdDuration}s)");
         yield return new WaitForSeconds(holdDuration);
         
         // FASE 3: Fade out (25% da duração)
         float fadeOutDuration = _animationDuration * 0.25f;
         elapsed = 0f;
+        
+        Debug.Log($"[PatternTextPopup] FASE 3: Fade Out ({fadeOutDuration}s)");
         
         while (elapsed < fadeOutDuration)
         {
@@ -238,8 +290,12 @@ public class PatternTextPopupController : MonoBehaviour
             yield return null;
         }
         
+        Debug.Log($"[PatternTextPopup] Fade Out completo");
+        
         // Esconder no final
         HideImmediate();
+        
+        Debug.Log($"[PatternTextPopup] AnimatePopup CONCLUÍDO");
     }
     
     /// <summary>
@@ -247,12 +303,16 @@ public class PatternTextPopupController : MonoBehaviour
     /// </summary>
     private void HideImmediate()
     {
+        Debug.Log($"[PatternTextPopup] HideImmediate chamado");
+        
         if (_canvasGroup != null)
         {
             _canvasGroup.alpha = 0f;
+            Debug.Log($"[PatternTextPopup] Alpha = 0");
         }
         
         gameObject.SetActive(false);
+        Debug.Log($"[PatternTextPopup] GameObject desativado");
     }
 }
 
