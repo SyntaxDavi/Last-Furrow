@@ -3,228 +3,73 @@ using UnityEngine;
 using TMPro;
 
 /// <summary>
-/// Controller responsável por exibir pop-ups de texto dos padrões detectados.
-/// 
-/// RESPONSABILIDADE:
-/// - Mostrar nome do padrão (ex: "CRUZ SIMPLES!")
-/// - Mostrar pontos ganhos (ex: "+15")
-/// - Animações: Scale up + Fade in/out (MANUAL - sem DOTween)
-/// 
-/// CONFIGURAÇÃO:
-/// - TextMeshProUGUI (anexado ao mesmo GameObject ou filhos)
-/// - CanvasGroup para fade
-/// - Segue o mesmo padrão do PatternScoreHUDView
-/// 
-/// SETUP NO UNITY:
-/// 1. Criar GameObject vazio no MainPanel: "PatternVisualSystem"
-/// 2. Anexar este script
-/// 3. Adicionar filhos com TextMeshProUGUI:
-///    - "PatternNameText" (grande, centralizado)
-///    - "PatternScoreText" (menor, abaixo do nome)
-/// 4. CanvasGroup no GameObject principal
-/// 
-/// COMPORTAMENTO:
-/// - Texto aparece DURANTE o highlight dos slots
-/// - Cor baseada no Tier do padrão (calculado via BaseScore)
-/// - Decay afeta a cor/opacidade
+/// Exibe pop-ups de texto para padrões detectados.
+/// Usa PatternVisualConfig para todas as configurações.
 /// </summary>
 public class PatternTextPopupController : MonoBehaviour
 {
     [Header("Configuration")]
     [SerializeField] private PatternVisualConfig _config;
     
-    [Header("Text References (como PatternScoreHUDView)")]
-    [Tooltip("Texto do nome do padrão (ex: 'LINHA!')")]
+    [Header("References")]
     [SerializeField] private TextMeshProUGUI _patternNameText;
-    
-    [Tooltip("Texto do score (ex: '+15')")]
     [SerializeField] private TextMeshProUGUI _scoreText;
-    
-    [Tooltip("CanvasGroup para fade in/out")]
     [SerializeField] private CanvasGroup _canvasGroup;
-    
-    [Header("Animation Settings")]
-    [Tooltip("Duração da animação completa (scale up + fade)")]
-    [Range(0.5f, 3f)]
-    [SerializeField] private float _animationDuration = 1.5f;
-    
-    [Tooltip("Escala inicial (antes do scale up)")]
-    [Range(0f, 1f)]
-    [SerializeField] private float _startScale = 0.5f;
-    
-    [Tooltip("Escala final")]
-    [Range(1f, 2f)]
-    [SerializeField] private float _endScale = 1f;
     
     private void Awake()
     {
-        Debug.Log("[PatternTextPopup] ========== AWAKE INICIADO ==========");
-        
-        // Validações
         if (_config == null)
         {
-            Debug.LogWarning("[PatternTextPopup] PatternVisualConfig não atribuído! Procurando...");
             _config = Resources.Load<PatternVisualConfig>("Patterns/PatternVisualConfig");
-            Debug.Log($"[PatternTextPopup] Config encontrado? {_config != null}");
         }
         
         if (_patternNameText == null)
         {
-            Debug.LogError("[PatternTextPopup] PatternNameText não atribuído! Procurando em filhos...");
             _patternNameText = transform.Find("PatternNameText")?.GetComponent<TextMeshProUGUI>();
-            Debug.Log($"[PatternTextPopup] PatternNameText encontrado? {_patternNameText != null}");
-            if (_patternNameText != null)
-            {
-                Debug.Log($"[PatternTextPopup] PatternNameText.gameObject.name: {_patternNameText.gameObject.name}");
-            }
-        }
-        else
-        {
-            Debug.Log($"[PatternTextPopup] PatternNameText JÁ atribuído: {_patternNameText.gameObject.name}");
-        }
-        
-        if (_scoreText == null)
-        {
-            Debug.LogWarning("[PatternTextPopup] ScoreText não atribuído (opcional)");
-        }
-        else
-        {
-            Debug.Log($"[PatternTextPopup] ScoreText atribuído: {_scoreText.gameObject.name}");
         }
         
         if (_canvasGroup == null)
         {
-            _canvasGroup = GetComponent<CanvasGroup>();
-            if (_canvasGroup == null)
-            {
-                Debug.LogWarning("[PatternTextPopup] CanvasGroup não encontrado, adicionando...");
-                _canvasGroup = gameObject.AddComponent<CanvasGroup>();
-            }
-            Debug.Log($"[PatternTextPopup] CanvasGroup configurado");
-        }
-        else
-        {
-            Debug.Log($"[PatternTextPopup] CanvasGroup JÁ atribuído");
+            _canvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
         }
         
-        Debug.Log($"[PatternTextPopup] GameObject.name: {gameObject.name}");
-        Debug.Log($"[PatternTextPopup] GameObject.activeSelf: {gameObject.activeSelf}");
-        
-        // Estado inicial: invisível
         HideImmediate();
-        
-        Debug.Log("[PatternTextPopup] ========== AWAKE CONCLUÍDO ==========");
     }
     
-    /// <summary>
-    /// Mostra o nome do padrão com animação.
-    /// </summary>
+    
     public IEnumerator ShowPatternName(PatternMatch match)
     {
-        Debug.Log($"[PatternTextPopup] ========== ShowPatternName INICIADO ==========");
-        Debug.Log($"[PatternTextPopup] Match: {match?.DisplayName ?? "NULL"}");
-        
-        if (_patternNameText == null)
+        if (_patternNameText == null || _config == null)
         {
-            Debug.LogError("[PatternTextPopup] PatternNameText é NULL! Configure no Inspector.");
+            Debug.LogError("[PatternTextPopup] Missing references!");
             yield break;
         }
         
-        Debug.Log($"[PatternTextPopup] PatternNameText OK");
+        _config.DebugLog($"Showing pattern: {match.DisplayName}");
         
-        _config?.DebugLog($"[PatternTextPopup] Mostrando nome: {match.DisplayName}");
-        
-        // Configurar texto do NOME
         _patternNameText.text = match.DisplayName.ToUpper();
-        Debug.Log($"[PatternTextPopup] Texto configurado: '{_patternNameText.text}'");
         
-        // Calcular Tier baseado no BaseScore
         int tier = CalculateTier(match.BaseScore);
-        Debug.Log($"[PatternTextPopup] Tier calculado: {tier}");
+        Color tierColor = _config.GetTierColor(tier);
         
-        // Cor baseada no Tier
-        Color tierColor = _config != null ? _config.GetTierColor(tier) : Color.white;
-        Debug.Log($"[PatternTextPopup] Cor: {tierColor}");
-        
-        // Aplicar decay na cor se necessário
-        if (_config != null && match.DaysActive > 1)
+        if (match.DaysActive > 1)
         {
             tierColor = _config.ApplyDecayToColor(tierColor, match.DaysActive);
-            Debug.Log($"[PatternTextPopup] Cor com decay: {tierColor}");
         }
         
         _patternNameText.color = tierColor;
         
-        // MOSTRAR também o SCORE TEXT
         if (_scoreText != null)
         {
             _scoreText.text = $"+{match.BaseScore}";
             _scoreText.color = tierColor;
             _scoreText.gameObject.SetActive(true);
-            Debug.Log($"[PatternTextPopup] ScoreText ATIVADO: '{_scoreText.text}' com cor {tierColor}");
-        }
-        else
-        {
-            Debug.LogWarning($"[PatternTextPopup] ScoreText é NULL - não vai aparecer!");
         }
         
-        Debug.Log($"[PatternTextPopup] Iniciando AnimatePopup...");
-        // Animar
         yield return AnimatePopup();
-        
-        Debug.Log($"[PatternTextPopup] ========== ShowPatternName CONCLUÍDO ==========");
     }
     
-    /// <summary>
-    /// Mostra o score do padrão com animação.
-    /// </summary>
-    public IEnumerator ShowPatternScore(PatternMatch match, PatternScoreResult scoreResult)
-    {
-        if (_scoreText == null)
-        {
-            _config?.DebugLog("[PatternTextPopup] ScoreText não configurado, pulando...");
-            yield break;
-        }
-        
-        _config?.DebugLog($"[PatternTextPopup] Mostrando score: +{scoreResult.FinalScore}");
-        
-        // Configurar texto
-        string scoreTextString = $"+{scoreResult.FinalScore}";
-        
-        // Adicionar indicador de decay se aplicável
-        if (scoreResult.HasDecay)
-        {
-            scoreTextString += $" (Dia {scoreResult.DaysActive})";
-        }
-        
-        _scoreText.text = scoreTextString;
-        _scoreText.gameObject.SetActive(true);
-        
-        // Calcular Tier
-        int tier = CalculateTier(match.BaseScore);
-        
-        // Cor baseada no Tier
-        Color tierColor = _config != null ? _config.GetTierColor(tier) : Color.white;
-        
-        if (_config != null && match.DaysActive > 1)
-        {
-            tierColor = _config.ApplyDecayToColor(tierColor, match.DaysActive);
-        }
-        
-        _scoreText.color = tierColor;
-        
-        // Score text aparece junto com o nome (não precisa animar novamente)
-        yield break;
-    }
     
-    /// <summary>
-    /// Calcula o Tier baseado no BaseScore do padrão.
-    /// RANGES (baseado no PatternVisualConfig):
-    /// - Tier 1: 5-14 pts (Prata/Cinza)
-    /// - Tier 2: 15-34 pts (Verde)
-    /// - Tier 3: 35-79 pts (Dourado)
-    /// - Tier 4: 80+ pts (Roxo Místico)
-    /// </summary>
     private int CalculateTier(int baseScore)
     {
         if (baseScore >= 80) return 4;
@@ -233,92 +78,56 @@ public class PatternTextPopupController : MonoBehaviour
         return 1;
     }
     
-    /// <summary>
-    /// Animação principal: Scale up + Fade in/out (MANUAL - sem DOTween).
-    /// </summary>
     private IEnumerator AnimatePopup()
     {
-        Debug.Log($"[PatternTextPopup] AnimatePopup INICIADO");
-        Debug.Log($"[PatternTextPopup] GameObject.name: {gameObject.name}");
-        Debug.Log($"[PatternTextPopup] CanvasGroup: {_canvasGroup != null}");
-        
-        // Estado inicial
-        transform.localScale = Vector3.one * _startScale;
+        transform.localScale = Vector3.one * _config.popupStartScale;
         _canvasGroup.alpha = 0f;
         gameObject.SetActive(true);
         
-        Debug.Log($"[PatternTextPopup] Estado inicial: scale={_startScale}, alpha=0, active=true");
+        float duration = _config.popupAnimationDuration;
+        float fadeInDuration = duration * 0.25f;
+        float holdDuration = duration * 0.5f;
+        float fadeOutDuration = duration * 0.25f;
         
-        // FASE 1: Fade in + Scale up (25% da duração)
-        float fadeInDuration = _animationDuration * 0.25f;
+        // Fade in + Scale up
         float elapsed = 0f;
-        
-        Debug.Log($"[PatternTextPopup] FASE 1: Fade In ({fadeInDuration}s)");
-        
         while (elapsed < fadeInDuration)
         {
             elapsed += Time.deltaTime;
             float t = elapsed / fadeInDuration;
-            
-            // Ease OutBack manual
             float easeT = 1f - Mathf.Pow(1f - t, 3f);
             
             _canvasGroup.alpha = t;
-            transform.localScale = Vector3.one * Mathf.Lerp(_startScale, _endScale, easeT);
+            transform.localScale = Vector3.one * Mathf.Lerp(_config.popupStartScale, _config.popupEndScale, easeT);
             
             yield return null;
         }
         
-        // Garantir valores finais
         _canvasGroup.alpha = 1f;
-        transform.localScale = Vector3.one * _endScale;
+        transform.localScale = Vector3.one * _config.popupEndScale;
         
-        Debug.Log($"[PatternTextPopup] Fade In completo: alpha=1, scale={_endScale}");
-        
-        // FASE 2: Hold (50% da duração)
-        float holdDuration = _animationDuration * 0.5f;
-        Debug.Log($"[PatternTextPopup] FASE 2: Hold ({holdDuration}s)");
+        // Hold
         yield return new WaitForSeconds(holdDuration);
         
-        // FASE 3: Fade out (25% da duração)
-        float fadeOutDuration = _animationDuration * 0.25f;
+        // Fade out
         elapsed = 0f;
-        
-        Debug.Log($"[PatternTextPopup] FASE 3: Fade Out ({fadeOutDuration}s)");
-        
         while (elapsed < fadeOutDuration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / fadeOutDuration;
-            
-            _canvasGroup.alpha = 1f - t;
-            
+            _canvasGroup.alpha = 1f - (elapsed / fadeOutDuration);
             yield return null;
         }
         
-        Debug.Log($"[PatternTextPopup] Fade Out completo");
-        
-        // Esconder no final
         HideImmediate();
-        
-        Debug.Log($"[PatternTextPopup] AnimatePopup CONCLUÍDO");
     }
     
-    /// <summary>
-    /// Esconde imediatamente sem animação.
-    /// </summary>
     private void HideImmediate()
     {
-        Debug.Log($"[PatternTextPopup] HideImmediate chamado");
-        
         if (_canvasGroup != null)
         {
             _canvasGroup.alpha = 0f;
-            Debug.Log($"[PatternTextPopup] Alpha = 0");
         }
-        
         gameObject.SetActive(false);
-        Debug.Log($"[PatternTextPopup] GameObject desativado");
     }
 }
 
