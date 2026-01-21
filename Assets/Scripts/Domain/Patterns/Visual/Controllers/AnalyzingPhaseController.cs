@@ -1,9 +1,11 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Orquestra a fase de análise: levitação + detecção + eventos.
+/// Orquestra a fase de análise usando Strategy Pattern para detecção de padrões.
 /// Dispara eventos que outros controllers escutam (highlight, popup, breathing).
+/// SOLID: Single Responsibility - apenas orquestra, detecção delegada aos detectores.
 /// </summary>
 public class AnalyzingPhaseController : MonoBehaviour
 {
@@ -13,6 +15,9 @@ public class AnalyzingPhaseController : MonoBehaviour
     [Header("References")]
     [SerializeField] private GridManager _gridManager;
     [SerializeField] private PatternTextPopupController _patternPopup;
+    
+    private List<IPatternDetector> _detectors;
+    private HashSet<int> _processedSlots;
     
     private void Awake()
     {
@@ -25,6 +30,10 @@ public class AnalyzingPhaseController : MonoBehaviour
         {
             _patternPopup = FindObjectOfType<PatternTextPopupController>();
         }
+        
+        // Obter todos os detectores da factory
+        _detectors = PatternDetectorFactory.GetAllDetectors();
+        _processedSlots = new HashSet<int>();
     }
     
     public IEnumerator AnalyzeAndGrowGrid(IGridService gridService, GameEvents events, RunData runData)
@@ -35,10 +44,19 @@ public class AnalyzingPhaseController : MonoBehaviour
             yield break;
         }
         
-        _config.DebugLog("Starting grid analysis");
+        _config.DebugLog("Starting grid analysis with pattern detection");
         
         var allSlots = _gridManager.GetComponentsInChildren<GridSlotView>();
+        int[] allSlotIndices = new int[allSlots.Length];
         
+        for (int i = 0; i < allSlots.Length; i++)
+        {
+            allSlotIndices[i] = allSlots[i].SlotIndex;
+        }
+        
+        _processedSlots.Clear();
+        
+        // Analisar cada slot
         for (int i = 0; i < allSlots.Length; i++)
         {
             var slot = allSlots[i];
@@ -46,41 +64,50 @@ public class AnalyzingPhaseController : MonoBehaviour
             
             int slotIndex = slot.SlotIndex;
             
+            // Pular se já processado em padrão anterior
+            if (_processedSlots.Contains(slotIndex)) continue;
+            
             if (!gridService.IsSlotUnlocked(slotIndex)) continue;
             
             events.Grid.TriggerAnalyzeSlot(slotIndex);
             
             StartCoroutine(LevitateSlot(slot));
             
-            var slotData = gridService.GetSlotReadOnly(slotIndex);
-            bool hasCrop = slotData != null && slotData.CropID.IsValid;
+            // Tentar detectar padrões neste slot (ordem de prioridade)
+            PatternMatch foundPattern = null;
             
-            if (hasCrop && i + 1 < allSlots.Length)
+            foreach (var detector in _detectors)
             {
-                var nextSlot = allSlots[i + 1];
-                if (nextSlot != null)
+                if (detector.CanDetectAt(gridService, slotIndex))
                 {
-                    int nextSlotIndex = nextSlot.SlotIndex;
-                    var nextSlotData = gridService.GetSlotReadOnly(nextSlotIndex);
-                    bool nextHasCrop = nextSlotData != null && nextSlotData.CropID.IsValid;
+                    foundPattern = detector.DetectAt(gridService, slotIndex, allSlotIndices);
                     
-                    if (gridService.IsSlotUnlocked(nextSlotIndex) && nextHasCrop)
+                    if (foundPattern != null)
                     {
-                        // Pattern found! Dispatch event
-                        var tempMatch = CreatePatternMatch("Par Adjacente", 5, new System.Collections.Generic.List<int> { slotIndex, nextSlotIndex });
+                        _config.DebugLog($"Pattern found: {foundPattern.DisplayName} at slot {slotIndex}");
                         
-                        events.Pattern.TriggerPatternSlotCompleted(tempMatch);
-                        
-                        if (_patternPopup != null)
+                        // Marcar slots deste padrão como processados
+                        foreach (int processedSlot in foundPattern.SlotIndices)
                         {
-                            StartCoroutine(_patternPopup.ShowPatternName(tempMatch));
+                            _processedSlots.Add(processedSlot);
                         }
                         
-                        i++; // Skip next slot
+                        // Disparar evento
+                        events.Pattern.TriggerPatternSlotCompleted(foundPattern);
+                        
+                        // Mostrar popup
+                        if (_patternPopup != null)
+                        {
+                            StartCoroutine(_patternPopup.ShowPatternName(foundPattern));
+                        }
+                        
+                        // Apenas 1 padrão por slot (maior prioridade)
+                        break;
                     }
                 }
             }
             
+            // Delay configurável
             if (_config.analyzingSlotDelay > 0f)
             {
                 yield return new WaitForSeconds(_config.analyzingSlotDelay);
@@ -93,6 +120,7 @@ public class AnalyzingPhaseController : MonoBehaviour
         
         _config.DebugLog("Grid analysis complete");
     }
+    
     
     private IEnumerator LevitateSlot(GridSlotView slot)
     {
@@ -122,18 +150,5 @@ public class AnalyzingPhaseController : MonoBehaviour
         
         slot.transform.localPosition = originalPos;
     }
-    
-    private PatternMatch CreatePatternMatch(string displayName, int baseScore, System.Collections.Generic.List<int> slotIndices)
-    {
-        var match = PatternMatch.Create(
-            patternID: "TEMP_" + displayName.ToUpper().Replace(" ", "_"),
-            displayName: displayName,
-            slotIndices: slotIndices,
-            baseScore: baseScore,
-            cropIDs: new System.Collections.Generic.List<CropID>()
-        );
-        
-        match.SetTrackingData(daysActive: 1, hasRecreationBonus: false);
-        return match;
-    }
 }
+
