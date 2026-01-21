@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
 
 /// <summary>
 /// Gerenciador central de toda UI de patterns.
@@ -12,46 +11,81 @@ public class PatternUIManager : MonoBehaviour
     [Header("Configuration")]
     [SerializeField] private PatternVisualConfig _config;
     
-    [Header("Pop-up References")]
-    [SerializeField] private TextMeshProUGUI _patternNameText;
-    [SerializeField] private TextMeshProUGUI _scoreText;
-    [SerializeField] private CanvasGroup _popupCanvasGroup;
-    
     [Header("Sub-Controllers")]
+    [SerializeField] private PatternTextPopupController _popupController;
     [SerializeField] private PatternFeedbackView _debugFeedbackView;
     [SerializeField] private PatternHighlightController _highlightController;
     
     [Header("Debug")]
     [SerializeField] private bool _enableDebugFeedback = false;
     
+    private bool _isSubscribed = false;
+    
     private void Awake()
     {
+        Debug.Log("[PatternUIManager] ========== AWAKE (Wrapper) ==========");
+        
         if (_config == null)
         {
             _config = Resources.Load<PatternVisualConfig>("Patterns/PatternVisualConfig");
         }
         
-        if (_popupCanvasGroup == null)
+        if (_popupController == null)
         {
-            _popupCanvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
+            _popupController = GetComponentInChildren<PatternTextPopupController>();
+            if (_popupController == null)
+            {
+                _popupController = FindFirstObjectByType<PatternTextPopupController>();
+            }
         }
         
-        HidePopupImmediate();
+        Debug.Log($"[PatternUIManager] PopupController found: {_popupController != null}");
     }
     
     private void OnEnable()
     {
-        if (AppCore.Instance?.Events?.Pattern != null)
+        Debug.Log("[PatternUIManager] ========== ON ENABLE ==========");
+        TrySubscribeToEvents();
+    }
+    
+    private IEnumerator Start()
+    {
+        Debug.Log("[PatternUIManager] ========== START (waiting for AppCore) ==========");
+        
+        // Aguarda AppCore estar pronto
+        yield return new WaitUntil(() => AppCore.Instance?.Events?.Pattern != null);
+        
+        Debug.Log("[PatternUIManager] AppCore ready! Subscribing to events...");
+        TrySubscribeToEvents();
+    }
+    
+    private void TrySubscribeToEvents()
+    {
+        if (_isSubscribed)
         {
-            AppCore.Instance.Events.Pattern.OnPatternSlotCompleted += OnPatternCompleted;
-            AppCore.Instance.Events.Pattern.OnPatternsDetected += OnPatternsDetected;
-            AppCore.Instance.Events.Pattern.OnPatternDecayApplied += OnDecayApplied;
-            AppCore.Instance.Events.Pattern.OnPatternRecreated += OnRecreated;
+            Debug.Log("[PatternUIManager] Already subscribed, skipping...");
+            return;
         }
+        
+        if (AppCore.Instance?.Events?.Pattern == null)
+        {
+            Debug.LogWarning("[PatternUIManager] AppCore not ready yet, will retry in Start()");
+            return;
+        }
+        
+        AppCore.Instance.Events.Pattern.OnPatternSlotCompleted += OnPatternCompleted;
+        AppCore.Instance.Events.Pattern.OnPatternsDetected += OnPatternsDetected;
+        AppCore.Instance.Events.Pattern.OnPatternDecayApplied += OnDecayApplied;
+        AppCore.Instance.Events.Pattern.OnPatternRecreated += OnRecreated;
+        
+        _isSubscribed = true;
+        Debug.Log("[PatternUIManager] ? All event listeners subscribed!");
     }
     
     private void OnDisable()
     {
+        if (!_isSubscribed) return;
+        
         if (AppCore.Instance?.Events?.Pattern != null)
         {
             AppCore.Instance.Events.Pattern.OnPatternSlotCompleted -= OnPatternCompleted;
@@ -59,11 +93,61 @@ public class PatternUIManager : MonoBehaviour
             AppCore.Instance.Events.Pattern.OnPatternDecayApplied -= OnDecayApplied;
             AppCore.Instance.Events.Pattern.OnPatternRecreated -= OnRecreated;
         }
+        
+        _isSubscribed = false;
+        Debug.Log("[PatternUIManager] Event listeners unsubscribed");
     }
     
     private void OnPatternCompleted(PatternMatch match)
     {
-        StartCoroutine(ShowPatternPopup(match));
+        // WRAPPER: Ativa controller e delega popup (coroutine roda aqui)
+        if (_popupController != null)
+        {
+            Debug.Log($"[PatternUIManager] ?? Delegating popup to controller: {match.DisplayName}");
+            
+            // Garantir que o GameObject está ativo antes de iniciar coroutine
+            if (!_popupController.gameObject.activeInHierarchy)
+            {
+                _popupController.gameObject.SetActive(true);
+            }
+            
+            StartCoroutine(ShowPatternRoutine(match));
+        }
+        else
+        {
+            Debug.LogError("[PatternUIManager] ? PopupController is NULL! Cannot show popup.");
+        }
+    }
+    
+    /// <summary>
+    /// WRAPPER: Método público para chamada direta (delega para controller).
+    /// </summary>
+    public void ShowPatternPopupDirect(PatternMatch match)
+    {
+        Debug.Log($"[PatternUIManager] ?? WRAPPER: Direct call for {match.DisplayName}");
+        
+        if (_popupController != null)
+        {
+            // Garantir que o GameObject está ativo
+            if (!_popupController.gameObject.activeInHierarchy)
+            {
+                _popupController.gameObject.SetActive(true);
+            }
+            
+            StartCoroutine(ShowPatternRoutine(match));
+        }
+        else
+        {
+            Debug.LogError("[PatternUIManager] ? PopupController is NULL!");
+        }
+    }
+    
+    /// <summary>
+    /// Wrapper que roda no contexto ativo do UIManager (resolve problema de GameObject inativo).
+    /// </summary>
+    private IEnumerator ShowPatternRoutine(PatternMatch match)
+    {
+        yield return _popupController.ShowPatternCoroutine(match);
     }
     
     private void OnPatternsDetected(List<PatternMatch> matches, int totalPoints)
@@ -84,94 +168,5 @@ public class PatternUIManager : MonoBehaviour
     private void OnRecreated(PatternMatch match)
     {
         _config.DebugLog($"[PatternUIManager] Recreation bonus: {match.DisplayName}");
-    }
-    
-    private IEnumerator ShowPatternPopup(PatternMatch match)
-    {
-        if (_patternNameText == null || _config == null)
-        {
-            Debug.LogError("[PatternUIManager] Missing popup references!");
-            yield break;
-        }
-        
-        _config.DebugLog($"Showing pattern: {match.DisplayName}");
-        
-        _patternNameText.text = match.DisplayName.ToUpper();
-        
-        int tier = CalculateTier(match.BaseScore);
-        Color tierColor = _config.GetTierColor(tier);
-        
-        if (match.DaysActive > 1)
-        {
-            tierColor = _config.ApplyDecayToColor(tierColor, match.DaysActive);
-        }
-        
-        _patternNameText.color = tierColor;
-        
-        if (_scoreText != null)
-        {
-            _scoreText.text = $"+{match.BaseScore}";
-            _scoreText.color = tierColor;
-            _scoreText.gameObject.SetActive(true);
-        }
-        
-        yield return AnimatePopup();
-    }
-    
-    private int CalculateTier(int baseScore)
-    {
-        if (baseScore >= 80) return 4;
-        if (baseScore >= 35) return 3;
-        if (baseScore >= 15) return 2;
-        return 1;
-    }
-    
-    private IEnumerator AnimatePopup()
-    {
-        transform.localScale = Vector3.one * _config.popupStartScale;
-        _popupCanvasGroup.alpha = 0f;
-        gameObject.SetActive(true);
-        
-        float duration = _config.popupAnimationDuration;
-        float fadeInDuration = duration * 0.25f;
-        float holdDuration = duration * 0.5f;
-        float fadeOutDuration = duration * 0.25f;
-        
-        float elapsed = 0f;
-        while (elapsed < fadeInDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / fadeInDuration;
-            float easeT = 1f - Mathf.Pow(1f - t, 3f);
-            
-            _popupCanvasGroup.alpha = t;
-            transform.localScale = Vector3.one * Mathf.Lerp(_config.popupStartScale, _config.popupEndScale, easeT);
-            
-            yield return null;
-        }
-        
-        _popupCanvasGroup.alpha = 1f;
-        transform.localScale = Vector3.one * _config.popupEndScale;
-        
-        yield return new WaitForSeconds(holdDuration);
-        
-        elapsed = 0f;
-        while (elapsed < fadeOutDuration)
-        {
-            elapsed += Time.deltaTime;
-            _popupCanvasGroup.alpha = 1f - (elapsed / fadeOutDuration);
-            yield return null;
-        }
-        
-        HidePopupImmediate();
-    }
-    
-    private void HidePopupImmediate()
-    {
-        if (_popupCanvasGroup != null)
-        {
-            _popupCanvasGroup.alpha = 0f;
-        }
-        gameObject.SetActive(false);
     }
 }

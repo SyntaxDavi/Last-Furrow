@@ -22,13 +22,13 @@ MonoBehaviour:
   highlightDuration: 1.74
   highlightPulseSpeed: 3.28
   highlightFadeOutDuration: 0.3
-  popupAnimationDuration: 1.5
-  popupStartScale: 0.5
+  popupAnimationDuration: 0.72
+  popupStartScale: 0.225
   popupEndScale: 1
-  breathingAmount: 0.0277
-  breathingSpeed: 0.889
-  patternReactionStrength: 0.069
-  reactionDuration: 0.491
+  breathingAmount: 0.0179
+  breathingSpeed: 0.619
+  patternReactionStrength: 0.0647
+  reactionDuration: 0.273
   criticalDecayDaysThreshold: 3
   decayWarningColor: {r: 1, g: 0.3, b: 0.3, a: 1}
   debugMode: 1

@@ -2967,6 +2967,53 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 824601361}
   m_CullTransparentMesh: 1
+--- !u!1 &880657815
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 880657817}
+  - component: {fileID: 880657816}
+  m_Layer: 0
+  m_Name: AnalyzingPhaseController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &880657816
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 880657815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f4ad1e6af402c44699927b65d05325f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _config: {fileID: 11400000, guid: 0ce5f80d9d042f246974393c9aa66073, type: 2}
+  _gridManager: {fileID: 434515749}
+  _popupController: {fileID: 0}
+--- !u!4 &880657817
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 880657815}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.13719, y: 1.27106, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &888648029
 GameObject:
   m_ObjectHideFlags: 0
@@ -4843,16 +4890,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 1362975647}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f51b22563486a8d4094027f23a9b8dd7, type: 3}
+  m_Script: {fileID: 11500000, guid: 4c7c2d9f7d9712849a3627a6ac4f91a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _config: {fileID: 11400000, guid: 0ce5f80d9d042f246974393c9aa66073, type: 2}
   _patternNameText: {fileID: 1152418916}
   _scoreText: {fileID: 621747702}
-  _popupCanvasGroup: {fileID: 1362975649}
-  _debugFeedbackView: {fileID: 563714836}
-  _highlightController: {fileID: 1823516974}
-  _enableDebugFeedback: 0
+  _canvasGroup: {fileID: 1362975649}
+  _animationDuration: 1.5
+  _startScale: 0.8
+  _endScale: 1.2
 --- !u!1 &1400629001
 GameObject:
   m_ObjectHideFlags: 0
@@ -5680,6 +5727,7 @@ GameObject:
   - component: {fileID: 1726399247}
   - component: {fileID: 1726399246}
   - component: {fileID: 1726399245}
+  - component: {fileID: 1726399248}
   m_Layer: 0
   m_Name: PatternVisualSystem
   m_TagString: Untagged
@@ -5731,6 +5779,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1726399248
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1726399244}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f51b22563486a8d4094027f23a9b8dd7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _config: {fileID: 11400000, guid: 0ce5f80d9d042f246974393c9aa66073, type: 2}
+  _popupController: {fileID: 1362975650}
+  _debugFeedbackView: {fileID: 563714836}
+  _highlightController: {fileID: 1823516974}
+  _enableDebugFeedback: 1
 --- !u!1 &1745695844
 GameObject:
   m_ObjectHideFlags: 0
@@ -7207,6 +7272,7 @@ SceneRoots:
   - {fileID: 1184381075}
   - {fileID: 737428865}
   - {fileID: 1842980145}
+  - {fileID: 880657817}
   - {fileID: 1919772009}
   - {fileID: 955808733}
   - {fileID: 1785937552}

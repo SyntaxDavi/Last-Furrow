@@ -14,7 +14,7 @@ public class AnalyzingPhaseController : MonoBehaviour
     
     [Header("References")]
     [SerializeField] private GridManager _gridManager;
-    [SerializeField] private PatternUIManager _patternUIManager;
+    [SerializeField] private PatternUIManager _uiManager;  // WRAPPER para popups
     
     private List<IPatternDetector> _detectors;
     private HashSet<int> _processedSlots;
@@ -26,9 +26,9 @@ public class AnalyzingPhaseController : MonoBehaviour
             _config = Resources.Load<PatternVisualConfig>("Patterns/PatternVisualConfig");
         }
         
-        if (_patternUIManager == null)
+        if (_uiManager == null)
         {
-            _patternUIManager = FindFirstObjectByType<PatternUIManager>();
+            _uiManager = FindFirstObjectByType<PatternUIManager>();
         }
         
         // Obter todos os detectores da factory
@@ -100,6 +100,17 @@ public class AnalyzingPhaseController : MonoBehaviour
                         
                         // Disparar evento para highlights/popup
                         events.Pattern.TriggerPatternSlotCompleted(foundPattern);
+                        
+                        // HARDCODE: Chamar popup via UIManager (resolve problema de GameObject inativo)
+                        if (_uiManager != null)
+                        {
+                            Debug.Log($"[AnalyzingPhaseController] ?? Showing popup via UIManager: {foundPattern.DisplayName}");
+                            _uiManager.ShowPatternPopupDirect(foundPattern);
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[AnalyzingPhaseController] ?? UIManager is null!");
+                        }
                         
                         // Disparar eventos de decay/recreation
                         if (foundPattern.DaysActive > 1)
