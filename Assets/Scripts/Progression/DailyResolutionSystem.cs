@@ -4,22 +4,21 @@ using Cysharp.Threading.Tasks;
 
 public class DailyResolutionSystem : MonoBehaviour
 {
-    // ONDA 6.2: Builder Pattern + Context Pattern
     private DailyResolutionContext _logicContext;
     private DailyVisualContext _visualContext;
-    private IDailyFlowBuilder _pipelineBuilder;  // ? Builder injetado
+    private IDailyFlowBuilder _pipelineBuilder;  
     
     private bool _isInitialized = false;
     private bool _isProcessing = false;
 
     /// <summary>
     /// Injeção de Dependências Explícita (chamado pelo AppCore após scene load).
-    /// ONDA 6.2: Agora recebe Builder Pattern para construção do pipeline.
+    /// Agora recebe Builder Pattern para construção do pipeline.
     /// </summary>
     public void Construct(
         DailyResolutionContext logicContext, 
         DailyVisualContext visualContext,
-        IDailyFlowBuilder pipelineBuilder)  // ? Builder injetado
+        IDailyFlowBuilder pipelineBuilder)  
     {
         _logicContext = logicContext;
         _visualContext = visualContext;
@@ -71,20 +70,25 @@ public class DailyResolutionSystem : MonoBehaviour
 
         var flowControl = new FlowControl();
         
-        // ONDA 6.2: Builder Pattern - Sistema NÃO conhece steps específicos
         var pipeline = _pipelineBuilder.BuildPipeline(_logicContext, _visualContext, runData);
         
         Debug.Log($"[DailyResolution] ========== PIPELINE START ==========");
         Debug.Log($"[DailyResolution] Executando {pipeline.Count} steps");
         
-        // ONDA 6.3: Error Handling + Telemetry
         float totalDuration = 0f;
         int stepIndex = 0;
+        var executedSteps = new List<IFlowStep>();  // Rastreio para rollback
 
         foreach (var step in pipeline)
         {
             stepIndex++;
-            string stepName = step.GetType().Name;
+            string stepName = step.GetStepName();
+            
+            if (!step.CanExecute())
+            {
+                Debug.LogWarning($"[DailyResolution] [{stepIndex}/{pipeline.Count}] ?? PULADO: {stepName} (condições não atendidas)");
+                continue;
+            }
             
             // Telemetry: Medir tempo de execução
             float startTime = Time.realtimeSinceStartup;
@@ -94,6 +98,9 @@ public class DailyResolutionSystem : MonoBehaviour
                 Debug.Log($"[DailyResolution] [{stepIndex}/{pipeline.Count}] Executando: {stepName}");
                 
                 await step.Execute(flowControl);
+                
+                // Marcar como executado (para rollback se necessário)
+                executedSteps.Add(step);
                 
                 // Telemetry: Log de duração
                 float duration = Time.realtimeSinceStartup - startTime;
@@ -118,7 +125,10 @@ public class DailyResolutionSystem : MonoBehaviour
                 if (IsCriticalStep(step))
                 {
                     Debug.LogError($"[DailyResolution] Step crítico falhou! Abortando pipeline.");
-                    flowControl.AbortPipeline();
+                    flowControl.AbortPipeline($"Step crítico {stepName} falhou");
+                    
+                    // tentar rollback de steps executados
+                    await RollbackExecutedSteps(executedSteps);
                     break;
                 }
                 else
@@ -166,5 +176,46 @@ public class DailyResolutionSystem : MonoBehaviour
         return step is GrowGridStep || 
                step is CalculateScoreStep || 
                step is AdvanceTimeStep;
+    }
+    
+    /// <summary>
+    /// Executa rollback de steps executados (ordem reversa).
+    /// Chamado quando pipeline aborta após erro crítico.
+    /// </summary>
+    private async UniTask RollbackExecutedSteps(List<IFlowStep> executedSteps)
+    {
+        if (executedSteps.Count == 0)
+        {
+            Debug.Log("[DailyResolution] Nenhum step para fazer rollback.");
+            return;
+        }
+        
+        Debug.LogWarning($"[DailyResolution] ?? Iniciando rollback de {executedSteps.Count} steps...");
+        
+        // Rollback em ordem reversa (LIFO)
+        for (int i = executedSteps.Count - 1; i >= 0; i--)
+        {
+            var step = executedSteps[i];
+            
+            if (step is IReversibleStep reversibleStep && reversibleStep.WasExecuted)
+            {
+                try
+                {
+                    Debug.Log($"[DailyResolution] ?? Rollback: {step.GetStepName()}");
+                    await reversibleStep.Rollback();
+                    Debug.Log($"[DailyResolution] ? Rollback concluído: {step.GetStepName()}");
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[DailyResolution] ? Erro no rollback de {step.GetStepName()}: {ex.Message}");
+                }
+            }
+            else
+            {
+                Debug.Log($"[DailyResolution] ?? Step {step.GetStepName()} não suporta rollback");
+            }
+        }
+        
+        Debug.LogWarning("[DailyResolution] ?? Rollback completo");
     }
 }
