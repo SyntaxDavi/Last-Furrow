@@ -4,49 +4,45 @@ using System.Collections.Generic;
 
 public class DailyResolutionSystem : MonoBehaviour
 {
-    // Estado interno
-    private bool _isProcessing = false;
+    private AnalyzingPhaseController _analyzingController;
+    private GridSlotScanner _gridSlotScanner;
+
+    // --- DEPENDÊNCIAS DE LÓGICA (Injetadas via Code) ---
+    private DailyResolutionContext _ctx;
     private bool _isInitialized = false;
+    private bool _isProcessing = false;
 
-    // Dependências (Injetadas pelo AppCore ou cacheadas)
-    private RunManager _runManager;
-    private SaveManager _saveManager;
-    private InputManager _inputManager;
-    private GameEvents _events;
-    private DailyHandSystem _handSystem;
-    private WeeklyGoalSystem _goalSystem;
-
-    public void Initialize()
+    // Método de Injeção (Chamado pelo Bootloader/AppCore)
+    public void Construct(
+       DailyResolutionContext context,
+       AnalyzingPhaseController visualController, 
+       GridSlotScanner scannerController        
+   )
     {
-        if (AppCore.Instance != null)
-        {
-            _runManager = AppCore.Instance.RunManager;
-            _saveManager = AppCore.Instance.SaveManager;
-            _inputManager = AppCore.Instance.InputManager;
-            _events = AppCore.Instance.Events;
-            _handSystem = AppCore.Instance.DailyHandSystem;
-            _goalSystem = AppCore.Instance.WeeklyGoalSystem;
+        _ctx = context;
 
-            _isInitialized = true;
-        }
-        else
-        {
-            Debug.LogError("[DailyResolution] FATAL: AppCore não encontrado.");
-        }
+        // Guardamos as referências que vieram da cena
+        _analyzingController = visualController;
+        _gridSlotScanner = scannerController;
+
+        _isInitialized = true;
+
+        // Logs de verificação (Debug)
+        if (_analyzingController == null) Debug.LogWarning("[DailyResolution] Rodando sem AnalyzingController (Modo Headless?)");
+        if (_gridSlotScanner == null) Debug.LogWarning("[DailyResolution] Rodando sem GridSlotScanner (Modo Headless?)");
     }
 
     public void StartEndDaySequence()
     {
-        // 1. Fail Fast (Boot Seguro)
         if (!_isInitialized)
         {
-            Debug.LogError("[DailyResolution] Erro: Sistema não inicializado. Verifique a ordem de boot.");
+            Debug.LogError("[DailyResolution] FATAL: Dependências não injetadas via Construct()!");
             return;
         }
 
         if (_isProcessing) return;
 
-        var runData = _saveManager.Data.CurrentRun;
+        var runData = _ctx.SaveManager.Data.CurrentRun;
         if (runData == null) return;
 
         StartCoroutine(ExecuteDayRoutine(runData));
@@ -55,48 +51,48 @@ public class DailyResolutionSystem : MonoBehaviour
     private IEnumerator ExecuteDayRoutine(RunData runData)
     {
         _isProcessing = true;
-        _events.Time.TriggerResolutionStarted();
+        _ctx.Events.Time.TriggerResolutionStarted();
 
-        // 1. Cria o Token de Controle
         var flowControl = new FlowControl();
+
+        // --- CONSTRUÇÃO DO PIPELINE COM INJEÇÃO EXPLÍCITA ---
+        // Note como passamos exatamente o que cada step precisa, misturando Contexto e Referências de Cena
 
         var pipeline = new List<IFlowStep>
         {
-            new GrowGridStep(AppCore.Instance.GetGridLogic(), _events, _inputManager, runData),
+            // GrowGridStep agora recebe o controller visual explicitamente
+            new GrowGridStep(_ctx.GridService, _ctx.Events, _ctx.InputManager, runData, _analyzingController),
             
-            // ? NOVO: Detectar padrões APÓS crescimento, ANTES de calcular score
+            // DetectPatternsStep recebe tracking service e scanner visual explicitamente
             new DetectPatternsStep(
-                AppCore.Instance.GetGridLogic(),
-                AppCore.Instance.PatternDetector,
-                AppCore.Instance.PatternCalculator,
+                _ctx.GridService,
+                _ctx.PatternDetector,
+                _ctx.PatternCalculator,
+                _ctx.PatternTracking, 
                 runData,
-                _events
+                _ctx.Events,
+                _gridSlotScanner      
             ),
-            
-            new CalculateScoreStep(_goalSystem, _runManager, runData, _events.Progression),
-            new AdvanceTimeStep(_runManager, _saveManager),
-            new DailyDrawStep(_handSystem, _runManager, runData)
+
+            new CalculateScoreStep(_ctx.GoalSystem, _ctx.RunManager, runData, _ctx.Events.Progression),
+            new AdvanceTimeStep(_ctx.RunManager, _ctx.SaveManager),
+            new DailyDrawStep(_ctx.HandSystem, _ctx.RunManager, runData)
         };
 
-        // --- EXECUÇÃO SEGURA ---
         foreach (var step in pipeline)
         {
-            // Passa o token para o passo
             yield return step.Execute(flowControl);
 
-            // CHECKPOINT: Se alguém apertou o botão vermelho, PARAR TUDO.
             if (flowControl.ShouldAbort)
             {
-                Debug.Log("[DailyResolution] Pipeline abortado por solicitação de um Step.");
-                break; // Sai do loop foreach imediatamente
+                Debug.Log("[DailyResolution] Pipeline abortado.");
+                break;
             }
         }
 
-        // Se abortou, talvez não devamos disparar 'ResolutionEnded' se a tela de GameOver já assumiu.
-        // Mas geralmente, liberar o estado é seguro.
         if (!flowControl.ShouldAbort)
         {
-            _events.Time.TriggerResolutionEnded();
+            _ctx.Events.Time.TriggerResolutionEnded();
             Debug.Log("=== Resolução do Dia Concluída ===");
         }
 

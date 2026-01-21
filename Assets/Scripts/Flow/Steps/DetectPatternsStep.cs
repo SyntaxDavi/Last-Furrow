@@ -12,7 +12,7 @@ using UnityEngine;
 /// 4. AdvanceTimeStep
 /// 5. DailyDrawStep
 /// 
-/// RESPONSABILIDADES (ONDA 5.5 - DUAL-SCAN):
+/// RESPONSABILIDADES (DUAL-SCAN):
 /// - [FASE 1] Verificação Inteira (GridFullVerification)
 ///   - Detecta todos os padrões de uma vez
 ///   - Calcula pontos e atualiza tracking
@@ -33,13 +33,10 @@ public class DetectPatternsStep : IFlowStep
     private readonly IGridService _gridService;
     private readonly PatternDetector _detector;
     private readonly PatternScoreCalculator _calculator;
+    private readonly PatternTrackingService _trackingService; 
     private readonly RunData _runData;
     private readonly GameEvents _events;
-    
-    // ONDA 5.5: Novo sistema dual-scan
-    private GridFullVerification _fullVerification;
-    private GridSlotScanner _slotScanner;
-    private bool _slotScannerInitialized;
+    private readonly GridSlotScanner _slotScanner;
     
     // Tracking separado para UI/Debug
     private int _lastPatternScore;
@@ -49,145 +46,86 @@ public class DetectPatternsStep : IFlowStep
     public int LastPatternCount => _lastPatternCount;
 
     public DetectPatternsStep(
-        IGridService gridService, 
+        IGridService gridService,
         PatternDetector detector,
         PatternScoreCalculator calculator,
-        RunData runData, 
-        GameEvents events)
+        PatternTrackingService trackingService, 
+        RunData runData,
+        GameEvents events,
+        GridSlotScanner slotScanner) 
     {
         _gridService = gridService;
         _detector = detector;
         _calculator = calculator;
+        _trackingService = trackingService;
         _runData = runData;
         _events = events;
-        
-        // Criar verificação completa
-        var trackingService = AppCore.Instance?.PatternTracking;
-        _fullVerification = new GridFullVerification(gridService, detector, trackingService);
+        _slotScanner = slotScanner;
     }
-
-    public IEnumerator Execute(FlowControl control)
-    {
-        Debug.Log("[DetectPatternsStep] ???????????????????????????????????????");
-        Debug.Log("[DetectPatternsStep] ===== FASE 1: VERIFICAÇÃO INTEIRA =====");
-        
-        // FASE 1: Scan completo (lógica pura, sem visual)
-        List<PatternMatch> matches = _fullVerification.Scan();
-        
-        _lastPatternCount = matches.Count;
-        
-        Debug.Log($"[DetectPatternsStep] {matches.Count} padrões detectados e armazenados no cache");
-        
-        // Calcular pontos COM METADATA
-        int points = 0;
-        PatternScoreTotalResult scoreResults = null;
-        
-        if (matches.Count > 0)
-        {
-            scoreResults = _calculator.CalculateTotalWithMetadata(matches, _gridService);
-            points = scoreResults.TotalScore;
-            
-            // Disparar eventos para UI baseado na metadata
-            foreach (var result in scoreResults.IndividualResults)
-            {
-                if (result.HasDecay)
-                {
-                    Debug.Log($"[DetectPatternsStep] Decay: {result.Match.DisplayName} (Dia {result.DaysActive}, {result.DecayMultiplier:F2}x)");
-                    _events.Pattern.TriggerPatternDecayApplied(
-                        result.Match, 
-                        result.DaysActive, 
-                        result.DecayMultiplier
-                    );
-                }
-                
-                if (result.HasRecreationBonus)
-                {
-                    Debug.Log($"[DetectPatternsStep] Recreation: {result.Match.DisplayName} (+10%)");
-                    _events.Pattern.TriggerPatternRecreated(result.Match);
-                }
-            }
-        }
-        
-        _lastPatternScore = points;
-        
-        Debug.Log($"[DetectPatternsStep] Total de pontos: {points}");
-        
-        // Atualizar HighestDailyPatternScore
-        if (points > _runData.HighestDailyPatternScore)
-        {
-            _runData.HighestDailyPatternScore = points;
-            Debug.Log($"[DetectPatternsStep] ? Novo recorde diário: {points}!");
-        }
-        
-        // Adicionar à meta semanal
-        if (points > 0)
-        {
-            int scoreBefore = _runData.CurrentWeeklyScore;
-            _runData.CurrentWeeklyScore += points;
-            
-            Debug.Log($"[DetectPatternsStep] Score semanal: {scoreBefore} + {points} = {_runData.CurrentWeeklyScore}");
-        }
-        
-        // Emitir evento legado (UI antiga pode reagir)
-        _events.Pattern.TriggerPatternsDetected(matches, points);
-        
-        // Log summary
-        LogPatternSummary(matches, points, scoreResults);
-        
-        Debug.Log("[DetectPatternsStep] ===== FASE 2: SCAN INCREMENTAL (VISUAL) =====");
-        
-        // FASE 2: Scan incremental (slot-por-slot, dispara animações)
-        // ONDA 6.0: Agora AGUARDA as animações terminarem (yield return)
-        if (matches.Count > 0)
-        {
-            yield return PlayIncrementalScan();
-        }
-        else
-        {
-            Debug.Log("[DetectPatternsStep] Nenhum padrão para animar, pulando scan incremental");
-        }
-        
-        Debug.Log("[DetectPatternsStep] ???????????????????????????????????????");
-        
-        // Delay final
-        yield return new WaitForSeconds(0.2f);
-        
-        // CLEANUP: Limpar cache ao fim da verificação
-        PatternDetectionCache.Instance?.Clear();
-        Debug.Log("[DetectPatternsStep] Cache limpo (prevenindo vazamento entre dias)");
-    }
-    
     /// <summary>
     /// Executa scan incremental (slot-por-slot) para animações.
     /// Cacheia referência ao GridSlotScanner para performance.
     /// </summary>
+    public IEnumerator Execute(FlowControl control)
+    {
+        Debug.Log("[DetectPatternsStep] ===== FASE 1: VERIFICAÇÃO INTEIRA =====");
+
+        // 1. Lógica Pura (Calcula tudo)
+        var fullVerification = new GridFullVerification(_gridService, _detector, _trackingService);
+        List<PatternMatch> matches = fullVerification.Scan();
+
+        // 2. Pontuação e Eventos de Dados
+        int points = 0;
+        if (matches.Count > 0)
+        {
+            var scoreResults = _calculator.CalculateTotalWithMetadata(matches, _gridService);
+            points = scoreResults.TotalScore;
+
+            // Disparar eventos de lógica (Decay, etc)
+            foreach (var result in scoreResults.IndividualResults)
+            {
+                if (result.HasDecay) _events.Pattern.TriggerPatternDecayApplied(result.Match, result.DaysActive, result.DecayMultiplier);
+                if (result.HasRecreationBonus) _events.Pattern.TriggerPatternRecreated(result.Match);
+            }
+
+            LogPatternSummary(matches, points, scoreResults);
+        }
+
+        // Atualizar Recordes e Meta
+        _lastPatternScore = points;
+        if (points > _runData.HighestDailyPatternScore) _runData.HighestDailyPatternScore = points;
+        if (points > 0) _runData.CurrentWeeklyScore += points;
+
+        // Dispara evento principal
+        _events.Pattern.TriggerPatternsDetected(matches, points);
+
+        Debug.Log("[DetectPatternsStep] ===== FASE 2: SCAN INCREMENTAL (VISUAL) =====");
+
+        // 3. Visual (Chama o método auxiliar AQUI)
+        if (matches.Count > 0)
+        {
+            yield return PlayIncrementalScan();
+        }
+
+        // Delay final e Limpeza
+        yield return new WaitForSeconds(0.2f);
+        PatternDetectionCache.Instance?.Clear();
+    }
+
+    // Método auxiliar limpo: só executa se tiver scanner
     private IEnumerator PlayIncrementalScan()
     {
-        // Lazy initialization do scanner (primeira chamada)
-        if (!_slotScannerInitialized)
-        {
-            _slotScanner = Object.FindFirstObjectByType<GridSlotScanner>();
-            _slotScannerInitialized = true;
-            
-            if (_slotScanner == null)
-            {
-                Debug.LogWarning("[DetectPatternsStep] GridSlotScanner não encontrado - animações desabilitadas");
-            }
-            else
-            {
-                Debug.Log("[DetectPatternsStep] GridSlotScanner cacheado");
-            }
-        }
-        
-        // Executar scan se disponível
         if (_slotScanner != null)
         {
-            Debug.Log("[DetectPatternsStep] Iniciando scan incremental...");
             yield return _slotScanner.ScanSequentially();
-            Debug.Log("[DetectPatternsStep] Scan incremental concluído");
+        }
+        else
+        {
+            Debug.LogWarning("[DetectPatternsStep] GridSlotScanner não injetado. Animações puladas.");
         }
     }
-    
+
+
     private void LogPatternSummary(List<PatternMatch> matches, int totalPoints, PatternScoreTotalResult scoreResults)
     {
         if (matches.Count == 0)

@@ -151,7 +151,6 @@ public class AppCore : MonoBehaviour
 
         // 3. Inicializa Sistemas de Regra (QUE DEPENDEM DOS SERVIÇOS ACIMA)
         // Agora, quando Initialize() rodar, o WeeklyGoalSystem já existe!
-        DailyResolutionSystem.Initialize();
 
         GameStateManager.Initialize();
 
@@ -210,8 +209,19 @@ public class AppCore : MonoBehaviour
         if (scene.name == "Boot") return;
         Camera activeCamera = Camera.main;
         if (activeCamera != null) InputManager.SetCamera(activeCamera);
-    }
 
+        // SE a cena for a de Gameplay, injeta as dependências do DailySystem
+        if (scene.name == "Game" || scene.name == _firstSceneName)
+        {
+            // Pequeno delay para garantir que o GridService da cena já se registrou no AppCore
+            StartCoroutine(InjectDailySystemRoutine());
+        }
+    }
+    private System.Collections.IEnumerator InjectDailySystemRoutine()
+    {
+        yield return null; // Espera 1 frame para GridManager registrar o GridService
+        InjectDailySystemDependencies();
+    }
     // --- REGISTRO DE SERVIÇOS DE CENA ---
 
     public IGridService GetGridLogic()
@@ -241,6 +251,43 @@ public class AppCore : MonoBehaviour
                 Debug.LogError($"[AppCore] Erro ao injetar GridService: {ex.Message}");
             }
         }
+    }
+    public void InjectDailySystemDependencies()
+    {
+        if (DailyResolutionSystem == null) return;
+
+        // 1. Validações de Dados
+        if (SaveManager?.Data?.CurrentRun == null) return;
+
+        if (PatternTracking == null)
+        {
+            InitializePatternTracking(SaveManager.Data.CurrentRun);
+        }
+
+        // 2. BUSCAR AS REFERÊNCIAS VISUAIS NA CENA ATUAL
+        // Como estamos no "OnSceneLoaded", é seguro procurar agora.
+        // Isso substitui o "arrastar no inspector".
+        var sceneAnalyzer = FindFirstObjectByType<AnalyzingPhaseController>();
+        var sceneScanner = FindFirstObjectByType<GridSlotScanner>();
+
+        // 3. Montar o Contexto de Lógica
+        var context = new DailyResolutionContext(
+            RunManager,
+            SaveManager,
+            InputManager,
+            Events,
+            DailyHandSystem,
+            WeeklyGoalSystem,
+            GetGridLogic(),
+            PatternDetector,
+            PatternTracking,
+            PatternCalculator
+        );
+
+        // 4. Injetar TUDO no Sistema (Lógica + Visual)
+        DailyResolutionSystem.Construct(context, sceneAnalyzer, sceneScanner);
+
+        Debug.Log($"[AppCore] DailySystem Injetado. Visual encontrado? Analyzer={(sceneAnalyzer != null)}, Scanner={(sceneScanner != null)}");
     }
 
     public void UnregisterGridService()
