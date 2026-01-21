@@ -1,10 +1,9 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 /// <summary>
 /// Detecta padrão de cruz: centro + 4 adjacentes (cima, baixo, esquerda, direita).
 /// Tier 3: padrão avançado. TODAS as plantas devem estar vivas (NÃO withered).
-/// Usa PatternDefinitionSO como fonte única da verdade.
+/// Usa PatternDefinitionSO existente (CROSS).
 /// 
 /// Layout (exemplo grid 3x3):
 ///   [1]
@@ -19,12 +18,6 @@ public class CrossPatternDetector : IPatternDetector
     
     public CrossPatternDetector(PatternDefinitionSO definition)
     {
-        if (definition == null)
-        {
-            Debug.LogError("[CrossPatternDetector] Definition is null! Loading from Resources...");
-            definition = Resources.Load<PatternDefinitionSO>("Patterns/CrossPattern");
-        }
-        
         Definition = definition;
     }
     

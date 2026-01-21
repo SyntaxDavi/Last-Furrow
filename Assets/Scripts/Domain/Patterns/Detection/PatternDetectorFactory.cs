@@ -4,7 +4,7 @@ using UnityEngine;
 /// <summary>
 /// Factory para criação de detectores de padrões.
 /// SOLID: Open/Closed Principle - fácil adicionar novos detectores.
-/// Carrega definições de ScriptableObjects (Single Source of Truth).
+/// Carrega definições de PatternDefinitionSO existentes.
 /// </summary>
 public class PatternDetectorFactory
 {
@@ -12,7 +12,7 @@ public class PatternDetectorFactory
     private static bool _initialized;
     
     /// <summary>
-    /// Inicializa a factory carregando definitions dos Resources.
+    /// Inicializa a factory carregando definitions do caminho correto.
     /// </summary>
     private static void Initialize()
     {
@@ -20,40 +20,38 @@ public class PatternDetectorFactory
         
         _detectors = new List<IPatternDetector>();
         
-        // Carregar definitions dos Resources
-        var adjacentDef = Resources.Load<PatternDefinitionSO>("Patterns/AdjacentPair");
-        var lineDef = Resources.Load<PatternDefinitionSO>("Patterns/HorizontalLine");
-        var crossDef = Resources.Load<PatternDefinitionSO>("Patterns/CrossPattern");
+        // Carregar PatternLibrary (contém todas as definitions)
+        var library = Resources.Load<PatternLibrary>("PatternLibrary");
+        
+        if (library == null)
+        {
+            Debug.LogError("[PatternDetectorFactory] PatternLibrary not found in Resources!");
+            _initialized = true;
+            return;
+        }
+        
+        // Buscar definitions específicas que temos detectores implementados
+        var adjacentDef = library.GetPatternByID("ADJACENT_PAIR");
+        var lineDef = library.GetPatternByID("FULL_LINE");
+        var crossDef = library.GetPatternByID("CROSS");
         
         // Criar detectores com definitions (ordem de prioridade: mais complexo primeiro)
         if (crossDef != null)
         {
             _detectors.Add(new CrossPatternDetector(crossDef));
-        }
-        else
-        {
-            Debug.LogWarning("[PatternDetectorFactory] CrossPattern definition not found! Creating with defaults.");
-            _detectors.Add(new CrossPatternDetector(null));
+            Debug.Log($"[PatternDetectorFactory] Registered: {crossDef.DisplayName} ({crossDef.BaseScore}pts)");
         }
         
         if (lineDef != null)
         {
             _detectors.Add(new HorizontalLineDetector(lineDef));
-        }
-        else
-        {
-            Debug.LogWarning("[PatternDetectorFactory] HorizontalLine definition not found! Creating with defaults.");
-            _detectors.Add(new HorizontalLineDetector(null));
+            Debug.Log($"[PatternDetectorFactory] Registered: {lineDef.DisplayName} ({lineDef.BaseScore}pts)");
         }
         
         if (adjacentDef != null)
         {
             _detectors.Add(new AdjacentPairDetector(adjacentDef));
-        }
-        else
-        {
-            Debug.LogWarning("[PatternDetectorFactory] AdjacentPair definition not found! Creating with defaults.");
-            _detectors.Add(new AdjacentPairDetector(null));
+            Debug.Log($"[PatternDetectorFactory] Registered: {adjacentDef.DisplayName} ({adjacentDef.BaseScore}pts)");
         }
         
         Debug.Log($"[PatternDetectorFactory] {_detectors.Count} detectores registrados");
@@ -96,4 +94,5 @@ public class PatternDetectorFactory
         Debug.Log($"[PatternDetectorFactory] Detector '{detector.Definition.PatternID}' registrado");
     }
 }
+
 

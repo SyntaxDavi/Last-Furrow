@@ -1,10 +1,9 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 /// <summary>
 /// Detecta pares de crops adjacentes horizontalmente.
 /// Padrão mais simples: 2 crops lado a lado (NÃO withered).
-/// Usa PatternDefinitionSO como fonte única da verdade.
+/// Usa PatternDefinitionSO existente (ADJACENT_PAIR).
 /// </summary>
 public class AdjacentPairDetector : IPatternDetector
 {
@@ -12,12 +11,6 @@ public class AdjacentPairDetector : IPatternDetector
     
     public AdjacentPairDetector(PatternDefinitionSO definition)
     {
-        if (definition == null)
-        {
-            Debug.LogError("[AdjacentPairDetector] Definition is null! Loading from Resources...");
-            definition = Resources.Load<PatternDefinitionSO>("Patterns/AdjacentPair");
-        }
-        
         Definition = definition;
     }
     

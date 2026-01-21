@@ -1,10 +1,9 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 /// <summary>
 /// Detecta linha horizontal completa (3 crops em sequência, NÃO withered).
 /// Tier 2: mais valioso que par adjacente.
-/// Usa PatternDefinitionSO como fonte única da verdade.
+/// Usa PatternDefinitionSO existente (FULL_LINE).
 /// </summary>
 public class HorizontalLineDetector : IPatternDetector
 {
@@ -14,12 +13,6 @@ public class HorizontalLineDetector : IPatternDetector
     
     public HorizontalLineDetector(PatternDefinitionSO definition)
     {
-        if (definition == null)
-        {
-            Debug.LogError("[HorizontalLineDetector] Definition is null! Loading from Resources...");
-            definition = Resources.Load<PatternDefinitionSO>("Patterns/HorizontalLine");
-        }
-        
         Definition = definition;
     }
     
