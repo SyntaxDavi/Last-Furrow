@@ -73,7 +73,8 @@ public class AnalyzingPhaseController : MonoBehaviour
             
             events.Grid.TriggerAnalyzeSlot(slotIndex);
             
-            StartCoroutine(LevitateSlot(slot));
+            // AGUARDAR levitação terminar (pipeline sincronizado)
+            yield return LevitateSlot(slot);
             
             // Tentar detectar padrões neste slot (ordem de prioridade)
             PatternMatch foundPattern = null;
@@ -101,11 +102,11 @@ public class AnalyzingPhaseController : MonoBehaviour
                         // Disparar evento para highlights/popup
                         events.Pattern.TriggerPatternSlotCompleted(foundPattern);
                         
-                        // HARDCODE: Chamar popup via UIManager (resolve problema de GameObject inativo)
+                        // AGUARDAR popup terminar (pipeline sincronizado)
                         if (_uiManager != null)
                         {
                             Debug.Log($"[AnalyzingPhaseController] ?? Showing popup via UIManager: {foundPattern.DisplayName}");
-                            _uiManager.ShowPatternPopupDirect(foundPattern);
+                            yield return _uiManager.ShowPatternPopupRoutine(foundPattern);
                         }
                         else
                         {

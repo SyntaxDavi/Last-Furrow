@@ -120,11 +120,12 @@ public class PatternUIManager : MonoBehaviour
     }
     
     /// <summary>
-    /// WRAPPER: Método público para chamada direta (delega para controller).
+    /// WRAPPER: Método público para chamada direta (fire-and-forget, não aguarda).
+    /// Use ShowPatternPopupRoutine() se precisar aguardar no pipeline.
     /// </summary>
     public void ShowPatternPopupDirect(PatternMatch match)
     {
-        Debug.Log($"[PatternUIManager] ?? WRAPPER: Direct call for {match.DisplayName}");
+        Debug.Log($"[PatternUIManager] ?? WRAPPER: Direct call (fire-and-forget) for {match.DisplayName}");
         
         if (_popupController != null)
         {
@@ -135,6 +136,30 @@ public class PatternUIManager : MonoBehaviour
             }
             
             StartCoroutine(ShowPatternRoutine(match));
+        }
+        else
+        {
+            Debug.LogError("[PatternUIManager] ? PopupController is NULL!");
+        }
+    }
+    
+    /// <summary>
+    /// PIPELINE-SAFE: Retorna IEnumerator para caller aguardar animação completa.
+    /// Use este método quando o pipeline precisa sincronizar (yield return).
+    /// </summary>
+    public IEnumerator ShowPatternPopupRoutine(PatternMatch match)
+    {
+        Debug.Log($"[PatternUIManager] ?? PIPELINE call (awaitable) for {match.DisplayName}");
+        
+        if (_popupController != null)
+        {
+            // Garantir que o GameObject está ativo
+            if (!_popupController.gameObject.activeInHierarchy)
+            {
+                _popupController.gameObject.SetActive(true);
+            }
+            
+            yield return ShowPatternRoutine(match);
         }
         else
         {
