@@ -55,6 +55,8 @@ public class AnalyzingPhaseController : MonoBehaviour
         }
         
         _processedSlots.Clear();
+        var foundPatterns = new List<PatternMatch>();
+        int totalPoints = 0;
         
         // Analisar cada slot
         for (int i = 0; i < allSlots.Length; i++)
@@ -92,7 +94,11 @@ public class AnalyzingPhaseController : MonoBehaviour
                             _processedSlots.Add(processedSlot);
                         }
                         
-                        // Disparar evento
+                        // Adicionar à lista
+                        foundPatterns.Add(foundPattern);
+                        totalPoints += foundPattern.BaseScore;
+                        
+                        // Disparar evento para highlights/popup
                         events.Pattern.TriggerPatternSlotCompleted(foundPattern);
                         
                         // Mostrar popup
@@ -116,6 +122,13 @@ public class AnalyzingPhaseController : MonoBehaviour
             {
                 yield return null;
             }
+        }
+        
+        // Disparar evento geral para breathing
+        if (foundPatterns.Count > 0)
+        {
+            events.Pattern.TriggerPatternsDetected(foundPatterns, totalPoints);
+            _config.DebugLog($"Breathing event dispatched: {foundPatterns.Count} patterns, {totalPoints} points");
         }
         
         _config.DebugLog("Grid analysis complete");

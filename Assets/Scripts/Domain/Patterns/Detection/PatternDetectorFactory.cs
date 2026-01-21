@@ -4,30 +4,68 @@ using UnityEngine;
 /// <summary>
 /// Factory para criação de detectores de padrões.
 /// SOLID: Open/Closed Principle - fácil adicionar novos detectores.
+/// Carrega definições de ScriptableObjects (Single Source of Truth).
 /// </summary>
 public class PatternDetectorFactory
 {
     private static List<IPatternDetector> _detectors;
+    private static bool _initialized;
+    
+    /// <summary>
+    /// Inicializa a factory carregando definitions dos Resources.
+    /// </summary>
+    private static void Initialize()
+    {
+        if (_initialized) return;
+        
+        _detectors = new List<IPatternDetector>();
+        
+        // Carregar definitions dos Resources
+        var adjacentDef = Resources.Load<PatternDefinitionSO>("Patterns/AdjacentPair");
+        var lineDef = Resources.Load<PatternDefinitionSO>("Patterns/HorizontalLine");
+        var crossDef = Resources.Load<PatternDefinitionSO>("Patterns/CrossPattern");
+        
+        // Criar detectores com definitions (ordem de prioridade: mais complexo primeiro)
+        if (crossDef != null)
+        {
+            _detectors.Add(new CrossPatternDetector(crossDef));
+        }
+        else
+        {
+            Debug.LogWarning("[PatternDetectorFactory] CrossPattern definition not found! Creating with defaults.");
+            _detectors.Add(new CrossPatternDetector(null));
+        }
+        
+        if (lineDef != null)
+        {
+            _detectors.Add(new HorizontalLineDetector(lineDef));
+        }
+        else
+        {
+            Debug.LogWarning("[PatternDetectorFactory] HorizontalLine definition not found! Creating with defaults.");
+            _detectors.Add(new HorizontalLineDetector(null));
+        }
+        
+        if (adjacentDef != null)
+        {
+            _detectors.Add(new AdjacentPairDetector(adjacentDef));
+        }
+        else
+        {
+            Debug.LogWarning("[PatternDetectorFactory] AdjacentPair definition not found! Creating with defaults.");
+            _detectors.Add(new AdjacentPairDetector(null));
+        }
+        
+        Debug.Log($"[PatternDetectorFactory] {_detectors.Count} detectores registrados");
+        _initialized = true;
+    }
     
     /// <summary>
     /// Retorna todos os detectores disponíveis, ordenados por prioridade.
-    /// Detectores mais complexos/valiosos primeiro para evitar overlaps.
     /// </summary>
     public static List<IPatternDetector> GetAllDetectors()
     {
-        if (_detectors == null)
-        {
-            _detectors = new List<IPatternDetector>
-            {
-                // Ordem de prioridade: mais complexo primeiro
-                new CrossPatternDetector(),        // Tier 3: 35 pts
-                new HorizontalLineDetector(),      // Tier 2: 15 pts
-                new AdjacentPairDetector()         // Tier 1: 5 pts
-            };
-            
-            Debug.Log($"[PatternDetectorFactory] {_detectors.Count} detectores registrados");
-        }
-        
+        Initialize();
         return _detectors;
     }
     
@@ -36,8 +74,8 @@ public class PatternDetectorFactory
     /// </summary>
     public static IPatternDetector GetDetector(string patternID)
     {
-        var detectors = GetAllDetectors();
-        return detectors.Find(d => d.PatternID == patternID);
+        Initialize();
+        return _detectors.Find(d => d.Definition.PatternID == patternID);
     }
     
     /// <summary>
@@ -45,16 +83,17 @@ public class PatternDetectorFactory
     /// </summary>
     public static void RegisterDetector(IPatternDetector detector)
     {
-        var detectors = GetAllDetectors();
+        Initialize();
         
         // Evitar duplicatas
-        if (detectors.Exists(d => d.PatternID == detector.PatternID))
+        if (_detectors.Exists(d => d.Definition.PatternID == detector.Definition.PatternID))
         {
-            Debug.LogWarning($"[PatternDetectorFactory] Detector '{detector.PatternID}' já registrado");
+            Debug.LogWarning($"[PatternDetectorFactory] Detector '{detector.Definition.PatternID}' já registrado");
             return;
         }
         
-        detectors.Add(detector);
-        Debug.Log($"[PatternDetectorFactory] Detector '{detector.PatternID}' registrado");
+        _detectors.Add(detector);
+        Debug.Log($"[PatternDetectorFactory] Detector '{detector.Definition.PatternID}' registrado");
     }
 }
+

@@ -1353,8 +1353,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f4ad1e6af402c44699927b65d05325f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _slotScanSpeed: 0.47
-  _highlightDuration: 2
+  _config: {fileID: 11400000, guid: 0ce5f80d9d042f246974393c9aa66073, type: 2}
   _gridManager: {fileID: 434515749}
   _patternPopup: {fileID: 1362975650}
 --- !u!1 &521356419
@@ -4965,9 +4964,6 @@ MonoBehaviour:
   _patternNameText: {fileID: 1152418916}
   _scoreText: {fileID: 621747702}
   _canvasGroup: {fileID: 1362975649}
-  _animationDuration: 2.24
-  _startScale: 0.517
-  _endScale: 1.046
 --- !u!1 &1400629001
 GameObject:
   m_ObjectHideFlags: 0

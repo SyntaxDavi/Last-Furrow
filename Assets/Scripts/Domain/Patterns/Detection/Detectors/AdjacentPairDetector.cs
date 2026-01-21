@@ -1,21 +1,37 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
 /// Detecta pares de crops adjacentes horizontalmente.
-/// Padrão mais simples: 2 crops lado a lado.
+/// Padrão mais simples: 2 crops lado a lado (NÃO withered).
+/// Usa PatternDefinitionSO como fonte única da verdade.
 /// </summary>
 public class AdjacentPairDetector : IPatternDetector
 {
-    public string PatternID => "ADJACENT_PAIR";
-    public string DisplayName => "Par Adjacente";
-    public int BaseScore => 5;
+    public PatternDefinitionSO Definition { get; private set; }
+    
+    public AdjacentPairDetector(PatternDefinitionSO definition)
+    {
+        if (definition == null)
+        {
+            Debug.LogError("[AdjacentPairDetector] Definition is null! Loading from Resources...");
+            definition = Resources.Load<PatternDefinitionSO>("Patterns/AdjacentPair");
+        }
+        
+        Definition = definition;
+    }
     
     public bool CanDetectAt(IGridService gridService, int slotIndex)
     {
         if (!gridService.IsSlotUnlocked(slotIndex)) return false;
         
         var slotData = gridService.GetSlotReadOnly(slotIndex);
-        return slotData != null && slotData.CropID.IsValid;
+        if (slotData == null || !slotData.CropID.IsValid) return false;
+        
+        // CRÍTICO: Ignorar plantas withered!
+        if (slotData.IsWithered) return false;
+        
+        return true;
     }
     
     public PatternMatch DetectAt(IGridService gridService, int slotIndex, int[] allSlotIndices)
@@ -25,14 +41,15 @@ public class AdjacentPairDetector : IPatternDetector
         // Verificar próximo slot horizontal
         int nextIndex = slotIndex + 1;
         
-        // Validar se próximo existe
         if (nextIndex >= allSlotIndices.Length) return null;
         
-        // Verificar se próximo tem crop
         if (!gridService.IsSlotUnlocked(nextIndex)) return null;
         
         var nextSlotData = gridService.GetSlotReadOnly(nextIndex);
         if (nextSlotData == null || !nextSlotData.CropID.IsValid) return null;
+        
+        // CRÍTICO: Próximo slot também não pode estar withered!
+        if (nextSlotData.IsWithered) return null;
         
         // Padrão encontrado!
         var slotIndices = new List<int> { slotIndex, nextIndex };
@@ -43,10 +60,10 @@ public class AdjacentPairDetector : IPatternDetector
         };
         
         var match = PatternMatch.Create(
-            patternID: PatternID,
-            displayName: DisplayName,
+            patternID: Definition.PatternID,
+            displayName: Definition.DisplayName,
             slotIndices: slotIndices,
-            baseScore: BaseScore,
+            baseScore: Definition.BaseScore,
             cropIDs: cropIDs,
             debugDescription: $"Slots {slotIndex}-{nextIndex}"
         );
@@ -55,3 +72,4 @@ public class AdjacentPairDetector : IPatternDetector
         return match;
     }
 }
+

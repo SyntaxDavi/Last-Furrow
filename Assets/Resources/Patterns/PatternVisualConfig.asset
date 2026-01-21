@@ -12,53 +12,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a215743064ce9045a120aaf40344822, type: 3}
   m_Name: PatternVisualConfig
   m_EditorClassIdentifier: 
-  tier1Color: {r: 0.64705884, g: 1, b: 1, a: 1}
-  tier2Color: {r: 0.2, g: 0.8, b: 0.2, a: 1}
-  tier3Color: {r: 1, g: 0.84, b: 0, a: 1}
-  tier4Color: {r: 0.8, g: 0.2, b: 1, a: 1}
-  pulseSpeed: 5
-  highlightDuration: 3
-  sequentialDelay: 0.5
-  highlightPulseSpeed: 9.66
-  highlightDelayBetween: 0.5
-  highlightFadeDuration: 2
-  analyzingDurationPerSlot: 0.05
-  analyzingLevitationHeight: 0.05
-  analyzingOnlyPlants: 1
-  analyzingShowPulse: 1
-  onlyHighlightImportantDecay: 1
-  importantDecayThreshold: 39
-  criticalDecayDaysThreshold: 5
-  decayWarningColor: {r: 1, g: 0.3, b: 0.3, a: 1}
-  popupOffset: {x: 0, y: 50}
-  fadeInDuration: 0.2
-  holdDuration: 0.8
-  fadeOutDuration: 0.2
-  baseTextSize: 36
-  scaleBonusPerTier: 1.2
-  breathingAmount: 0.05
-  breathingSpeed: 0.974
-  plantReactionStrength: 0.0472
-  harvestReactionStrength: 0.0491
+  tier1Color: {r: 0.3504961, g: 1, b: 0.28773582, a: 1}
+  tier2Color: {r: 1, g: 0.9340743, b: 0.3160377, a: 1}
+  tier3Color: {r: 1, g: 0.27164674, b: 0, a: 1}
+  tier4Color: {r: 0.15633601, g: 0, b: 0.754717, a: 1}
+  analyzingSlotDelay: 0.371
+  levitationHeight: 0.126
+  levitationDuration: 0.2
+  highlightDuration: 1.74
+  highlightPulseSpeed: 3.28
+  highlightFadeOutDuration: 0.3
+  popupAnimationDuration: 1.5
+  popupStartScale: 0.5
+  popupEndScale: 1
+  breathingAmount: 0.0413
+  breathingSpeed: 0.889
   patternReactionStrength: 0.069
   reactionDuration: 0.491
-  maxActiveParticles: 50
-  maxParticlesPerBurst: 20
-  particleLOD: 1
-  enableParticles: 1
-  highlightSortingOrder: 5
-  popupSortingOrder: 10
-  comboSortingOrder: 8
-  synergiaSortingOrder: 3
-  particleSortingOrder: 1
-  popupPoolSize: 5
-  particlePoolSize: 20
-  preWarmPools: 1
+  criticalDecayDaysThreshold: 3
+  decayWarningColor: {r: 1, g: 0.3, b: 0.3, a: 1}
   debugMode: 1
-  showTierColors: 1
-  logVisualEvents: 1
-  disablePooling: 0
   freezeAnimations: 0
-  showPerformanceMetrics: 0
-  forceDecayVisual: 0
-  forceTierOverride: 0

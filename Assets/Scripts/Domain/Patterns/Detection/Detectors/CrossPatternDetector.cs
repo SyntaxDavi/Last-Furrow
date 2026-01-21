@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
 /// Detecta padrão de cruz: centro + 4 adjacentes (cima, baixo, esquerda, direita).
-/// Tier 3: padrão avançado.
+/// Tier 3: padrão avançado. TODAS as plantas devem estar vivas (NÃO withered).
+/// Usa PatternDefinitionSO como fonte única da verdade.
 /// 
 /// Layout (exemplo grid 3x3):
 ///   [1]
@@ -11,34 +13,45 @@ using System.Collections.Generic;
 /// </summary>
 public class CrossPatternDetector : IPatternDetector
 {
-    public string PatternID => "CROSS_PATTERN";
-    public string DisplayName => "Cruz";
-    public int BaseScore => 35;
+    public PatternDefinitionSO Definition { get; private set; }
     
     private const int GRID_WIDTH = 3; // Assumindo grid 3x3
+    
+    public CrossPatternDetector(PatternDefinitionSO definition)
+    {
+        if (definition == null)
+        {
+            Debug.LogError("[CrossPatternDetector] Definition is null! Loading from Resources...");
+            definition = Resources.Load<PatternDefinitionSO>("Patterns/CrossPattern");
+        }
+        
+        Definition = definition;
+    }
     
     public bool CanDetectAt(IGridService gridService, int slotIndex)
     {
         if (!gridService.IsSlotUnlocked(slotIndex)) return false;
         
         var slotData = gridService.GetSlotReadOnly(slotIndex);
-        return slotData != null && slotData.CropID.IsValid;
+        if (slotData == null || !slotData.CropID.IsValid) return false;
+        
+        // CRÍTICO: Ignorar plantas withered!
+        if (slotData.IsWithered) return false;
+        
+        return true;
     }
     
     public PatternMatch DetectAt(IGridService gridService, int slotIndex, int[] allSlotIndices)
     {
         if (!CanDetectAt(gridService, slotIndex)) return null;
         
-        // Centro da cruz
         int center = slotIndex;
         
-        // Calcular posições adjacentes
         int top = center - GRID_WIDTH;
         int bottom = center + GRID_WIDTH;
         int left = center - 1;
         int right = center + 1;
         
-        // Validar se todas as posições existem
         if (top < 0 || bottom >= allSlotIndices.Length) return null;
         if (left < 0 || right >= allSlotIndices.Length) return null;
         
@@ -49,7 +62,7 @@ public class CrossPatternDetector : IPatternDetector
         
         if (leftRow != centerRow || rightRow != centerRow) return null;
         
-        // Verificar se todos os slots têm crops
+        // Verificar se todos os slots têm crops VIVAS
         int[] crossIndices = { center, top, bottom, left, right };
         var slotIndices = new List<int>();
         var cropIDs = new List<CropID>();
@@ -61,16 +74,19 @@ public class CrossPatternDetector : IPatternDetector
             var slotData = gridService.GetSlotReadOnly(idx);
             if (slotData == null || !slotData.CropID.IsValid) return null;
             
+            // CRÍTICO: Todos devem estar vivos!
+            if (slotData.IsWithered) return null;
+            
             slotIndices.Add(idx);
             cropIDs.Add(slotData.CropID);
         }
         
         // Cruz encontrada!
         var match = PatternMatch.Create(
-            patternID: PatternID,
-            displayName: DisplayName,
+            patternID: Definition.PatternID,
+            displayName: Definition.DisplayName,
             slotIndices: slotIndices,
-            baseScore: BaseScore,
+            baseScore: Definition.BaseScore,
             cropIDs: cropIDs,
             debugDescription: $"Centro: {center}"
         );
@@ -79,3 +95,4 @@ public class CrossPatternDetector : IPatternDetector
         return match;
     }
 }
+

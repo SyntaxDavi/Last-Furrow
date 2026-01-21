@@ -1,23 +1,39 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
-/// Detecta linha horizontal completa (3 crops em sequência).
+/// Detecta linha horizontal completa (3 crops em sequência, NÃO withered).
 /// Tier 2: mais valioso que par adjacente.
+/// Usa PatternDefinitionSO como fonte única da verdade.
 /// </summary>
 public class HorizontalLineDetector : IPatternDetector
 {
-    public string PatternID => "HORIZONTAL_LINE";
-    public string DisplayName => "Linha Horizontal";
-    public int BaseScore => 15;
+    public PatternDefinitionSO Definition { get; private set; }
     
     private const int LINE_SIZE = 3;
+    
+    public HorizontalLineDetector(PatternDefinitionSO definition)
+    {
+        if (definition == null)
+        {
+            Debug.LogError("[HorizontalLineDetector] Definition is null! Loading from Resources...");
+            definition = Resources.Load<PatternDefinitionSO>("Patterns/HorizontalLine");
+        }
+        
+        Definition = definition;
+    }
     
     public bool CanDetectAt(IGridService gridService, int slotIndex)
     {
         if (!gridService.IsSlotUnlocked(slotIndex)) return false;
         
         var slotData = gridService.GetSlotReadOnly(slotIndex);
-        return slotData != null && slotData.CropID.IsValid;
+        if (slotData == null || !slotData.CropID.IsValid) return false;
+        
+        // CRÍTICO: Ignorar plantas withered!
+        if (slotData.IsWithered) return false;
+        
+        return true;
     }
     
     public PatternMatch DetectAt(IGridService gridService, int slotIndex, int[] allSlotIndices)
@@ -27,19 +43,20 @@ public class HorizontalLineDetector : IPatternDetector
         var slotIndices = new List<int>();
         var cropIDs = new List<CropID>();
         
-        // Verificar se temos 3 slots consecutivos com crops
+        // Verificar se temos 3 slots consecutivos com crops VIVAS
         for (int i = 0; i < LINE_SIZE; i++)
         {
             int checkIndex = slotIndex + i;
             
-            // Validar índice
             if (checkIndex >= allSlotIndices.Length) return null;
             
-            // Verificar se slot está desbloqueado e tem crop
             if (!gridService.IsSlotUnlocked(checkIndex)) return null;
             
             var slotData = gridService.GetSlotReadOnly(checkIndex);
             if (slotData == null || !slotData.CropID.IsValid) return null;
+            
+            // CRÍTICO: Todos os slots devem estar vivos!
+            if (slotData.IsWithered) return null;
             
             slotIndices.Add(checkIndex);
             cropIDs.Add(slotData.CropID);
@@ -47,10 +64,10 @@ public class HorizontalLineDetector : IPatternDetector
         
         // Linha completa encontrada!
         var match = PatternMatch.Create(
-            patternID: PatternID,
-            displayName: DisplayName,
+            patternID: Definition.PatternID,
+            displayName: Definition.DisplayName,
             slotIndices: slotIndices,
-            baseScore: BaseScore,
+            baseScore: Definition.BaseScore,
             cropIDs: cropIDs,
             debugDescription: $"Slots {slotIndex}-{slotIndex + LINE_SIZE - 1}"
         );
@@ -59,3 +76,4 @@ public class HorizontalLineDetector : IPatternDetector
         return match;
     }
 }
+

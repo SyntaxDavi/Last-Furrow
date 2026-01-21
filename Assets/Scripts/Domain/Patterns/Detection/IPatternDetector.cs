@@ -1,23 +1,14 @@
 /// <summary>
 /// Interface para detecção de padrões específicos no grid.
 /// Strategy Pattern: cada detector implementa sua lógica de detecção.
+/// Integrado com PatternDefinitionSO para Single Source of Truth.
 /// </summary>
 public interface IPatternDetector
 {
     /// <summary>
-    /// ID único do padrão (ex: "ADJACENT_PAIR", "FULL_LINE", "CROSS")
+    /// Definição do padrão (ScriptableObject com ID, nome, score, tier).
     /// </summary>
-    string PatternID { get; }
-    
-    /// <summary>
-    /// Nome exibido na UI (ex: "Par Adjacente", "Linha Completa")
-    /// </summary>
-    string DisplayName { get; }
-    
-    /// <summary>
-    /// Pontuação base do padrão
-    /// </summary>
-    int BaseScore { get; }
+    PatternDefinitionSO Definition { get; }
     
     /// <summary>
     /// Detecta o padrão em um slot específico e seus adjacentes.
@@ -30,7 +21,8 @@ public interface IPatternDetector
     
     /// <summary>
     /// Verifica se este detector pode ser aplicado neste slot.
-    /// Útil para otimização (ex: não testar linha se slot está bloqueado)
+    /// Útil para otimização (ex: não testar linha se slot está bloqueado/withered)
     /// </summary>
     bool CanDetectAt(IGridService gridService, int slotIndex);
 }
+
