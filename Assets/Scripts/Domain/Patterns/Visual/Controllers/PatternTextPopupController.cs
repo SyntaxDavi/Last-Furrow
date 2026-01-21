@@ -134,7 +134,7 @@ public class PatternTextPopupController : MonoBehaviour
         
         _config?.DebugLog($"[PatternTextPopup] Mostrando nome: {match.DisplayName}");
         
-        // Configurar texto
+        // Configurar texto do NOME
         _patternNameText.text = match.DisplayName.ToUpper();
         Debug.Log($"[PatternTextPopup] Texto configurado: '{_patternNameText.text}'");
         
@@ -155,11 +155,17 @@ public class PatternTextPopupController : MonoBehaviour
         
         _patternNameText.color = tierColor;
         
-        // Esconder score text por padrão
+        // MOSTRAR também o SCORE TEXT
         if (_scoreText != null)
         {
-            _scoreText.gameObject.SetActive(false);
-            Debug.Log($"[PatternTextPopup] ScoreText escondido");
+            _scoreText.text = $"+{match.BaseScore}";
+            _scoreText.color = tierColor;
+            _scoreText.gameObject.SetActive(true);
+            Debug.Log($"[PatternTextPopup] ScoreText ATIVADO: '{_scoreText.text}' com cor {tierColor}");
+        }
+        else
+        {
+            Debug.LogWarning($"[PatternTextPopup] ScoreText é NULL - não vai aparecer!");
         }
         
         Debug.Log($"[PatternTextPopup] Iniciando AnimatePopup...");

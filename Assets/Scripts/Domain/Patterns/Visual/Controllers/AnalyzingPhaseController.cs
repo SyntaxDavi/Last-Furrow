@@ -16,13 +16,16 @@ using UnityEngine;
 /// </summary>
 public class AnalyzingPhaseController : MonoBehaviour
 {
-    [Header("HARDCODE Settings")]
-    [SerializeField] private float _delayPerSlot = 0.3f;
-    [SerializeField] private float _highlightDuration = 2f;
-    [SerializeField] private GridManager _gridManager;
+[Header("HARDCODE Settings")]
+[Tooltip("Delay entre verificação de cada slot (mais baixo = mais rápido)")]
+[Range(0f, 1f)]
+[SerializeField] private float _slotScanSpeed = 0.1f;
     
-    [Header("Pattern Popup")]
-    [SerializeField] private PatternTextPopupController _patternPopup;
+[SerializeField] private float _highlightDuration = 2f;
+[SerializeField] private GridManager _gridManager;
+    
+[Header("Pattern Popup")]
+[SerializeField] private PatternTextPopupController _patternPopup;
     
     private void Awake()
     {
@@ -177,8 +180,15 @@ public class AnalyzingPhaseController : MonoBehaviour
                 }
             }
             
-            // Delay reduzido antes do próximo slot (apenas para não sobrecarregar)
-            yield return null; // Apenas um frame
+            // Delay configurável entre slots
+            if (_slotScanSpeed > 0f)
+            {
+                yield return new WaitForSeconds(_slotScanSpeed);
+            }
+            else
+            {
+                yield return null; // Se speed = 0, apenas um frame
+            }
         }
         
         Debug.Log("====================================================================");
