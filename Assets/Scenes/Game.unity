@@ -1341,7 +1341,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _slotScanDelay: 0.1
   _gridManager: {fileID: 434515749}
-  _uiManager: {fileID: 0}
+  _uiManager: {fileID: 1726399248}
 --- !u!114 &434515752
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2999,7 +2999,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _config: {fileID: 11400000, guid: 0ce5f80d9d042f246974393c9aa66073, type: 2}
   _gridManager: {fileID: 434515749}
-  _uiManager: {fileID: 0}
+  _uiManager: {fileID: 1726399248}
 --- !u!4 &880657817
 Transform:
   m_ObjectHideFlags: 0

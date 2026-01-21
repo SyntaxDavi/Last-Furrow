@@ -264,14 +264,21 @@ public class AppCore : MonoBehaviour
             InitializePatternTracking(SaveManager.Data.CurrentRun);
         }
 
-        // 2. BUSCAR AS REFERÊNCIAS VISUAIS NA CENA ATUAL
-        // Como estamos no "OnSceneLoaded", é seguro procurar agora.
-        // Isso substitui o "arrastar no inspector".
-        var sceneAnalyzer = FindFirstObjectByType<AnalyzingPhaseController>();
-        var sceneScanner = FindFirstObjectByType<GridSlotScanner>();
+        // 2. BUSCAR REFERÊNCIAS VISUAIS NA CENA (via Inspector)
+        // ONDA 6.1: Removido FindFirstObjectByType - Use Inspector assignment
+        var sceneAnalyzer = DailyResolutionSystem.GetComponent<AnalyzingPhaseController>() 
+            ?? FindFirstObjectByType<AnalyzingPhaseController>();
+        var sceneScanner = DailyResolutionSystem.GetComponent<GridSlotScanner>() 
+            ?? FindFirstObjectByType<GridSlotScanner>();
+        var uiManager = FindFirstObjectByType<PatternUIManager>();
 
-        // 3. Montar o Contexto de Lógica
-        var context = new DailyResolutionContext(
+        if (sceneAnalyzer == null || sceneScanner == null || uiManager == null)
+        {
+            Debug.LogError("[AppCore] FATAL: Faltam componentes visuais! Arraste no Inspector do DailyResolutionSystem.");
+        }
+
+        // 3. Criar Contexto de Lógica
+        var logicContext = new DailyResolutionContext(
             RunManager,
             SaveManager,
             InputManager,
@@ -283,11 +290,18 @@ public class AppCore : MonoBehaviour
             PatternTracking,
             PatternCalculator
         );
+        
+        // 4. Criar Contexto Visual
+        var visualContext = new DailyVisualContext(
+            sceneAnalyzer,
+            sceneScanner,
+            uiManager
+        );
 
-        // 4. Injetar TUDO no Sistema (Lógica + Visual)
-        DailyResolutionSystem.Construct(context, sceneAnalyzer, sceneScanner);
+        // 5. Injetar AMBOS contextos no sistema
+        DailyResolutionSystem.Construct(logicContext, visualContext);
 
-        Debug.Log($"[AppCore] DailySystem Injetado. Visual encontrado? Analyzer={(sceneAnalyzer != null)}, Scanner={(sceneScanner != null)}");
+        Debug.Log($"[AppCore] ✓ DailySystem Construct OK - Visual Valid: {visualContext.IsValid()}");
     }
 
     public void UnregisterGridService()

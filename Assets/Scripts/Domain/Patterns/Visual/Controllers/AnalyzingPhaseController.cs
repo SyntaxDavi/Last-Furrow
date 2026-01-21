@@ -28,9 +28,10 @@ public class AnalyzingPhaseController : MonoBehaviour
             _config = Resources.Load<PatternVisualConfig>("Patterns/PatternVisualConfig");
         }
 
+        // ONDA 6.1: Remover FindFirstObjectByType - Validar apenas (atribuir no Inspector)
         if (_uiManager == null)
         {
-            _uiManager = FindFirstObjectByType<PatternUIManager>();
+            Debug.LogError("[AnalyzingPhaseController] PatternUIManager não atribuído no Inspector!");
         }
 
         // Obter todos os detectores da factory

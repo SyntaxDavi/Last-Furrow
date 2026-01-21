@@ -41,10 +41,11 @@ public class GridSlotScanner : MonoBehaviour
             return;
         }
 
-        // Lazy Get (Mantido, mas idealmente seria injetado)
+        // ONDA 6.1: Remover FindFirstObjectByType - Apenas validar
         if (_uiManager == null)
         {
-            _uiManager = FindFirstObjectByType<PatternUIManager>();
+            Debug.LogError("[GridSlotScanner] PatternUIManager não atribuído no Inspector!");
+            return;
         }
 
         if (PatternDetectionCache.Instance == null || !PatternDetectionCache.Instance.HasPatterns())

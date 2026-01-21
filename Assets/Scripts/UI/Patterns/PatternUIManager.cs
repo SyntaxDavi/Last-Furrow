@@ -25,21 +25,22 @@ public class PatternUIManager : MonoBehaviour
     private void Awake()
     {
         Debug.Log("[PatternUIManager] ========== AWAKE (Wrapper) ==========");
-
+        
         if (_config == null)
         {
             _config = Resources.Load<PatternVisualConfig>("Patterns/PatternVisualConfig");
         }
-
+        
+        // ONDA 6.1: Remover FindFirstObjectByType - Validar apenas (atribuir no Inspector)
         if (_popupController == null)
         {
             _popupController = GetComponentInChildren<PatternTextPopupController>();
             if (_popupController == null)
             {
-                _popupController = FindFirstObjectByType<PatternTextPopupController>();
+                Debug.LogError("[PatternUIManager] PatternTextPopupController não encontrado! Atribua no Inspector.");
             }
         }
-
+        
         Debug.Log($"[PatternUIManager] PopupController found: {_popupController != null}");
     }
 

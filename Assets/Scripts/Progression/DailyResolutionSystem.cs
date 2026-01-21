@@ -1,36 +1,39 @@
 using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 
 public class DailyResolutionSystem : MonoBehaviour
 {
-    private AnalyzingPhaseController _analyzingController;
-    private GridSlotScanner _gridSlotScanner;
-
-    // --- DEPENDÊNCIAS DE LÓGICA (Injetadas via Code) ---
-    private DailyResolutionContext _ctx;
+    // ONDA 6.1: Dependency Injection via Context Pattern
+    private DailyResolutionContext _logicContext;
+    private DailyVisualContext _visualContext;
+    
     private bool _isInitialized = false;
     private bool _isProcessing = false;
 
-    // Método de Injeção (Chamado pelo Bootloader/AppCore)
-    public void Construct(
-       DailyResolutionContext context,
-       AnalyzingPhaseController visualController, 
-       GridSlotScanner scannerController        
-   )
+    /// <summary>
+    /// Injeção de Dependências Explícita (chamado pelo AppCore após scene load).
+    /// </summary>
+    public void Construct(DailyResolutionContext logicContext, DailyVisualContext visualContext)
     {
-        _ctx = context;
-
-        // Guardamos as referências que vieram da cena
-        _analyzingController = visualController;
-        _gridSlotScanner = scannerController;
+        _logicContext = logicContext;
+        _visualContext = visualContext;
 
         _isInitialized = true;
 
-        // Logs de verificação (Debug)
-        if (_analyzingController == null) Debug.LogWarning("[DailyResolution] Rodando sem AnalyzingController (Modo Headless?)");
-        if (_gridSlotScanner == null) Debug.LogWarning("[DailyResolution] Rodando sem GridSlotScanner (Modo Headless?)");
+        // Validações
+        if (_logicContext == null)
+        {
+            Debug.LogError("[DailyResolution] FATAL: LogicContext é NULL!");
+            _isInitialized = false;
+        }
+        
+        if (_visualContext == null || !_visualContext.IsValid())
+        {
+            Debug.LogWarning("[DailyResolution] VisualContext inválido (Modo Headless ou faltam referências)");
+        }
+        
+        Debug.Log($"[DailyResolution] ? Construct OK - Visual Valid: {_visualContext?.IsValid()}");
     }
 
     public void StartEndDaySequence()
@@ -43,7 +46,7 @@ public class DailyResolutionSystem : MonoBehaviour
 
         if (_isProcessing) return;
 
-        var runData = _ctx.SaveManager.Data.CurrentRun;
+        var runData = _logicContext.SaveManager.Data.CurrentRun;
         if (runData == null) return;
 
         ExecuteDayRoutine(runData).Forget();
@@ -52,32 +55,34 @@ public class DailyResolutionSystem : MonoBehaviour
     private async UniTaskVoid ExecuteDayRoutine(RunData runData)
     {
         _isProcessing = true;
-        _ctx.Events.Time.TriggerResolutionStarted();
+        _logicContext.Events.Time.TriggerResolutionStarted();
 
         var flowControl = new FlowControl();
-
-        // --- CONSTRUÇÃO DO PIPELINE COM INJEÇÃO EXPLÍCITA ---
-        // Note como passamos exatamente o que cada step precisa, misturando Contexto e Referências de Cena
-
         var pipeline = new List<IFlowStep>
         {
-            // GrowGridStep agora recebe o controller visual explicitamente
-            new GrowGridStep(_ctx.GridService, _ctx.Events, _ctx.InputManager, runData, _analyzingController),
+            // GrowGridStep recebe controller visual via construtor
+            new GrowGridStep(
+                _logicContext.GridService, 
+                _logicContext.Events, 
+                _logicContext.InputManager, 
+                runData, 
+                _visualContext.Analyzer  
+            ),
             
-            // DetectPatternsStep recebe tracking service e scanner visual explicitamente
+            // DetectPatternsStep recebe scanner visual via construtor
             new DetectPatternsStep(
-                _ctx.GridService,
-                _ctx.PatternDetector,
-                _ctx.PatternCalculator,
-                _ctx.PatternTracking, 
+                _logicContext.GridService,
+                _logicContext.PatternDetector,
+                _logicContext.PatternCalculator,
+                _logicContext.PatternTracking, 
                 runData,
-                _ctx.Events,
-                _gridSlotScanner      
+                _logicContext.Events,
+                _visualContext.Scanner  
             ),
 
-            new CalculateScoreStep(_ctx.GoalSystem, _ctx.RunManager, runData, _ctx.Events.Progression),
-            new AdvanceTimeStep(_ctx.RunManager, _ctx.SaveManager),
-            new DailyDrawStep(_ctx.HandSystem, _ctx.RunManager, runData)
+            new CalculateScoreStep(_logicContext.GoalSystem, _logicContext.RunManager, runData, _logicContext.Events.Progression),
+            new AdvanceTimeStep(_logicContext.RunManager, _logicContext.SaveManager),
+            new DailyDrawStep(_logicContext.HandSystem, _logicContext.RunManager, runData)
         };
 
         foreach (var step in pipeline)
@@ -96,7 +101,7 @@ public class DailyResolutionSystem : MonoBehaviour
 
         if (!flowControl.ShouldAbort)
         {
-            _ctx.Events.Time.TriggerResolutionEnded();
+            _logicContext.Events.Time.TriggerResolutionEnded();
             Debug.Log("=== Resolução do Dia Concluída ===");
         }
 
