@@ -1,18 +1,18 @@
-using System.Collections;
+using Cysharp.Threading.Tasks; 
 
 public class ChangeStateStep : IFlowStep
 {
     private readonly IWeekendStateFlow _stateFlow;
     private readonly bool _enterWeekend;
 
-    // Injeção de Dependência via Construtor
+    // Injeção de Dependência via Construtor (Mantida igual)
     public ChangeStateStep(IWeekendStateFlow stateFlow, bool enterWeekend)
     {
         _stateFlow = stateFlow;
         _enterWeekend = enterWeekend;
     }
 
-    public IEnumerator Execute(FlowControl control)
+    public async UniTask Execute(FlowControl control)
     {
         if (_enterWeekend)
         {
@@ -23,7 +23,7 @@ public class ChangeStateStep : IFlowStep
             _stateFlow.ExitWeekendState(); // Ex: GameState.Playing
         }
 
-        // Como mudança de estado é instantânea, esperamos um frame para garantir sincronia
-        yield return null;
+        // Equivalente a yield return null: Espera 1 frame para garantir sincronia
+        await UniTask.Yield();
     }
 }

@@ -1,4 +1,4 @@
-using System.Collections;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public class DailyDrawStep : IFlowStep
@@ -14,7 +14,7 @@ public class DailyDrawStep : IFlowStep
         _runData = runData;
     }
 
-    public IEnumerator Execute(FlowControl control)
+    public async UniTask Execute(FlowControl control)
     {
         // REGRA DE OURO: Só dá cartas se for dia de trabalho
         if (_runManager.CurrentPhase == RunPhase.Production)
@@ -22,14 +22,14 @@ public class DailyDrawStep : IFlowStep
             Debug.Log("[Step] Iniciando Draw Diário...");
             _handSystem.ProcessDailyDraw(_runData);
 
-            // Tempo para animação "Fan Out"
-            yield return new WaitForSeconds(0.8f);
+            // Tempo para animação "Fan Out" (0.8s = 800ms)
+            await UniTask.Delay(800);
         }
         else
         {
             Debug.Log("[Step] Fim de Semana: Sem cartas hoje.");
-            // Pequeno respiro
-            yield return new WaitForSeconds(0.5f);
+            // Pequeno respiro (0.5s = 500ms)
+            await UniTask.Delay(500);
         }
     }
 }

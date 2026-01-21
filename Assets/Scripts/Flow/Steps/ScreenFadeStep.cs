@@ -1,4 +1,5 @@
-using System.Collections;
+using Cysharp.Threading.Tasks;
+using System; // Necessário para TimeSpan
 using UnityEngine;
 
 public class ScreenFadeStep : IFlowStep
@@ -12,15 +13,16 @@ public class ScreenFadeStep : IFlowStep
         _duration = duration;
     }
 
-    public IEnumerator Execute(FlowControl control)
+    public async UniTask Execute(FlowControl control)
     {
-        // Se você tiver um sistema de Fade no AppCore, chame aqui.
-        // yield return AppCore.Instance.ScreenFader.Fade(_fadeIn, _duration);
+        // Se você tiver um sistema de Fade no AppCore, chame aqui com await.
+        // await AppCore.Instance.ScreenFader.FadeAsync(_fadeIn, _duration);
 
-        // POR ENQUANTO (Simulação para não quebrar seu código):
+        // POR ENQUANTO (Simulação):
         Debug.Log($"[Step] Iniciando Fade {(_fadeIn ? "In" : "Out")} ({_duration}s)...");
 
-        yield return new WaitForSeconds(_duration);
+        // Converte float (segundos) para TimeSpan
+        await UniTask.Delay(TimeSpan.FromSeconds(_duration));
 
         Debug.Log($"[Step] Fade {(_fadeIn ? "In" : "Out")} Completo.");
     }

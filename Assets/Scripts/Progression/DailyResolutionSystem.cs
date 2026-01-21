@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 
 public class DailyResolutionSystem : MonoBehaviour
 {
@@ -45,10 +46,10 @@ public class DailyResolutionSystem : MonoBehaviour
         var runData = _ctx.SaveManager.Data.CurrentRun;
         if (runData == null) return;
 
-        StartCoroutine(ExecuteDayRoutine(runData));
+        ExecuteDayRoutine(runData).Forget();
     }
 
-    private IEnumerator ExecuteDayRoutine(RunData runData)
+    private async UniTaskVoid ExecuteDayRoutine(RunData runData)
     {
         _isProcessing = true;
         _ctx.Events.Time.TriggerResolutionStarted();
@@ -81,13 +82,16 @@ public class DailyResolutionSystem : MonoBehaviour
 
         foreach (var step in pipeline)
         {
-            yield return step.Execute(flowControl);
+            await step.Execute(flowControl);
 
             if (flowControl.ShouldAbort)
             {
                 Debug.Log("[DailyResolution] Pipeline abortado.");
                 break;
             }
+
+            if (this == null || this.GetCancellationTokenOnDestroy().IsCancellationRequested)
+                return;
         }
 
         if (!flowControl.ShouldAbort)

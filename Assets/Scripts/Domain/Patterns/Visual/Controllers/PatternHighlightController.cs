@@ -1,20 +1,22 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Cysharp.Threading.Tasks; // <--- Importante
+using System.Threading; // Para CancellationToken
 
 /// <summary>
 /// Escuta eventos de padrões e aplica highlights visuais nos slots.
+/// Versão: UniTask (Async/Await)
 /// </summary>
 public class PatternHighlightController : MonoBehaviour
 {
     [Header("Configuration")]
     [SerializeField] private PatternVisualConfig _config;
-    
+
     [Header("References")]
     [SerializeField] private GridManager _gridManager;
-    
+
     private Dictionary<int, GridSlotView> _slotCache = new Dictionary<int, GridSlotView>();
-    
+
     private void Awake()
     {
         if (_config == null)
@@ -22,25 +24,26 @@ public class PatternHighlightController : MonoBehaviour
             _config = Resources.Load<PatternVisualConfig>("Patterns/PatternVisualConfig");
         }
     }
-    
+
     private void Start()
     {
         CacheSlots();
         SubscribeToEvents();
     }
-    
+
     private void OnDestroy()
     {
         UnsubscribeFromEvents();
+        // UniTask cuida do cancelamento automaticamente via GetCancellationTokenOnDestroy
     }
-    
+
     private void CacheSlots()
     {
         if (_gridManager == null) return;
-        
+
         _slotCache.Clear();
         var slots = _gridManager.GetComponentsInChildren<GridSlotView>();
-        
+
         foreach (var slot in slots)
         {
             if (slot != null)
@@ -49,7 +52,7 @@ public class PatternHighlightController : MonoBehaviour
             }
         }
     }
-    
+
     private void SubscribeToEvents()
     {
         if (AppCore.Instance?.Events?.Pattern != null)
@@ -57,7 +60,7 @@ public class PatternHighlightController : MonoBehaviour
             AppCore.Instance.Events.Pattern.OnPatternSlotCompleted += OnPatternSlotCompleted;
         }
     }
-    
+
     private void UnsubscribeFromEvents()
     {
         if (AppCore.Instance?.Events?.Pattern != null)
@@ -65,63 +68,81 @@ public class PatternHighlightController : MonoBehaviour
             AppCore.Instance.Events.Pattern.OnPatternSlotCompleted -= OnPatternSlotCompleted;
         }
     }
-    
+
     private void OnPatternSlotCompleted(PatternMatch match)
     {
         if (match == null || _config == null || match.SlotIndices == null) return;
-        
+
         int tier = CalculateTier(match.BaseScore);
         Color tierColor = _config.GetTierColor(tier);
         Color finalColor = _config.ApplyDecayToColor(tierColor, match.DaysActive);
-        
+
         foreach (int slotIndex in match.SlotIndices)
         {
             if (_slotCache.TryGetValue(slotIndex, out GridSlotView slot))
             {
-                StartCoroutine(HighlightSlot(slot, finalColor));
+                // Inicia a animação sem esperar (Fire-and-Forget)
+                // .Forget() diz ao compilador "Eu sei que não estou esperando isso terminar, pode rodar solto"
+                HighlightSlotAsync(slot, finalColor).Forget();
             }
         }
     }
-    
-    private IEnumerator HighlightSlot(GridSlotView slot, Color color)
+
+    private async UniTaskVoid HighlightSlotAsync(GridSlotView slot, Color color)
     {
-        if (slot == null) yield break;
-        
+        // Pega o token de cancelamento deste MonoBehaviour.
+        // Se este objeto for destruído, a task cancela automaticamente.
+        var token = this.GetCancellationTokenOnDestroy();
+
+        if (slot == null) return;
+
         float elapsed = 0f;
         float duration = _config.highlightDuration;
-        
+
+        // FASE 1: Loop de Animação (PingPong)
         while (elapsed < duration)
         {
+            // Verifica se o slot ainda existe (segurança extra)
+            if (slot == null) return;
+
             elapsed += Time.deltaTime;
-            
+
             float t = Mathf.PingPong(elapsed * _config.highlightPulseSpeed, 1f);
             Color pulsedColor = color;
             pulsedColor.a = Mathf.Lerp(0.3f, 0.8f, t);
-            
+
             slot.SetPatternHighlight(pulsedColor, true);
-            
-            yield return null;
+
+            // Espera 1 frame, mas cancela se o objeto morrer
+            await UniTask.Yield(PlayerLoopTiming.Update, token);
         }
-        
-        // Fade out
+
+        // FASE 2: Fade out
         float fadeElapsed = 0f;
         float fadeDuration = _config.highlightFadeOutDuration;
-        
+
         while (fadeElapsed < fadeDuration)
         {
+            if (slot == null) return;
+
             fadeElapsed += Time.deltaTime;
             float t = fadeElapsed / fadeDuration;
-            
+
             Color fadedColor = color;
             fadedColor.a = Mathf.Lerp(0.8f, 0f, t);
-            
+
             slot.SetPatternHighlight(fadedColor, true);
-            yield return null;
+
+            await UniTask.Yield(PlayerLoopTiming.Update, token);
         }
-        
-        slot.ClearPatternHighlight();
+
+        // Limpeza final
+        if (slot != null)
+        {
+            slot.ClearPatternHighlight();
+        }
     }
-    
+
     private int CalculateTier(int baseScore)
     {
         if (baseScore >= 80) return 4;

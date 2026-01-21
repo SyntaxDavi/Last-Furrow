@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -66,7 +67,7 @@ public class DetectPatternsStep : IFlowStep
     /// Executa scan incremental (slot-por-slot) para animações.
     /// Cacheia referência ao GridSlotScanner para performance.
     /// </summary>
-    public IEnumerator Execute(FlowControl control)
+    public async UniTask Execute(FlowControl control)
     {
         Debug.Log("[DetectPatternsStep] ===== FASE 1: VERIFICAÇÃO INTEIRA =====");
 
@@ -104,24 +105,26 @@ public class DetectPatternsStep : IFlowStep
         // 3. Visual (Chama o método auxiliar AQUI)
         if (matches.Count > 0)
         {
-            yield return PlayIncrementalScan();
+            // Await espera a animação terminar
+            await PlayIncrementalScan();
         }
 
         // Delay final e Limpeza
-        yield return new WaitForSeconds(0.2f);
+        await UniTask.Delay(200);
         PatternDetectionCache.Instance?.Clear();
     }
 
     // Método auxiliar limpo: só executa se tiver scanner
-    private IEnumerator PlayIncrementalScan()
+    private async UniTask PlayIncrementalScan()
     {
         if (_slotScanner != null)
         {
-            yield return _slotScanner.ScanSequentially();
+            // O Scanner também precisa retornar UniTask
+            await _slotScanner.ScanSequentially();
         }
         else
         {
-            Debug.LogWarning("[DetectPatternsStep] GridSlotScanner não injetado. Animações puladas.");
+            Debug.LogWarning("Scanner null");
         }
     }
 

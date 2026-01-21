@@ -1,4 +1,4 @@
-using System.Collections;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public class GrowGridStep : IFlowStep
@@ -16,7 +16,7 @@ public class GrowGridStep : IFlowStep
         GameEvents events,
         InputManager input,
         RunData runData,
-        AnalyzingPhaseController visualController) // <--- Injeção aqui
+        AnalyzingPhaseController visualController)
     {
         _gridService = gridService;
         _events = events;
@@ -25,13 +25,16 @@ public class GrowGridStep : IFlowStep
         _visualController = visualController;
     }
 
-    public IEnumerator Execute(FlowControl control)
+    public async UniTask Execute(FlowControl control)
     {
         // Lógica simplificada: Verifica se a dependência existe
         if (_visualController != null)
         {
             Debug.Log("[GrowGridStep] Usando AnalyzingPhaseController para animação.");
-            yield return _visualController.AnalyzeAndGrowGrid(_gridService, _events, _runData);
+
+            // Aguarda a análise visual. 
+            // NOTA: O método AnalyzeAndGrowGrid no controller também deve ser convertido para 'async UniTask'
+            await _visualController.AnalyzeAndGrowGrid(_gridService, _events, _runData);
         }
         else
         {
@@ -45,6 +48,7 @@ public class GrowGridStep : IFlowStep
             }
         }
 
-        yield return new WaitForSeconds(0.5f);
+        // Delay de 500ms (0.5s)
+        await UniTask.Delay(500);
     }
 }

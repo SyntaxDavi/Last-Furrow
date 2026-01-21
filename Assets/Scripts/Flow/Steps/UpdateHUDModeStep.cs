@@ -1,4 +1,4 @@
-using System.Collections;
+using Cysharp.Threading.Tasks;
 
 public class UpdateHUDModeStep : IFlowStep
 {
@@ -11,7 +11,7 @@ public class UpdateHUDModeStep : IFlowStep
         _isWeekend = isWeekend;
     }
 
-    public IEnumerator Execute(FlowControl control)
+    public async UniTask Execute(FlowControl control)
     {
         if (_isWeekend)
         {
@@ -24,6 +24,7 @@ public class UpdateHUDModeStep : IFlowStep
             _uiFlow.CleanupUIAfterWeekend();
         }
 
-        yield return null;
+        // Espera 1 frame para garantir que a UI se atualize/reconstrua layout
+        await UniTask.Yield();
     }
 }

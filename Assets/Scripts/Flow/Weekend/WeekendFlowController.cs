@@ -1,16 +1,15 @@
 using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks; // <--- Importante
 
 public class WeekendFlowController : MonoBehaviour
 {
     private RunManager _runManager;
     private IWeekendFlowBuilder _flowBuilder;
 
-    private Coroutine _activeFlowRoutine;
+    // Controle de cancelamento para segurança
+    private System.Threading.CancellationTokenSource _cts;
 
-    // INICIALIZAÇÃO SIMPLIFICADA
-    // Ele não recebe mais 10 dependências, recebe apenas quem orquestra (Builder) e quem avisa (RunManager)
     public void Initialize(RunManager runManager, IWeekendFlowBuilder flowBuilder)
     {
         _runManager = runManager;
@@ -27,39 +26,45 @@ public class WeekendFlowController : MonoBehaviour
             _runManager.OnWeekendStarted -= StartWeekendSequence;
             _runManager.OnProductionStarted -= EndWeekendSequence;
         }
+
+        // Cancela qualquer fluxo pendente se o objeto morrer
+        _cts?.Cancel();
+        _cts?.Dispose();
     }
 
     // --- REAÇÃO AOS EVENTOS ---
 
     private void StartWeekendSequence(RunData runData)
     {
-        // Pede a receita para o Builder
         var pipeline = _flowBuilder.BuildEnterPipeline(runData);
-        RunPipeline(pipeline);
+        // Fire-and-forget seguro com UniTask
+        RunPipeline(pipeline).Forget();
     }
 
     private void EndWeekendSequence(RunData runData)
     {
-        // Pede a receita para o Builder
         var pipeline = _flowBuilder.BuildExitPipeline(runData);
-        RunPipeline(pipeline);
+        RunPipeline(pipeline).Forget();
     }
 
-    // --- EXECUTOR (Mantido igual) ---
+    // --- EXECUTOR (Atualizado para UniTask) ---
 
-    private void RunPipeline(List<IFlowStep> steps)
+    private async UniTaskVoid RunPipeline(List<IFlowStep> steps)
     {
-        if (_activeFlowRoutine != null) StopCoroutine(_activeFlowRoutine);
-        _activeFlowRoutine = StartCoroutine(ExecutePipelineRoutine(steps));
-    }
+        // Reinicia o token de cancelamento
+        _cts?.Cancel();
+        _cts = new System.Threading.CancellationTokenSource();
+        var token = _cts.Token;
 
-    private IEnumerator ExecutePipelineRoutine(List<IFlowStep> steps)
-    {
-        var flowControl = new FlowControl(); 
+        var flowControl = new FlowControl();
 
         foreach (var step in steps)
         {
-            yield return step.Execute(flowControl); 
+            // Verifica se o objeto foi destruído antes de continuar
+            if (this == null || token.IsCancellationRequested) return;
+
+            // Aguarda o passo (que agora retorna UniTask)
+            await step.Execute(flowControl);
 
             if (flowControl.ShouldAbort)
             {
@@ -67,7 +72,5 @@ public class WeekendFlowController : MonoBehaviour
                 break;
             }
         }
-
-        _activeFlowRoutine = null;
     }
 }

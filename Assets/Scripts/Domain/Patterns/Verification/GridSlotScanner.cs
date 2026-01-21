@@ -1,192 +1,165 @@
-using System.Collections;
+using Cysharp.Threading.Tasks; 
+using System; 
 using System.Collections.Generic;
+using System.Threading; 
 using UnityEngine;
 
-/// <summary>
-/// Scanner INCREMENTAL que verifica grid slot-por-slot.
-/// 
-/// RESPONSABILIDADE (SOLID):
-/// - Iterar slots desbloqueados sequencialmente
-/// - Consultar padrões no PatternDetectionCache
-/// - Disparar OnPatternSlotCompleted uma vez por padrão
-/// - Pausa mínima entre slots (timing/performance)
-/// 
-/// FILOSOFIA:
-/// - Single Responsibility: Apenas scan incremental
-/// - Não faz visual (dispara eventos para UI)
-/// - Usa HashSet para evitar disparar mesmo padrão 2x
-/// 
-/// FLOW:
-/// GridFullVerification (armazena) ? GridSlotScanner (itera) ? PatternEvents (dispara)
-/// </summary>
 public class GridSlotScanner : MonoBehaviour
 {
     [Header("Configuration")]
     [Tooltip("Pausa entre verificação de slots (segundos)")]
-    [Range(0f, 0.5f)]  // EXPANDIDO: Permite de instantâneo (0) até mais lento (0.5s)
+    [Range(0f, 0.5f)]
     [SerializeField] private float _slotScanDelay = 0.001f;
-    
+
     [Header("Dependencies")]
-    [Tooltip("GridManager para acessar slots")]
     [SerializeField] private GridManager _gridManager;
-    
-    [Tooltip("UIManager para aguardar popups terminarem")]
     [SerializeField] private PatternUIManager _uiManager;
-    
-    // HashSet para evitar disparar mesmo padrão múltiplas vezes
+
+    // Controle de cancelamento (substitui StopAllCoroutines)
+    private CancellationTokenSource _cts;
+
     private HashSet<PatternMatch> _patternsAlreadyTriggered = new HashSet<PatternMatch>();
-    
+
     /// <summary>
-    /// Escaneia grid slot-por-slot (apenas desbloqueados).
-    /// Dispara OnPatternSlotCompleted quando encontra padrão completo.
+    /// Escaneia grid slot-por-slot usando UniTask (Async/Await).
     /// </summary>
-    public IEnumerator ScanSequentially()
+    public async UniTask ScanSequentially()
     {
         Debug.Log("[GridSlotScanner] ========== INICIANDO SCAN INCREMENTAL ==========");
-        
-        // Validações
+
+        // 1. Configurar Cancelamento (Segurança)
+        // Se já houver um scan rodando, cancela ele antes de começar o novo
+        if (_cts != null) { _cts.Cancel(); _cts.Dispose(); }
+        _cts = new CancellationTokenSource();
+        // O token é o que passamos para os "awaits" saberem que devem parar se mandarmos
+        var token = _cts.Token;
+
+        // --- VALIDAÇÕES (yield break vira return) ---
         if (_gridManager == null)
         {
             Debug.LogError("[GridSlotScanner] GridManager não atribuído!");
-            yield break;
+            return;
         }
-        
-        // Cachear UIManager se não atribuído
+
+        // Lazy Get (Mantido, mas idealmente seria injetado)
         if (_uiManager == null)
         {
-            _uiManager = Object.FindFirstObjectByType<PatternUIManager>();
-            if (_uiManager == null)
-            {
-                Debug.LogWarning("[GridSlotScanner] PatternUIManager não encontrado, popups não aguardarão");
-            }
+            _uiManager = FindFirstObjectByType<PatternUIManager>();
         }
-        
-        if (PatternDetectionCache.Instance == null)
+
+        if (PatternDetectionCache.Instance == null || !PatternDetectionCache.Instance.HasPatterns())
         {
-            Debug.LogError("[GridSlotScanner] PatternDetectionCache não disponível!");
-            yield break;
+            Debug.Log("[GridSlotScanner] Cache vazio ou nulo, scan cancelado");
+            return;
         }
-        
-        if (!PatternDetectionCache.Instance.HasPatterns())
-        {
-            Debug.Log("[GridSlotScanner] Nenhum padrão no cache, scan cancelado");
-            yield break;
-        }
-        
-        // Limpar padrões já disparados (nova verificação)
+
         _patternsAlreadyTriggered.Clear();
-        
-        // Obter slots desbloqueados
         var unlockedSlots = GetUnlockedSlots();
-        
+
         if (unlockedSlots.Count == 0)
         {
-            Debug.LogWarning("[GridSlotScanner] Nenhum slot desbloqueado encontrado!");
-            yield break;
+            Debug.LogWarning("[GridSlotScanner] Nenhum slot desbloqueado!");
+            return;
         }
-        
-        Debug.Log($"[GridSlotScanner] Verificando {unlockedSlots.Count} slots desbloqueados...");
-        
+
+        Debug.Log($"[GridSlotScanner] Verificando {unlockedSlots.Count} slots...");
         int patternsTriggered = 0;
-        
-        // Iterar slots sequencialmente
+
+        // --- LOOP PRINCIPAL ---
         foreach (var slotView in unlockedSlots)
         {
+            // Verifica se pediram para parar o scan no meio do loop
+            if (token.IsCancellationRequested) return;
+
             if (slotView == null) continue;
-            
             int slotIndex = slotView.SlotIndex;
-            
-            // Consultar padrões que incluem este slot
+
             var patternsForSlot = PatternDetectionCache.Instance.GetPatternsForSlot(slotIndex);
-            
-            // Disparar evento para cada padrão (se ainda não foi disparado)
+
             foreach (var pattern in patternsForSlot)
             {
                 if (!_patternsAlreadyTriggered.Contains(pattern))
                 {
-                    // Disparar evento (para highlights e outros listeners)
                     AppCore.Instance?.Events.Pattern.TriggerPatternSlotCompleted(pattern);
-                    
-                    // ONDA 6.0: Aguardar popup terminar (pipeline sincronizado)
+
                     if (_uiManager != null)
                     {
-                        yield return _uiManager.ShowPatternPopupRoutine(pattern);
+                        // ONDA 6.0: TRUQUE DE COMPATIBILIDADE
+                        // Se o ShowPatternPopupRoutine ainda retorna IEnumerator, convertemos para UniTask
+                        // Se você já atualizou o UIManager para UniTask, tire o ".ToUniTask(this)"
+                        await _uiManager.ShowPatternPopupRoutine(pattern);
                     }
-                    
+
                     _patternsAlreadyTriggered.Add(pattern);
                     patternsTriggered++;
-                    
-                    Debug.Log($"[GridSlotScanner] Padrão encontrado no slot {slotIndex}: {pattern.DisplayName}");
                 }
             }
-            
-            // Pausa mínima entre slots
+
+            // Pausa entre slots
             if (_slotScanDelay > 0f)
             {
-                yield return new WaitForSeconds(_slotScanDelay);
+                // Substitui WaitForSeconds. TimeSpan.FromSeconds converte float para tempo real.
+                await UniTask.Delay(TimeSpan.FromSeconds(_slotScanDelay), cancellationToken: token);
             }
         }
-        
-        Debug.Log($"[GridSlotScanner] Scan concluído: {patternsTriggered} padrões disparados");
-        Debug.Log("[GridSlotScanner] ========== FIM DO SCAN INCREMENTAL ==========");
-        
-        // Limpar HashSet após scan (preparar para próxima verificação)
+
+        Debug.Log($"[GridSlotScanner] Scan concluído: {patternsTriggered} padrões.");
         _patternsAlreadyTriggered.Clear();
+
+        // Limpa o token ao final com sucesso
+        _cts?.Dispose();
+        _cts = null;
     }
-    
-    /// <summary>
-    /// Retorna lista de slots desbloqueados no grid.
-    /// </summary>
+
+    // ... GetUnlockedSlots (Mantém igual pois não tem corrotina) ...
     private List<GridSlotView> GetUnlockedSlots()
     {
         var unlockedSlots = new List<GridSlotView>();
-        
-        if (_gridManager == null)
-        {
-            return unlockedSlots;
-        }
-        
-        // Obter RunData para verificar desbloqueio
+        if (_gridManager == null) return unlockedSlots;
+
         var saveData = AppCore.Instance?.SaveManager?.Data;
-        if (saveData == null || saveData.CurrentRun == null)
+
+        // Fallback simplificado
+        if (saveData?.CurrentRun == null)
         {
-            Debug.LogWarning("[GridSlotScanner] RunData não disponível, usando todos os slots");
-            
-            // Fallback: retornar todos os slots
-            var allSlots = _gridManager.GetComponentsInChildren<GridSlotView>();
-            unlockedSlots.AddRange(allSlots);
+            unlockedSlots.AddRange(_gridManager.GetComponentsInChildren<GridSlotView>());
             return unlockedSlots;
         }
-        
+
         var slotStates = saveData.CurrentRun.SlotStates;
         var allSlotViews = _gridManager.GetComponentsInChildren<GridSlotView>();
-        
+
         foreach (var slotView in allSlotViews)
         {
-            if (slotView == null) continue;
-            
-            int slotIndex = slotView.SlotIndex;
-            
-            // Verificar se slot está desbloqueado
-            if (slotIndex >= 0 && slotIndex < slotStates.Length)
+            if (slotView != null && slotView.SlotIndex < slotStates.Length)
             {
-                if (slotStates[slotIndex].IsUnlocked)
-                {
+                if (slotStates[slotView.SlotIndex].IsUnlocked)
                     unlockedSlots.Add(slotView);
-                }
             }
         }
-        
         return unlockedSlots;
     }
-    
+
     /// <summary>
-    /// Para scan em andamento (se necessário).
+    /// Interrompe o scan imediatamente.
     /// </summary>
     public void StopScan()
     {
-        StopAllCoroutines();
+        // Em vez de StopAllCoroutines, cancelamos o Token
+        if (_cts != null)
+        {
+            _cts.Cancel();
+            _cts.Dispose();
+            _cts = null;
+        }
+
         _patternsAlreadyTriggered.Clear();
-        Debug.Log("[GridSlotScanner] Scan interrompido");
+        Debug.Log("[GridSlotScanner] Scan interrompido (UniTask Cancelled)");
+    }
+
+    private void OnDestroy()
+    {
+        // Segurança: Garante que se o objeto for destruído, a task para
+        StopScan();
     }
 }

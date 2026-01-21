@@ -1,4 +1,4 @@
-using System.Collections;
+using Cysharp.Threading.Tasks;
 
 public class ResolveContentStep : IFlowStep
 {
@@ -11,13 +11,13 @@ public class ResolveContentStep : IFlowStep
         _runData = runData;
     }
 
-    public IEnumerator Execute(FlowControl control)
+    public async UniTask Execute(FlowControl control)
     {
         // Aqui o resolver decide se abre a Loja Normal, Loja Especial, Evento, etc.
         _resolver.ResolveContent(_runData);
 
         // Se a resolução de conteúdo envolvesse carregar assets pesados (Addressables),
-        // faríamos um yield return aqui. Por enquanto, é síncrono.
-        yield return null;
+        // usaríamos await aqui. Por enquanto, esperamos 1 frame.
+        await UniTask.Yield();
     }
 }

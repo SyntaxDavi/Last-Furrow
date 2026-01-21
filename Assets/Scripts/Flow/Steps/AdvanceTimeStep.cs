@@ -1,4 +1,4 @@
-using System.Collections;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public class AdvanceTimeStep : IFlowStep
@@ -12,7 +12,7 @@ public class AdvanceTimeStep : IFlowStep
         _saveManager = saveManager;
     }
 
-    public IEnumerator Execute(FlowControl control)
+    public async UniTask Execute(FlowControl control)
     {
         // 1. Avança o tempo (Dia 1 -> 2)
         _runManager.AdvanceDay();
@@ -21,6 +21,8 @@ public class AdvanceTimeStep : IFlowStep
         _saveManager.SaveGame();
 
         Debug.Log("[Step] Dia avançado e jogo salvo.");
-        yield return null;
+
+        // Espera 1 frame para garantir que outros sistemas reajam à mudança de dia
+        await UniTask.Yield();
     }
 }
