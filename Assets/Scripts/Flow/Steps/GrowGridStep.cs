@@ -38,27 +38,27 @@ public class GrowGridStep : IFlowStep
             }
         }
         
-        // HARDCODE: AnalyzingPhaseController faz TUDO agora
+        // HARDCODE: AnalyzingPhaseController faz análise VISUAL primeiro
         if (_analyzingController != null)
         {
-            Debug.Log("[GrowGridStep] === DELEGANDO TUDO PARA ANALYZING PHASE ===");
+            Debug.Log("[GrowGridStep] === FASE 1: ANÁLISE VISUAL ===");
             yield return _analyzingController.AnalyzeAndGrowGrid(_gridService, _events, _runData);
-            Debug.Log("[GrowGridStep] === ANALYZING PHASE CONCLUÍDA ===");
+            Debug.Log("[GrowGridStep] === ANÁLISE VISUAL CONCLUÍDA ===");
         }
-        else
+        
+        // FASE 2: CRESCER AS PLANTAS (SEM VISUAL, RÁPIDO)
+        Debug.Log("[GrowGridStep] === FASE 2: CRESCIMENTO DAS PLANTAS ===");
+        for (int i = 0; i < _runData.GridSlots.Length; i++)
         {
-            // Fallback: se não houver controller, processar normalmente (SEM VISUAL)
-            Debug.LogWarning("[GrowGridStep] Fallback: processando grid SEM visual");
-            for (int i = 0; i < _runData.GridSlots.Length; i++)
+            if (!_gridService.IsSlotUnlocked(i))
             {
-                if (!_gridService.IsSlotUnlocked(i))
-                {
-                    continue;
-                }
-
-                _gridService.ProcessNightCycleForSlot(i);
+                continue;
             }
+
+            Debug.Log($"   ?? Crescendo slot {i}...");
+            _gridService.ProcessNightCycleForSlot(i);
         }
+        Debug.Log("[GrowGridStep] === CRESCIMENTO CONCLUÍDO ===");
         
         yield return new WaitForSeconds(0.5f);
     }

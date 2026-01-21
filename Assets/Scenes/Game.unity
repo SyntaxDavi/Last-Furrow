@@ -1339,7 +1339,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd2841ae6531b9f4089106d7864e5d00, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _slotScanDelay: 0.001
+  _slotScanDelay: 0.1
   _gridManager: {fileID: 434515749}
 --- !u!114 &434515751
 MonoBehaviour:
@@ -1353,11 +1353,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f4ad1e6af402c44699927b65d05325f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _delayPerSlot: 0.3
+  _slotScanSpeed: 0.47
   _highlightDuration: 2
   _gridManager: {fileID: 434515749}
-  _popupText: {fileID: 1152418916}
-  _popupCanvasGroup: {fileID: 1362975649}
+  _patternPopup: {fileID: 1362975650}
 --- !u!1 &521356419
 GameObject:
   m_ObjectHideFlags: 0
@@ -3853,8 +3852,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 1453.473}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -402, y: 397}
-  m_SizeDelta: {x: 310.13, y: 115.33}
+  m_AnchoredPosition: {x: -473.43, y: 397.28}
+  m_SizeDelta: {x: 520.11, y: 161.06}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1152418916
 MonoBehaviour:
@@ -4966,7 +4965,7 @@ MonoBehaviour:
   _patternNameText: {fileID: 1152418916}
   _scoreText: {fileID: 621747702}
   _canvasGroup: {fileID: 1362975649}
-  _animationDuration: 1.63
+  _animationDuration: 2.24
   _startScale: 0.517
   _endScale: 1.046
 --- !u!1 &1400629001
@@ -5829,7 +5828,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _config: {fileID: 11400000, guid: 0ce5f80d9d042f246974393c9aa66073, type: 2}
-  _popupTextPrefab: {fileID: 0}
+  _popupTextPrefab: {fileID: 1152418914}
   _sparklesPrefab: {fileID: 0}
   _highlightPrefab: {fileID: 0}
 --- !u!4 &1726399247
