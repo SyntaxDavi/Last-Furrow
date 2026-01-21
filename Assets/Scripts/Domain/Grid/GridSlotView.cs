@@ -32,6 +32,14 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     [SerializeField] private SpriteRenderer _stateOverlayRenderer;
     [SerializeField] private SpriteRenderer _gameStateOverlayRenderer;
     [SerializeField] private SpriteRenderer _highlightRenderer;
+    
+    [Header("Crop Passive Score")]
+    [Tooltip("TextMeshPro para mostrar pontos passivos (+10)")]
+    [SerializeField] private TMPro.TextMeshPro _passiveScoreText;
+    [Tooltip("CanvasGroup para fade in/out do texto")]
+    [SerializeField] private CanvasGroup _passiveScoreGroup;
+    [Tooltip("Duração da animação de fade")]
+    [SerializeField] private float _scoreFadeDuration = 0.8f;
 
     [Header("Interacao")]
     [SerializeField] private int _interactionPriority = 0;
@@ -51,6 +59,12 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     private void Awake()
     {
         ConfigureRenderers();
+        
+        // Inicializar texto de pontos passivos como invisível
+        if (_passiveScoreGroup != null)
+        {
+            _passiveScoreGroup.alpha = 0f;
+        }
     }
 
     /// <summary>
@@ -414,7 +428,7 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     }
     
     /// <summary>
-    /// NOVO (ONDA 5.5): Verifica se o slot tem planta.
+    /// Verifica se o slot tem planta.
     /// </summary>
     public bool HasPlant()
     {
@@ -451,6 +465,81 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         // Restaurar estado original
         _highlightRenderer.enabled = wasEnabled;
         _highlightRenderer.color = originalColor;
+    }
+    
+    // --- API PÚBLICA PARA CROP PASSIVE SCORE ---
+    
+    /// <summary>
+    /// Mostra pontos passivos do crop em cima do slot com animação.
+    /// </summary>
+    /// <param name="points">Pontos a mostrar (ex: 10, 15)</param>
+    public void ShowPassiveScore(int points)
+    {
+        if (_passiveScoreText == null || _passiveScoreGroup == null)
+        {
+            Debug.LogWarning($"[GridSlotView {_index}] PassiveScore não configurado no Inspector!");
+            return;
+        }
+        
+        // Configurar texto
+        _passiveScoreText.text = $"+{points}";
+        
+        // Resetar estado inicial (escondido)
+        _passiveScoreGroup.alpha = 0f;
+        
+        // Iniciar animação
+        StartCoroutine(AnimatePassiveScore());
+    }
+    
+    private IEnumerator AnimatePassiveScore()
+    {
+        // Guardar posição inicial
+        Vector3 startPos = _passiveScoreText.transform.localPosition;
+        float popUpHeight = 0.5f; // Altura do movimento para cima
+        
+        // Fase 1: Fade IN + Pop-up rápido (0.2s)
+        float fadeInTime = _scoreFadeDuration * 0.25f;
+        float elapsed = 0f;
+        
+        while (elapsed < fadeInTime)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / fadeInTime;
+            
+            // Fade in
+            float alpha = Mathf.Lerp(0f, 1f, t);
+            _passiveScoreGroup.alpha = alpha;
+            
+            // Pop-up (movimento para cima com ease-out)
+            float easedT = 1f - Mathf.Pow(1f - t, 3f); // Cubic ease-out
+            Vector3 newPos = startPos + Vector3.up * (popUpHeight * easedT);
+            _passiveScoreText.transform.localPosition = newPos;
+            
+            yield return null;
+        }
+        
+        _passiveScoreGroup.alpha = 1f;
+        _passiveScoreText.transform.localPosition = startPos + Vector3.up * popUpHeight;
+        
+        // Fase 2: Hold (mostrar texto por 0.4s)
+        yield return new WaitForSeconds(_scoreFadeDuration * 0.5f);
+        
+        // Fase 3: Fade OUT (0.3s)
+        float fadeOutTime = _scoreFadeDuration * 0.375f;
+        elapsed = 0f;
+        
+        while (elapsed < fadeOutTime)
+        {
+            elapsed += Time.deltaTime;
+            float alpha = Mathf.Lerp(1f, 0f, elapsed / fadeOutTime);
+            _passiveScoreGroup.alpha = alpha;
+            yield return null;
+        }
+        
+        _passiveScoreGroup.alpha = 0f;
+        
+        // Restaurar posição original
+        _passiveScoreText.transform.localPosition = startPos;
     }
 }
 

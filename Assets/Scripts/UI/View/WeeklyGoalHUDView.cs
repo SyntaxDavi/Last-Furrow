@@ -31,13 +31,16 @@ public class WeeklyGoalHUDView : UIView
             // 1. Escuta mudanças nos pontos (final do dia)
             AppCore.Instance.Events.Progression.OnScoreUpdated += UpdateDisplay;
 
-            // 2. ONDA 6.4: Escuta pontos incrementais (tempo real)
+            // 2. Escuta pontos incrementais de padrões (tempo real)
             AppCore.Instance.Events.Pattern.OnScoreIncremented += OnScoreIncremented;
+            
+            // 3. Escuta pontos passivos de crops (tempo real)
+            AppCore.Instance.Events.Grid.OnCropPassiveScore += OnCropPassiveScore;
 
-            // 3. Escuta mudanças de modo (Esconder em cutscenes, mostrar em jogo)
+            // 4. Escuta mudanças de modo (Esconder em cutscenes, mostrar em jogo)
             AppCore.Instance.Events.UI.OnHUDModeChanged += HandleHUDMode;
 
-            // 4. Atualização Inicial (Crucial para não começar vazio)
+            // 5. Atualização Inicial (Crucial para não começar vazio)
             RefreshImmediate();
         }
     }
@@ -53,6 +56,7 @@ public class WeeklyGoalHUDView : UIView
         {
             AppCore.Instance.Events.Progression.OnScoreUpdated -= UpdateDisplay;
             AppCore.Instance.Events.Pattern.OnScoreIncremented -= OnScoreIncremented;
+            AppCore.Instance.Events.Grid.OnCropPassiveScore -= OnCropPassiveScore;
             AppCore.Instance.Events.UI.OnHUDModeChanged -= HandleHUDMode;
         }
     }
@@ -70,7 +74,7 @@ public class WeeklyGoalHUDView : UIView
     }
     
     /// <summary>
-    /// ONDA 6.4: Callback de pontos incrementais (tempo real).
+    /// Callback de pontos incrementais de padrões (tempo real).
     /// Anima contador enquanto padrões são detectados.
     /// </summary>
     private void OnScoreIncremented(int pointsAdded, int newTotal, int goal)
@@ -88,6 +92,16 @@ public class WeeklyGoalHUDView : UIView
             _currentDisplayScore = newTotal;
             UpdateDisplayImmediate(newTotal, goal);
         }
+    }
+    
+    /// <summary>
+    /// ONDA 6.5: Callback de pontos passivos de crops (tempo real).
+    /// Usa mesma animação que padrões.
+    /// </summary>
+    private void OnCropPassiveScore(int slotIndex, int cropPoints, int newTotal, int goal)
+    {
+        // Delega para mesmo método de animação
+        OnScoreIncremented(cropPoints, newTotal, goal);
     }
     
     /// <summary>

@@ -76,6 +76,9 @@ public class AnalyzingPhaseController : MonoBehaviour
 
             events.Grid.TriggerAnalyzeSlot(slotIndex);
 
+            // ONDA 6.5: Verificar se slot tem crop e dar pontos passivos PRIMEIRO
+            await ProcessCropPassiveScore(slotIndex, gridService, runData, events, slot);
+
             // AGUARDAR levitação terminar (pipeline sincronizado)
             await LevitateSlot(slot);
 
@@ -205,5 +208,54 @@ public class AnalyzingPhaseController : MonoBehaviour
         }
 
         slot.transform.localPosition = originalPos;
+    }
+    
+    /// <summary>
+    /// ONDA 6.5: Processa pontos passivos de crop individual.
+    /// Mostra popup pequeno "+X" em cima do slot e dispara evento.
+    /// </summary>
+    private async UniTask ProcessCropPassiveScore(
+        int slotIndex, 
+        IGridService gridService, 
+        RunData runData, 
+        GameEvents events,
+        GridSlotView slotView)
+    {
+        // Pegar estado do slot
+        if (slotIndex < 0 || slotIndex >= runData.GridSlots.Length) return;
+        
+        var slotState = runData.GridSlots[slotIndex];
+        
+        // Verificar se tem crop plantado (CropState usa CropID diretamente)
+        if (!slotState.CropID.IsValid || slotState.CropID == CropID.Empty) return;
+        
+        // Pegar dados do crop via GameLibrary
+        if (!AppCore.Instance.GameLibrary.TryGetCrop(slotState.CropID, out CropData cropData)) return;
+        if (cropData == null) return;
+        
+        // Calcular pontos passivos (BasePassiveScore)
+        int passivePoints = cropData.BasePassiveScore;
+        
+        // Aplicar multiplicador se maduro
+        if (slotState.CurrentGrowth >= cropData.DaysToMature && !slotState.IsWithered)
+        {
+            passivePoints = Mathf.RoundToInt(passivePoints * cropData.MatureScoreMultiplier);
+        }
+        
+        if (passivePoints <= 0) return; // Sem pontos
+        
+        // Calcular novo total (previsão)
+        int newTotal = runData.CurrentWeeklyScore + passivePoints;
+        
+        // Disparar evento para HUD atualizar
+        events.Grid.TriggerCropPassiveScore(slotIndex, passivePoints, newTotal, runData.WeeklyGoalTarget);
+        
+        // ONDA 6.5: Mostrar pontos no próprio slot (TextMeshPro local)
+        if (slotView != null)
+        {
+            slotView.ShowPassiveScore(passivePoints);
+        }
+        
+        Debug.Log($"[AnalyzingPhase] Crop em slot {slotIndex} deu +{passivePoints} pontos");
     }
 }
