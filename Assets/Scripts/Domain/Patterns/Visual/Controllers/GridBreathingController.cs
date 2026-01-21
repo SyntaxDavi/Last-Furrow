@@ -21,6 +21,14 @@ public class GridBreathingController : MonoBehaviour
         if (_config == null)
         {
             _config = Resources.Load<PatternVisualConfig>("Patterns/PatternVisualConfig");
+            if (_config == null)
+            {
+                Debug.LogError("[GridBreathing] PatternVisualConfig not found in Resources/Patterns!");
+            }
+            else
+            {
+                Debug.Log("[GridBreathing] Config loaded successfully");
+            }
         }
         
         if (_gridTransform == null)
@@ -29,10 +37,12 @@ public class GridBreathingController : MonoBehaviour
         }
         
         _originalScale = _gridTransform.localScale;
+        Debug.Log($"[GridBreathing] Initialized. Original scale: {_originalScale}");
     }
     
     private void Start()
     {
+        Debug.Log("[GridBreathing] Starting breathing animation...");
         StartBreathing();
         SubscribeToEvents();
     }

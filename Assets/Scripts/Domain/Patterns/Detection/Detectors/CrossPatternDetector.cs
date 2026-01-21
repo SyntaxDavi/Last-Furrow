@@ -5,7 +5,7 @@ using System.Collections.Generic;
 /// Tier 3: padrão avançado. TODAS as plantas devem estar vivas (NÃO withered).
 /// Usa PatternDefinitionSO existente (CROSS).
 /// 
-/// Layout (exemplo grid 3x3):
+/// Layout (exemplo grid 5x5):
 ///   [1]
 /// [3][0][4]
 ///   [2]
@@ -14,7 +14,7 @@ public class CrossPatternDetector : IPatternDetector
 {
     public PatternDefinitionSO Definition { get; private set; }
     
-    private const int GRID_WIDTH = 3; // Assumindo grid 3x3
+    private const int GRID_WIDTH = 5;
     
     public CrossPatternDetector(PatternDefinitionSO definition)
     {

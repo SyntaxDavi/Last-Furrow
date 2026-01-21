@@ -25,7 +25,7 @@ MonoBehaviour:
   popupAnimationDuration: 1.5
   popupStartScale: 0.5
   popupEndScale: 1
-  breathingAmount: 0.0413
+  breathingAmount: 0.0277
   breathingSpeed: 0.889
   patternReactionStrength: 0.069
   reactionDuration: 0.491

@@ -1,18 +1,18 @@
 using System.Collections.Generic;
 
 /// <summary>
-/// Detecta linha horizontal completa (5 crops em sequência, NÃO withered).
-/// Tier 2: mais valioso que par adjacente.
+/// Detecta linha vertical completa (5 crops em sequência vertical).
+/// Tier 2: equivalente à linha horizontal.
 /// Usa PatternDefinitionSO existente (FULL_LINE).
 /// </summary>
-public class HorizontalLineDetector : IPatternDetector
+public class VerticalLineDetector : IPatternDetector
 {
     public PatternDefinitionSO Definition { get; private set; }
     
     private const int LINE_SIZE = 5;
     private const int GRID_WIDTH = 5;
     
-    public HorizontalLineDetector(PatternDefinitionSO definition)
+    public VerticalLineDetector(PatternDefinitionSO definition)
     {
         Definition = definition;
     }
@@ -23,11 +23,10 @@ public class HorizontalLineDetector : IPatternDetector
         
         var slotData = gridService.GetSlotReadOnly(slotIndex);
         if (slotData == null || !slotData.CropID.IsValid) return false;
-        
-        // CRÍTICO: Ignorar plantas withered!
         if (slotData.IsWithered) return false;
         
-        return true;
+        // Só detectar se estamos no topo da linha
+        return slotIndex < GRID_WIDTH;
     }
     
     public PatternMatch DetectAt(IGridService gridService, int slotIndex, int[] allSlotIndices)
@@ -37,43 +36,30 @@ public class HorizontalLineDetector : IPatternDetector
         var slotIndices = new List<int>();
         var cropIDs = new List<CropID>();
         
-        int row = slotIndex / GRID_WIDTH;
-        
-        // Verificar se temos 5 slots consecutivos com crops VIVAS
+        // Verificar 5 slots consecutivos verticalmente
         for (int i = 0; i < LINE_SIZE; i++)
         {
-            int checkIndex = slotIndex + i;
+            int checkIndex = slotIndex + (i * GRID_WIDTH);
             
             if (checkIndex >= allSlotIndices.Length) return null;
-            
-            // Verificar se não cruza para outra linha
-            int checkRow = checkIndex / GRID_WIDTH;
-            if (checkRow != row) return null;
             
             if (!gridService.IsSlotUnlocked(checkIndex)) return null;
             
             var slotData = gridService.GetSlotReadOnly(checkIndex);
             if (slotData == null || !slotData.CropID.IsValid) return null;
-            
-            // CRÍTICO: Todos os slots devem estar vivos!
             if (slotData.IsWithered) return null;
             
             slotIndices.Add(checkIndex);
             cropIDs.Add(slotData.CropID);
         }
         
-        // Linha completa encontrada!
-        var match = PatternMatch.Create(
+        return PatternMatch.Create(
             patternID: Definition.PatternID,
-            displayName: Definition.DisplayName,
+            displayName: Definition.DisplayName + " (V)",
             slotIndices: slotIndices,
             baseScore: Definition.BaseScore,
             cropIDs: cropIDs,
-            debugDescription: $"Slots {slotIndex}-{slotIndex + LINE_SIZE - 1}"
+            debugDescription: $"Vertical column {slotIndex % GRID_WIDTH}"
         );
-        
-        match.SetTrackingData(daysActive: 1, hasRecreationBonus: false);
-        return match;
     }
 }
-
