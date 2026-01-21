@@ -18,8 +18,9 @@ using UnityEngine;
 /// 1. Verificação Inteira ? StorePatterns(matches)
 /// 2. Scanner Incremental ? GetPatternsForSlot(slotIndex)
 /// 3. Fim da verificação ? Clear()
+/// 
 /// </summary>
-public class PatternDetectionCache : MonoBehaviour
+public class PatternDetectionCache : MonoBehaviour, IPatternCache
 {
     public static PatternDetectionCache Instance { get; private set; }
     
