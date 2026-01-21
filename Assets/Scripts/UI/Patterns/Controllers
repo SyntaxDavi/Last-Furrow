@@ -101,10 +101,23 @@ public class AnalyzingPhaseController : MonoBehaviour
                         // Disparar evento para highlights/popup
                         events.Pattern.TriggerPatternSlotCompleted(foundPattern);
                         
-                        // Mostrar popup
-                        if (_patternPopup != null)
+                        // Disparar eventos de decay/recreation
+                        if (foundPattern.DaysActive > 1)
                         {
-                            StartCoroutine(_patternPopup.ShowPatternName(foundPattern));
+                            float decayMultiplier = Mathf.Pow(0.9f, foundPattern.DaysActive - 1);
+                            events.Pattern.TriggerPatternDecayApplied(
+                                foundPattern, 
+                                foundPattern.DaysActive, 
+                                decayMultiplier
+                            );
+                            
+                            _config.DebugLog($"[Decay] Pattern {foundPattern.DisplayName} has {foundPattern.DaysActive} days active, multiplier: {decayMultiplier:F2}");
+                        }
+                        
+                        if (foundPattern.HasRecreationBonus)
+                        {
+                            events.Pattern.TriggerPatternRecreated(foundPattern);
+                            _config.DebugLog($"[Recreation] Pattern {foundPattern.DisplayName} recreated with +10% bonus!");
                         }
                         
                         // Apenas 1 padrão por slot (maior prioridade)
