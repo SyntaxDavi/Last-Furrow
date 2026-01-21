@@ -264,17 +264,13 @@ public class AppCore : MonoBehaviour
             InitializePatternTracking(SaveManager.Data.CurrentRun);
         }
 
-        // 2. BUSCAR REFERÊNCIAS VISUAIS NA CENA (via Inspector)
-        // ONDA 6.1: Removido FindFirstObjectByType - Use Inspector assignment
-        var sceneAnalyzer = DailyResolutionSystem.GetComponent<AnalyzingPhaseController>() 
-            ?? FindFirstObjectByType<AnalyzingPhaseController>();
-        var sceneScanner = DailyResolutionSystem.GetComponent<GridSlotScanner>() 
-            ?? FindFirstObjectByType<GridSlotScanner>();
-        var uiManager = FindFirstObjectByType<PatternUIManager>();
-
-        if (sceneAnalyzer == null || sceneScanner == null || uiManager == null)
+        // 2. ONDA 6.3: Buscar Bootstrapper (1x ao invés de 3x FindFirstObjectByType)
+        var bootstrapper = FindFirstObjectByType<DailyVisualBootstrapper>();
+        
+        if (bootstrapper == null)
         {
-            Debug.LogError("[AppCore] FATAL: Faltam componentes visuais! Arraste no Inspector do DailyResolutionSystem.");
+            Debug.LogError("[AppCore] FATAL: DailyVisualBootstrapper não encontrado na scene! Adicione o componente.");
+            return;
         }
 
         // 3. Criar Contexto de Lógica
@@ -291,14 +287,16 @@ public class AppCore : MonoBehaviour
             PatternCalculator
         );
         
-        // 4. Criar Contexto Visual
-        var visualContext = new DailyVisualContext(
-            sceneAnalyzer,
-            sceneScanner,
-            uiManager
-        );
+        // 4. Criar Contexto Visual via Bootstrapper (valida automaticamente)
+        var visualContext = bootstrapper.CreateContext();
         
-        // 5. ONDA 6.2: Criar Pipeline Builder (Factory Pattern)
+        if (visualContext == null || !visualContext.IsValid())
+        {
+            Debug.LogError("[AppCore] FATAL: VisualContext inválido! Verifique referências no Bootstrapper.");
+            return;
+        }
+        
+        // 5. Criar Pipeline Builder (Factory Pattern)
         var pipelineBuilder = new DailyPipelineBuilder();
 
         // 6. Injetar TODOS contextos + Builder no sistema

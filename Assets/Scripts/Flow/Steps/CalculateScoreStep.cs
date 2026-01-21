@@ -114,7 +114,7 @@ public class CalculateScoreStep : IFlowStep
         if (_runData.CurrentLives <= 0)
         {
             _runManager.EndRun(RunEndReason.HarvestFailed);
-            control.AbortPipeline();
+            control.AbortPipeline("Game Over - Vidas esgotadas");
             return true;
         }
         return false;

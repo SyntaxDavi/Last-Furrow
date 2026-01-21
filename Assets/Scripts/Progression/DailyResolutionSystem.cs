@@ -72,31 +72,99 @@ public class DailyResolutionSystem : MonoBehaviour
         var flowControl = new FlowControl();
         
         // ONDA 6.2: Builder Pattern - Sistema NÃO conhece steps específicos
-        // Builder constrói pipeline baseado em contextos
         var pipeline = _pipelineBuilder.BuildPipeline(_logicContext, _visualContext, runData);
         
-        Debug.Log($"[DailyResolution] Executando pipeline: {pipeline.Count} steps");
+        Debug.Log($"[DailyResolution] ========== PIPELINE START ==========");
+        Debug.Log($"[DailyResolution] Executando {pipeline.Count} steps");
+        
+        // ONDA 6.3: Error Handling + Telemetry
+        float totalDuration = 0f;
+        int stepIndex = 0;
 
         foreach (var step in pipeline)
         {
-            await step.Execute(flowControl);
+            stepIndex++;
+            string stepName = step.GetType().Name;
+            
+            // Telemetry: Medir tempo de execução
+            float startTime = Time.realtimeSinceStartup;
+            
+            try
+            {
+                Debug.Log($"[DailyResolution] [{stepIndex}/{pipeline.Count}] Executando: {stepName}");
+                
+                await step.Execute(flowControl);
+                
+                // Telemetry: Log de duração
+                float duration = Time.realtimeSinceStartup - startTime;
+                totalDuration += duration;
+                
+                Debug.Log($"[DailyResolution] ? {stepName} concluído em {duration:F3}s");
+                
+                // Performance Warning
+                if (duration > 2f)
+                {
+                    Debug.LogWarning($"[DailyResolution] ?? {stepName} está lento! ({duration:F3}s)");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                // Error Handling: Log completo do erro
+                Debug.LogError($"[DailyResolution] ? ERRO no step {stepName}:");
+                Debug.LogError($"Message: {ex.Message}");
+                Debug.LogError($"StackTrace: {ex.StackTrace}");
+                
+                // Decidir: Abortar pipeline ou continuar?
+                if (IsCriticalStep(step))
+                {
+                    Debug.LogError($"[DailyResolution] Step crítico falhou! Abortando pipeline.");
+                    flowControl.AbortPipeline();
+                    break;
+                }
+                else
+                {
+                    Debug.LogWarning($"[DailyResolution] Step não-crítico falhou. Continuando...");
+                }
+            }
 
             if (flowControl.ShouldAbort)
             {
-                Debug.Log("[DailyResolution] Pipeline abortado.");
+                Debug.Log("[DailyResolution] Pipeline abortado por step.");
                 break;
             }
 
             if (this == null || this.GetCancellationTokenOnDestroy().IsCancellationRequested)
+            {
+                Debug.Log("[DailyResolution] Pipeline cancelado (objeto destruído).");
                 return;
+            }
         }
+
+        // Telemetry: Log final
+        Debug.Log($"[DailyResolution] ========== PIPELINE END ==========");
+        Debug.Log($"[DailyResolution] Tempo total: {totalDuration:F3}s");
 
         if (!flowControl.ShouldAbort)
         {
             _logicContext.Events.Time.TriggerResolutionEnded();
-            Debug.Log("=== Resolução do Dia Concluída ===");
+            Debug.Log("[DailyResolution] ? Resolução do Dia Concluída com Sucesso");
+        }
+        else
+        {
+            Debug.LogWarning("[DailyResolution] ?? Pipeline abortado");
         }
 
         _isProcessing = false;
+    }
+    
+    /// <summary>
+    /// Determina se um step é crítico (deve abortar pipeline se falhar).
+    /// </summary>
+    private bool IsCriticalStep(IFlowStep step)
+    {
+        // Steps críticos: GrowGridStep, CalculateScoreStep, AdvanceTimeStep
+        return step is GrowGridStep || 
+               step is CalculateScoreStep || 
+               step is AdvanceTimeStep;
     }
 }
