@@ -16,6 +16,16 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "GridVisualConfig", menuName = "Grid/Visual Config")]
 public class GridVisualConfig : ScriptableObject
 {
+    [Header("Cursor Animado")]
+    // Em vez de um sprite estático, pedimos o controlador da animação
+    public RuntimeAnimatorController cursorAnimatorController;
+
+    // O ajuste fino de posição que você pediu
+    public Vector3 cursorLocalOffset = Vector3.zero;
+
+    // Opcional: Escala caso a animação venha muito grande/pequena
+    public Vector3 cursorLocalScale = Vector3.one;
+
     [Header("Pixel Art Assets")]
     [Tooltip("Sprite do solo seco padrão")]
     public Sprite drySoilSprite;

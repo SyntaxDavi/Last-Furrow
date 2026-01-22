@@ -12,6 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 22a55c8c55edca74280e3f8c302d3858, type: 3}
   m_Name: GridVisualConfig
   m_EditorClassIdentifier: 
+  cursorAnimatorController: {fileID: 9100000, guid: ac1b5c9298bd2354aa7045ea0ebb82f3, type: 2}
+  cursorLocalOffset: {x: 0, y: -0.5, z: 0}
+  cursorLocalScale: {x: 1, y: 1, z: 1}
   drySoilSprite: {fileID: -4021013096228626078, guid: 4005c1be4b0af39409dbe10e25723e0e, type: 3}
   wetSoilSprite: {fileID: -8421498797493290970, guid: f11243876febb5c45a4904a740d3cf74, type: 3}
   lockedSoilSprite: {fileID: -1259536347818134243, guid: abbbe807427a02445b7988434c51cd2f, type: 3}
@@ -20,10 +23,10 @@ MonoBehaviour:
   witheredOverlay: {r: 1, g: 1, b: 0.7, a: 0.3}
   plantedOverlay: {r: 0.5, g: 1, b: 0.5, a: 0.15}
   disabledOverlay: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
-  validHover: {r: 0.9245283, g: 0.8584404, b: 0.39607844, a: 0.18431373}
-  invalidHover: {r: 1, g: 0, b: 0, a: 0.4}
+  validHover: {r: 0.34109113, g: 0.990566, b: 0.4968389, a: 0.19607843}
+  invalidHover: {r: 1, g: 0.2688679, b: 0.27058825, a: 0.29411766}
   unlockableHover: {r: 0, g: 1, b: 0, a: 0.3}
-  errorFlash: {r: 1, g: 0, b: 0, a: 1}
+  errorFlash: {r: 0.8867924, g: 0.1966002, b: 0.20945916, a: 0.6745098}
   analyzingPulse: {r: 1, g: 0.42745098, b: 1, a: 0.7647059}
   flashDuration: 0.81
   pulseDuration: 1.05

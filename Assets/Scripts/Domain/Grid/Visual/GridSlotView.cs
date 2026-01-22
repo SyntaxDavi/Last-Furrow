@@ -12,7 +12,8 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     [SerializeField] private SpriteRenderer _baseRenderer;
     [SerializeField] private SpriteRenderer _plantRenderer;
     [SerializeField] private SpriteRenderer _stateOverlayRenderer;
-    [SerializeField] private SpriteRenderer _highlightRenderer;
+    [SerializeField] private SpriteRenderer _highlightOverlayRenderer; 
+    [SerializeField] private SpriteRenderer _cursorRenderer;           
 
     [Header("UI Feedback")]
     [SerializeField] private TextMeshPro _passiveScoreText;
@@ -24,6 +25,8 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 
     private SlotHighlightController _highlightController;
     private Tween _scoreTween;
+
+    private Animator _cursorAnimator;
 
     public int SlotIndex => _index;
     public int InteractionPriority => 0;
@@ -44,18 +47,35 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _index = index;
         _isLocked = false;
 
-        // CRÍTICO: Garante que highlight tem sprite base configurado
-        if (_highlightRenderer != null && _context.VisualConfig.selectionBorderSprite != null)
+        // 1. Configura Overlay
+        if (_highlightOverlayRenderer != null && _baseRenderer != null)
         {
-            _highlightRenderer.sprite = _context.VisualConfig.selectionBorderSprite;
+            _highlightOverlayRenderer.sprite = _baseRenderer.sprite;
         }
 
-        // Injeta dependências no controller
-        _highlightController = new SlotHighlightController(_highlightRenderer, _context.VisualConfig);
+        // 2. Configura o Cursor Animado (Setup Automático)
+        if (_cursorRenderer != null && _context.VisualConfig.cursorAnimatorController != null)
+        {
+            // Garante que existe um Animator no mesmo objeto do SpriteRenderer
+            if (_cursorAnimator == null)
+                _cursorAnimator = _cursorRenderer.gameObject.GetComponent<Animator>();
 
-        // Sincroniza sprites dos overlays com a base
+            if (_cursorAnimator == null)
+                _cursorAnimator = _cursorRenderer.gameObject.AddComponent<Animator>();
+
+            // Atribui o controller de animação (Aseprite clip logic)
+            _cursorAnimator.runtimeAnimatorController = _context.VisualConfig.cursorAnimatorController;
+        }
+
+        // 3. Inicializa Controller passando o Animator
+        _highlightController = new SlotHighlightController(
+            _highlightOverlayRenderer,
+            _cursorRenderer,
+            _cursorAnimator, 
+            _context.VisualConfig
+        );
+
         SyncOverlaySprites();
-
         ResetVisualState();
     }
 
@@ -82,18 +102,8 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     }
     public void TriggerAnalyzingPulse(Color pulseColor, float duration)
     {
-        // Agora usamos o estado explícito "Analyzing"
-        // O AnalyzingPhaseController geralmente chama isso no início da análise
-        _highlightController?.SetAnalyzing(true);
-
-        // Como o AnalyzingPhaseController não chama "StopAnalyzing" explicitamente no seu código antigo,
-        // mantemos um failsafe aqui, mas o ideal é que o Controller externo gerencie start/stop.
-        StopAnalyzeAfterDelay(duration).Forget();
-    }
-    private async UniTaskVoid StopAnalyzeAfterDelay(float duration)
-    {
-        await UniTask.Delay(TimeSpan.FromSeconds(duration), cancellationToken: this.GetCancellationTokenOnDestroy());
-        _highlightController?.SetAnalyzing(false);
+        // Usa o método PlayScannerPulse que já gerencia o estado analyzing internamente
+        _highlightController?.PlayScannerPulse(duration, this.GetCancellationTokenOnDestroy()).Forget();
     }
     public void ShowPassiveScore(int points)
     {
@@ -226,8 +236,16 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         if (_baseRenderer == null) _baseRenderer = GetComponent<SpriteRenderer>();
         if (_plantRenderer == null) _plantRenderer = CreateChildSprite("PlantSprite", 1);
         if (_stateOverlayRenderer == null) _stateOverlayRenderer = CreateChildSprite("StateOverlay", 2);
-        if (_highlightRenderer == null) _highlightRenderer = CreateChildSprite("HighlightOverlay", 4);
+
+        // LAYER 3: Overlay de Cor (Verde/Amarelo/Vermelho)
+        if (_highlightOverlayRenderer == null)
+            _highlightOverlayRenderer = CreateChildSprite("OverlayFill", 3);
+
+        // LAYER 4: Cursor (Setas brancas em cima de tudo)
+        if (_cursorRenderer == null)
+            _cursorRenderer = CreateChildSprite("CursorArrows", 4);
     }
+
 
     private SpriteRenderer CreateChildSprite(string name, int orderOffset)
     {
