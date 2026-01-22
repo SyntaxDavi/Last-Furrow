@@ -1139,7 +1139,7 @@ Transform:
   m_GameObject: {fileID: 413033042}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.2900001, z: 0}
+  m_LocalPosition: {x: 0, y: 0.6, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1158,7 +1158,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AnchorX: 0.5
-  AnchorY: 0.629
+  AnchorY: 0.56
   Offset: {x: 0, y: 0}
 --- !u!1 &430980903
 GameObject:
@@ -1375,7 +1375,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _slotPrefab: {fileID: 2412386929584116462, guid: 28b8f0aacff53ce4ab77edbb5b825c91, type: 3}
   _gridContainer: {fileID: 413033043}
-  _spacing: {x: 1.5, y: 1.1}
+  _spacing: {x: 2, y: 1.4}
   _showDebugLogs: 1
 --- !u!114 &434515750
 MonoBehaviour:
@@ -7349,7 +7349,7 @@ Transform:
   m_GameObject: {fileID: 2128607301}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -2.55, z: 0}
+  m_LocalPosition: {x: 0, y: -3.1999998, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -7368,7 +7368,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AnchorX: 0.5
-  AnchorY: 0.245
+  AnchorY: 0.18
   Offset: {x: 0, y: 0}
 --- !u!1 &2132860106
 GameObject:
