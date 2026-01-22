@@ -27,7 +27,7 @@ MonoBehaviour:
   analyzingPulse: {r: 1, g: 0.42745098, b: 1, a: 0.7647059}
   flashDuration: 0.81
   pulseDuration: 1.05
-  stateOverlayOffset: 5
-  gameStateOverlayOffset: 2
-  hoverHighlightOffset: 6
+  stateOverlayOffset: 6
+  gameStateOverlayOffset: 7
+  hoverHighlightOffset: 5
   flashEffectOffset: 4
