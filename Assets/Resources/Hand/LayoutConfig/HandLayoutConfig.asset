@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4f0dd9de6ba0494fb53110da8289101, type: 3}
   m_Name: HandLayoutConfig
   m_EditorClassIdentifier: 
-  CardSpacing: 1.9
-  MaxHandWidth: 12
+  CardSpacing: 2.2
+  MaxHandWidth: 13.5
   ArcHeight: 0.4
   RotationIntensity: 10.5
   SpawnDelay: 0.1

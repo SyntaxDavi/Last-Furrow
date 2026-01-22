@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   PaddingLeft: 2
   PaddingRight: 2
-  PaddingTop: 4
-  PaddingBottom: 3.2
+  PaddingTop: 6
+  PaddingBottom: 6
   SnapToMultipleOf4: 1
   ShowDebugBounds: 1
   GridBoundsColor: {r: 0, g: 1, b: 0, a: 1}

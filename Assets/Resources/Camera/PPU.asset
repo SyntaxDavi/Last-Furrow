@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a07891dec2db1c84789e6c2a3e795647, type: 3}
   m_Name: PPU
   m_EditorClassIdentifier: 
-  PPU: 24
+  PPU: 32
   ReferenceVerticalPixels: 360
