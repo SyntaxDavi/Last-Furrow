@@ -15,9 +15,15 @@ MonoBehaviour:
   AllCrops:
   - {fileID: 11400000, guid: 68c2621930556cd4e97955d9488b95d6, type: 2}
   - {fileID: 11400000, guid: 536834a8918f85e4693e99cb0d6d0103, type: 2}
+  - {fileID: 11400000, guid: 0788edf2b9aa5c74aa726db849337dd7, type: 2}
+  - {fileID: 11400000, guid: 3672a286177bb034eb51a933ddd2f658, type: 2}
+  - {fileID: 11400000, guid: fe2ea8c53d541804bad1033abf8ccc8a, type: 2}
   AllCards:
   - {fileID: 11400000, guid: e12b06d8823623d4da1a53942b5439c0, type: 2}
   - {fileID: 11400000, guid: ace3ec00d61515846bc63b8374592163, type: 2}
+  - {fileID: 11400000, guid: 4805b18a76503bc4fa26f03c7b156c00, type: 2}
+  - {fileID: 11400000, guid: 16219c9ef46c31f488f0171ae684417f, type: 2}
+  - {fileID: 11400000, guid: 87e6967fe95315542a83e28b35c86885, type: 2}
   - {fileID: 11400000, guid: 8a36095e4b634f849a3e441bc375c194, type: 2}
   - {fileID: 11400000, guid: 771a282f1fe805247a5015f94eba9af4, type: 2}
   - {fileID: 11400000, guid: 288f107eef83c514cb83649d1dd6edf4, type: 2}

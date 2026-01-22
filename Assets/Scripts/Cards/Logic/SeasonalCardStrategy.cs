@@ -8,6 +8,9 @@ public class SeasonalCardStrategy : ICardSourceStrategy
     {
         (CardID)"card_corn",
         (CardID)"card_carrot",
+        (CardID)"card_onion",
+        (CardID)"card_potato",
+        (CardID)"card_lettuce",
         (CardID)"card_water",
         (CardID)"card_shovel",
         (CardID)"card_harvest",

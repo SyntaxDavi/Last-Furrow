@@ -10,15 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c4326d99a298970448385a0826c5b265, type: 3}
-  m_Name: Card_carrot
+  m_Name: Card_corn
   m_EditorClassIdentifier: 
   ID:
-    _value: card_carrot
-  Name: Carrot
+    _value: card_corn
+  Name: Corn
   Icon: {fileID: 0}
   Type: 0
-  Cost: 10
-  BaseSellValue: 5
-  CropToPlant: {fileID: 11400000, guid: 68c2621930556cd4e97955d9488b95d6, type: 2}
+  BaseSellValue: 7
+  CropToPlant: {fileID: 11400000, guid: 536834a8918f85e4693e99cb0d6d0103, type: 2}
   GrowthAcceleration: 0
   ValueMultiplier: 0

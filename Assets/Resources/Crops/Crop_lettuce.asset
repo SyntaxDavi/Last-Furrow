@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 13a09edc9120b8a49b499d82b669cc4f, type: 3}
-  m_Name: Crop_carrot
-  m_EditorClassIdentifier: 
+  m_Name: Crop_lettuce
+  m_EditorClassIdentifier: Assembly-CSharp::CropData
   ID:
-    _value: crop_carrot
-  Name: CropCarrot
-  Description: Um vegetal laranja!
-  DaysToMature: 2
-  FreshnessWindow: 2
+    _value: crop_lettuce
+  Name: CropLetucce
+  Description: "Um p\xE9zin de alface"
+  DaysToMature: 4
+  FreshnessWindow: 1
   BasePassiveScore: 10
   MatureScoreMultiplier: 1.5
   BaseSellValue: 0

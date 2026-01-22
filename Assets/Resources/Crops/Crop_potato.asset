@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 13a09edc9120b8a49b499d82b669cc4f, type: 3}
-  m_Name: Crop_carrot
-  m_EditorClassIdentifier: 
+  m_Name: Crop_potato
+  m_EditorClassIdentifier: Assembly-CSharp::CropData
   ID:
-    _value: crop_carrot
-  Name: CropCarrot
-  Description: Um vegetal laranja!
-  DaysToMature: 2
+    _value: crop_potato
+  Name: CropPotato
+  Description: "Batainha quando nasce sepalharrama pelo ch\xE3o"
+  DaysToMature: 3
   FreshnessWindow: 2
-  BasePassiveScore: 10
-  MatureScoreMultiplier: 1.5
+  BasePassiveScore: 5
+  MatureScoreMultiplier: 1.7
   BaseSellValue: 0
   SeedSprite: {fileID: 0}
   GrowthStages: []
