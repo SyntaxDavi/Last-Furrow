@@ -1375,7 +1375,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _slotPrefab: {fileID: 2412386929584116462, guid: 28b8f0aacff53ce4ab77edbb5b825c91, type: 3}
   _gridContainer: {fileID: 413033043}
-  _spacing: {x: 2, y: 1.4}
+  _spacing: {x: 2, y: 1.7}
   _showDebugLogs: 1
 --- !u!114 &434515750
 MonoBehaviour:
