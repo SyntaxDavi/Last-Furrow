@@ -20,7 +20,7 @@ MonoBehaviour:
   witheredOverlay: {r: 1, g: 1, b: 0.7, a: 0.3}
   plantedOverlay: {r: 0.5, g: 1, b: 0.5, a: 0.15}
   disabledOverlay: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
-  validHover: {r: 0.9245283, g: 0.8584404, b: 0.39607844, a: 0.70980394}
+  validHover: {r: 0.9245283, g: 0.8584404, b: 0.39607844, a: 0.18431373}
   invalidHover: {r: 1, g: 0, b: 0, a: 0.4}
   unlockableHover: {r: 0, g: 1, b: 0, a: 0.3}
   errorFlash: {r: 1, g: 0, b: 0, a: 1}
