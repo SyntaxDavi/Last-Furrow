@@ -1139,7 +1139,7 @@ Transform:
   m_GameObject: {fileID: 413033042}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.6, z: 0}
+  m_LocalPosition: {x: 0, y: 0.79999983, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1158,7 +1158,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AnchorX: 0.5
-  AnchorY: 0.56
+  AnchorY: 0.58
   Offset: {x: 0, y: 0}
 --- !u!1 &430980903
 GameObject:
@@ -1375,7 +1375,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _slotPrefab: {fileID: 2412386929584116462, guid: 28b8f0aacff53ce4ab77edbb5b825c91, type: 3}
   _gridContainer: {fileID: 413033043}
-  _spacing: {x: 2, y: 1.7}
+  _spacing: {x: 2, y: 2}
   _showDebugLogs: 1
 --- !u!114 &434515750
 MonoBehaviour:
@@ -1955,7 +1955,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Shuffle
+  m_text: "\u21BB"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2100000, guid: e73a58f6e2794ae7b1b7e50b7fb811b0, type: 2}
@@ -4251,7 +4251,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 100, y: -490}
+  m_AnchoredPosition: {x: 825, y: -425}
   m_SizeDelta: {x: 150, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1269773718
@@ -6788,8 +6788,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -100, y: -490}
-  m_SizeDelta: {x: 150, y: 50}
+  m_AnchoredPosition: {x: 636, y: -319}
+  m_SizeDelta: {x: 47.74, y: 39.74}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1947179163
 MonoBehaviour:

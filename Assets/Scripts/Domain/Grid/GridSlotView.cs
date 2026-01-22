@@ -130,23 +130,37 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _plantRenderer.enabled = false;
         _highlightRenderer.enabled = false;
         _gameStateOverlayRenderer.enabled = false;
-        _baseRenderer.color = _context.VisualConfig.dryColor;
+        _baseRenderer.sprite = _context.VisualConfig.drySoilSprite;
+        // Garantir que overlays use o mesmo sprite base (sincronizar caso o sprite base mude em tempo de execução)
+        SyncOverlaySprites();
     }
 
     /// <summary>
     /// Define estado de bloqueio do slot.
-    /// </summary>
+    /// </summary>  
     public void SetLockedState(bool isLocked)
     {
         _isLocked = isLocked;
         
         if (_isLocked)
         {
-            _baseRenderer.color = _context.VisualConfig.lockedColor;
+            if(_context.VisualConfig.lockedSoilSprite != null)
+            {
+                _baseRenderer.sprite = _context.VisualConfig.lockedSoilSprite;
+                _plantRenderer.color = Color.white;
+
+                // Sincronizar overlays quando trocar o sprite base
+                SyncOverlaySprites();
+            }
+            else
+            {
+                _baseRenderer.color = Color.gray;
+                _plantRenderer.color = Color.gray;
+            }
             _plantRenderer.enabled = false;
 
-           // if (_showDebugLogs) ;
-                // Debug.Log($"[GridSlotView {_index}] Estado: LOCKED");
+            if (_showDebugLogs) 
+                 Debug.Log($"[GridSlotView {_index}] Estado: LOCKED");
         }
     }
 
@@ -157,7 +171,21 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     {
         if (_isLocked) return;
 
-        // Layer 1: Plant Sprite
+        if (isWatered)
+        {
+            _baseRenderer.sprite = _context.VisualConfig.wetSoilSprite;
+            _baseRenderer.color = Color.white;
+        }
+        else
+        {
+            _baseRenderer.sprite = _context.VisualConfig.drySoilSprite;
+            _baseRenderer.color = Color.white;
+        }
+
+        // Garantir que overlays (state/game/highlight) estejam usando o sprite atual da base
+        SyncOverlaySprites();
+
+            // Layer 1: Plant Sprite
         bool hasPlant = plantSprite != null;
         if (hasPlant)
         {
@@ -169,11 +197,6 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
             _plantRenderer.enabled = false;
             _plantRenderer.sprite = null;
         }
-
-        // Layer 0: Base Color (dry/wet)
-        _baseRenderer.color = isWatered 
-            ? _context.VisualConfig.wetColor 
-            : _context.VisualConfig.dryColor;
 
         // Layer 2: State Overlay (mature/withered/planted)
         if (hasPlant && _stateOverlayRenderer != null)
@@ -392,6 +415,21 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         sr.enabled = false;
 
         return sr;
+    }
+
+    // Sincroniza o sprite das camadas de overlay para corresponder ao sprite base
+    private void SyncOverlaySprites()
+    {
+        if (_baseRenderer == null) return;
+
+        if (_stateOverlayRenderer != null)
+            _stateOverlayRenderer.sprite = _baseRenderer.sprite;
+
+        if (_gameStateOverlayRenderer != null)
+            _gameStateOverlayRenderer.sprite = _baseRenderer.sprite;
+
+        if (_highlightRenderer != null)
+            _highlightRenderer.sprite = _baseRenderer.sprite;
     }
     
     // --- API PÚBLICA PARA PATTERN HIGHLIGHTS (ONDA 5.5) ---

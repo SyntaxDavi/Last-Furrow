@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98882c1e93eabaa4593aaa438894d2e0, type: 3}
   m_Name: DefaultCameraFraming
   m_EditorClassIdentifier: 
-  PaddingLeft: 3
-  PaddingRight: 3
+  PaddingLeft: 2
+  PaddingRight: 2
   PaddingTop: 4
   PaddingBottom: 3.2
   SnapToMultipleOf4: 1

@@ -16,15 +16,18 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "GridVisualConfig", menuName = "Grid/Visual Config")]
 public class GridVisualConfig : ScriptableObject
 {
-    [Header("Base Colors")]
-    [Tooltip("Cor do solo seco (padrão branco)")]
-    public Color dryColor = Color.white;
-    
-    [Tooltip("Cor do solo molhado (azulado)")]
-    public Color wetColor = new Color(0.6f, 0.6f, 1f, 1f);
-    
-    [Tooltip("Cor de slot bloqueado (escuro)")]
-    public Color lockedColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+    [Header("Pixel Art Assets")]
+    [Tooltip("Sprite do solo seco padrão")]
+    public Sprite drySoilSprite;
+
+    [Tooltip("Sprite do solo molhado")]
+    public Sprite wetSoilSprite;
+
+    [Tooltip("Sprite do solo bloqueado (ex: pedra ou solo cinza)")]
+    public Sprite lockedSoilSprite;
+
+    [Tooltip("Sprite de moldura (Borda branca com meio transparente)")]
+    public Sprite selectionBorderSprite;
 
     [Header("State Overlays")]
     [Tooltip("Overlay de planta madura (verde forte)")]
