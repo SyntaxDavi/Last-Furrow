@@ -42,7 +42,8 @@ public class AppCore : MonoBehaviour
     public TimeManager TimeManager;
     public InputManager InputManager;
     public AudioManager AudioManager;
-    public DailyResolutionSystem DailyResolutionSystem;
+    public DailyResolutionSystem DailyResolutionSystem; // Mantido para referência mas injeção agora é via Bootstrapper
+
 
     // O Controlador do Flow (Arraste na cena)
     public WeekendFlowController WeekendFlowController;
@@ -149,19 +150,18 @@ public class AppCore : MonoBehaviour
 
         // ----------------------------------------------------
 
-        // 3. Inicializa Sistemas de Regra (QUE DEPENDEM DOS SERVIÇOS ACIMA)
-        // Agora, quando Initialize() rodar, o WeeklyGoalSystem já existe!
+        // ----------------------------------------------------
 
+        // 3. Inicializa Sistemas de Regra
         GameStateManager.Initialize();
 
-        // 4. Injeção de Dependência do Flow (Mantido igual)
+        // 4. Injeção de Dependência do Flow (Weekend)
         if (WeekendFlowController != null)
         {
             var weekendStateFlow = new WeekendStateFlow(GameStateManager);
             var weekendUIFlow = new WeekendUIFlow(Events.UI);
             var weekendContentResolver = new WeekendContentResolver(ShopService, _defaultShop, _specialShops);
 
-            // ⭐ SOLID: Injeta DailyHandSystem para permitir draw de cartas após shop
             var weekendBuilder = new DefaultWeekendFlowBuilder(
                 weekendStateFlow,
                 weekendUIFlow,
@@ -172,13 +172,9 @@ public class AppCore : MonoBehaviour
 
             WeekendFlowController.Initialize(RunManager, weekendBuilder);
         }
-        else
-        {
-            Debug.LogError("[AppCore] WeekendFlowController não atribuído!");
-        }
-        // -----------------------------------------------
 
         InputManager.OnAnyInputDetected += () => Events.Player.TriggerAnyInput();
+
 
         SceneManager.sceneLoaded += OnSceneLoaded;
         SceneManager.LoadScene(_firstSceneName);
@@ -212,18 +208,6 @@ public class AppCore : MonoBehaviour
         if (scene.name == "Boot") return;
         Camera activeCamera = Camera.main;
         if (activeCamera != null) InputManager.SetCamera(activeCamera);
-
-        // SE a cena for a de Gameplay, injeta as dependências do DailySystem
-        if (scene.name == "Game" || scene.name == _firstSceneName)
-        {
-            // Pequeno delay para garantir que o GridService da cena já se registrou no AppCore
-            StartCoroutine(InjectDailySystemRoutine());
-        }
-    }
-    private System.Collections.IEnumerator InjectDailySystemRoutine()
-    {
-        yield return null; // Espera 1 frame para GridManager registrar o GridService
-        InjectDailySystemDependencies();
     }
     // --- REGISTRO DE SERVIÇOS DE CENA ---
 
@@ -254,58 +238,6 @@ public class AppCore : MonoBehaviour
                 Debug.LogError($"[AppCore] Erro ao injetar GridService: {ex.Message}");
             }
         }
-    }
-    public void InjectDailySystemDependencies()
-    {
-        if (DailyResolutionSystem == null) return;
-
-        // 1. Validações de Dados
-        if (SaveManager?.Data?.CurrentRun == null) return;
-
-        if (PatternTracking == null)
-        {
-            InitializePatternTracking(SaveManager.Data.CurrentRun);
-        }
-
-        // 2. ONDA 6.3: Buscar Bootstrapper (1x ao invés de 3x FindFirstObjectByType)
-        var bootstrapper = FindFirstObjectByType<DailyVisualBootstrapper>();
-        
-        if (bootstrapper == null)
-        {
-            Debug.LogError("[AppCore] FATAL: DailyVisualBootstrapper não encontrado na scene! Adicione o componente.");
-            return;
-        }
-
-        // 3. Criar Contexto de Lógica
-        var logicContext = new DailyResolutionContext(
-            RunManager,
-            SaveManager,
-            InputManager,
-            Events,
-            DailyHandSystem,
-            WeeklyGoalSystem,
-            GetGridLogic(),
-            PatternDetector,
-            PatternTracking,
-            PatternCalculator
-        );
-        
-        // 4. Criar Contexto Visual via Bootstrapper (valida automaticamente)
-        var visualContext = bootstrapper.CreateContext();
-        
-        if (visualContext == null || !visualContext.IsValid())
-        {
-            Debug.LogError("[AppCore] FATAL: VisualContext inválido! Verifique referências no Bootstrapper.");
-            return;
-        }
-        
-        // 5. Criar Pipeline Builder (Factory Pattern)
-        var pipelineBuilder = new DailyPipelineBuilder();
-
-        // 6. Injetar TODOS contextos + Builder no sistema
-        DailyResolutionSystem.Construct(logicContext, visualContext, pipelineBuilder);
-
-        Debug.Log($"[AppCore] ✓ DailySystem Construct OK - Builder: {pipelineBuilder.GetType().Name}");
     }
 
     public void UnregisterGridService()

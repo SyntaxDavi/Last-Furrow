@@ -6,52 +6,46 @@ public class DailyResolutionSystem : MonoBehaviour
 {
     private DailyResolutionContext _logicContext;
     private DailyVisualContext _visualContext;
-    private IDailyFlowBuilder _pipelineBuilder;  
-    
-    private bool _isInitialized = false;
-    private bool _isProcessing = false;
+    private IDailyFlowBuilder _pipelineBuilder;
+
+    private bool _isInitialized = false;      
+    private bool _isProcessing = false;       
 
     /// <summary>
-    /// Injeção de Dependências Explícita (chamado pelo AppCore após scene load).
-    /// Agora recebe Builder Pattern para construção do pipeline.
+    /// InjeÃ§Ã£o de DependÃªncias ExplÃ­cita (chamado pelo Bootstrapper da cena).
     /// </summary>
     public void Construct(
-        DailyResolutionContext logicContext, 
-        DailyVisualContext visualContext,
-        IDailyFlowBuilder pipelineBuilder)  
+        DailyResolutionContext logicContext,  
+        DailyVisualContext visualContext,     
+        IDailyFlowBuilder pipelineBuilder)    
     {
         _logicContext = logicContext;
-        _visualContext = visualContext;
-        _pipelineBuilder = pipelineBuilder;
+        _visualContext = visualContext;       
+        _pipelineBuilder = pipelineBuilder;   
 
         _isInitialized = true;
 
-        // Validações
+        // ValidaÃ§Ãµes
         if (_logicContext == null)
         {
-            Debug.LogError("[DailyResolution] FATAL: LogicContext é NULL!");
+            Debug.LogError("[DailyResolution] FATAL: LogicContext Ã© NULL!");
             _isInitialized = false;
         }
-        
+
         if (_pipelineBuilder == null)
         {
-            Debug.LogError("[DailyResolution] FATAL: PipelineBuilder é NULL!");
+            Debug.LogError("[DailyResolution] FATAL: PipelineBuilder Ã© NULL!");
             _isInitialized = false;
         }
-        
-        if (_visualContext == null || !_visualContext.IsValid())
-        {
-            Debug.LogWarning("[DailyResolution] VisualContext inválido (Modo Headless ou faltam referências)");
-        }
-        
-        Debug.Log($"[DailyResolution] ? Construct OK - Builder: {_pipelineBuilder?.GetType().Name}");
+
+        Debug.Log($"[DailyResolution] âœ“ Construct OK - Builder: {_pipelineBuilder?.GetType().Name}");
     }
 
     public void StartEndDaySequence()
     {
         if (!_isInitialized)
         {
-            Debug.LogError("[DailyResolution] FATAL: Dependências não injetadas via Construct()!");
+            Debug.LogError("[DailyResolution] FATAL: DependÃªncias nÃ£o injetadas via Construct()!");
             return;
         }
 
@@ -60,7 +54,7 @@ public class DailyResolutionSystem : MonoBehaviour
         var runData = _logicContext.SaveManager.Data.CurrentRun;
         if (runData == null) return;
 
-        ExecuteDayRoutine(runData).Forget();
+        ExecuteDayRoutine(runData).Forget();  
     }
 
     private async UniTaskVoid ExecuteDayRoutine(RunData runData)
@@ -68,154 +62,21 @@ public class DailyResolutionSystem : MonoBehaviour
         _isProcessing = true;
         _logicContext.Events.Time.TriggerResolutionStarted();
 
-        var flowControl = new FlowControl();
-        
+        // 1. ConstrÃ³i o Pipeline
         var pipeline = _pipelineBuilder.BuildPipeline(_logicContext, _visualContext, runData);
         
-        Debug.Log($"[DailyResolution] ========== PIPELINE START ==========");
-        Debug.Log($"[DailyResolution] Executando {pipeline.Count} steps");
-        
-        float totalDuration = 0f;
-        int stepIndex = 0;
-        var executedSteps = new List<IFlowStep>();  // Rastreio para rollback
+        // 2. Executa via Executor GerenciÃ¡vel
+        var executor = new PipelineExecutor("DailyResolution");
 
-        foreach (var step in pipeline)
-        {
-            stepIndex++;
-            string stepName = step.GetStepName();
-            
-            if (!step.CanExecute())
-            {
-                Debug.LogWarning($"[DailyResolution] [{stepIndex}/{pipeline.Count}] ?? PULADO: {stepName} (condições não atendidas)");
-                continue;
-            }
-            
-            // Telemetry: Medir tempo de execução
-            float startTime = Time.realtimeSinceStartup;
-            
-            try
-            {
-                Debug.Log($"[DailyResolution] [{stepIndex}/{pipeline.Count}] Executando: {stepName}");
-                
-                await step.Execute(flowControl);
-                
-                // Marcar como executado (para rollback se necessário)
-                executedSteps.Add(step);
-                
-                // Telemetry: Log de duração
-                float duration = Time.realtimeSinceStartup - startTime;
-                totalDuration += duration;
-                
-                Debug.Log($"[DailyResolution] ? {stepName} concluído em {duration:F3}s");
-                
-                // Performance Warning
-                if (duration > 2f)
-                {
-                    Debug.LogWarning($"[DailyResolution] ?? {stepName} está lento! ({duration:F3}s)");
-                }
-            }
-            catch (System.Exception ex)
-            {
-                // Error Handling: Log completo do erro
-                Debug.LogError($"[DailyResolution] ? ERRO no step {stepName}:");
-                Debug.LogError($"Message: {ex.Message}");
-                Debug.LogError($"StackTrace: {ex.StackTrace}");
-                
-                // Decidir: Abortar pipeline ou continuar?
-                if (IsCriticalStep(step))
-                {
-                    Debug.LogError($"[DailyResolution] Step crítico falhou! Abortando pipeline.");
-                    flowControl.AbortPipeline($"Step crítico {stepName} falhou");
-                    
-                    // tentar rollback de steps executados
-                    await RollbackExecutedSteps(executedSteps);
-                    break;
-                }
-                else
-                {
-                    Debug.LogWarning($"[DailyResolution] Step não-crítico falhou. Continuando...");
-                }
-            }
+        await executor.ExecuteAsync(pipeline, 
+            onStepFinished: (step, duration) => {
+                if (duration > 2f) Debug.LogWarning($"[DailyResolution] âš  {step.GetStepName()} estÃ¡ lento! ({duration:F3}s)");
+            });
 
-            if (flowControl.ShouldAbort)
-            {
-                Debug.Log("[DailyResolution] Pipeline abortado por step.");
-                break;
-            }
-
-            if (this == null || this.GetCancellationTokenOnDestroy().IsCancellationRequested)
-            {
-                Debug.Log("[DailyResolution] Pipeline cancelado (objeto destruído).");
-                return;
-            }
-        }
-
-        // Telemetry: Log final
-        Debug.Log($"[DailyResolution] ========== PIPELINE END ==========");
-        Debug.Log($"[DailyResolution] Tempo total: {totalDuration:F3}s");
-
-        if (!flowControl.ShouldAbort)
-        {
-            _logicContext.Events.Time.TriggerResolutionEnded();
-            Debug.Log("[DailyResolution] ? Resolução do Dia Concluída com Sucesso");
-        }
-        else
-        {
-            Debug.LogWarning("[DailyResolution] ?? Pipeline abortado");
-        }
+        // 3. Finaliza
+        _logicContext.Events.Time.TriggerResolutionEnded();
+        Debug.Log("[DailyResolution] âœ“ ResoluÃ§Ã£o do Dia ConcluÃ­da");
 
         _isProcessing = false;
-    }
-    
-    /// <summary>
-    /// Determina se um step é crítico (deve abortar pipeline se falhar).
-    /// </summary>
-    private bool IsCriticalStep(IFlowStep step)
-    {
-        // Steps críticos: GrowGridStep, CalculateScoreStep, AdvanceTimeStep
-        return step is GrowGridStep || 
-               step is CalculateScoreStep || 
-               step is AdvanceTimeStep;
-    }
-    
-    /// <summary>
-    /// Executa rollback de steps executados (ordem reversa).
-    /// Chamado quando pipeline aborta após erro crítico.
-    /// </summary>
-    private async UniTask RollbackExecutedSteps(List<IFlowStep> executedSteps)
-    {
-        if (executedSteps.Count == 0)
-        {
-            Debug.Log("[DailyResolution] Nenhum step para fazer rollback.");
-            return;
-        }
-        
-        Debug.LogWarning($"[DailyResolution] ?? Iniciando rollback de {executedSteps.Count} steps...");
-        
-        // Rollback em ordem reversa (LIFO)
-        for (int i = executedSteps.Count - 1; i >= 0; i--)
-        {
-            var step = executedSteps[i];
-            
-            if (step is IReversibleStep reversibleStep && reversibleStep.WasExecuted)
-            {
-                try
-                {
-                    Debug.Log($"[DailyResolution] ?? Rollback: {step.GetStepName()}");
-                    await reversibleStep.Rollback();
-                    Debug.Log($"[DailyResolution] ? Rollback concluído: {step.GetStepName()}");
-                }
-                catch (System.Exception ex)
-                {
-                    Debug.LogError($"[DailyResolution] ? Erro no rollback de {step.GetStepName()}: {ex.Message}");
-                }
-            }
-            else
-            {
-                Debug.Log($"[DailyResolution] ?? Step {step.GetStepName()} não suporta rollback");
-            }
-        }
-        
-        Debug.LogWarning("[DailyResolution] ?? Rollback completo");
     }
 }

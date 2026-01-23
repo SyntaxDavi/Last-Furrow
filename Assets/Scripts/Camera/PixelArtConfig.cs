@@ -7,11 +7,11 @@ public class PixelArtConfig : ScriptableObject
     [Tooltip("Quantos pixels cabem em 1 unidade da Unity.")]
     public int PPU = 32;
 
-    [Tooltip("Resolução vertical de referência (ex: 180, 240, 360).")]
+    [Tooltip("Resoluï¿½ï¿½o vertical de referï¿½ncia (ex: 180, 240, 360).")]
     public int ReferenceVerticalPixels = 360;
 
     /// <summary>
-    /// Arredonda um valor flutuante para a grade de pixels mais próxima.
+    /// Arredonda um valor flutuante para a grade de pixels mais prï¿½xima.
     /// </summary>
     public float SnapToPixel(float value)
     {
@@ -20,8 +20,8 @@ public class PixelArtConfig : ScriptableObject
     }
 
     /// <summary>
-    /// Arredonda um vetor para a grade de pixels mais próxima.
-    /// Mantém Z inalterado.
+    /// Arredonda um vetor para a grade de pixels mais prï¿½xima.
+    /// Mantï¿½m Z inalterado.
     /// </summary>
     public Vector3 SnapPosition(Vector3 position)
     {
