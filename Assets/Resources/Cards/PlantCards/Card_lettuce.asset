@@ -15,7 +15,7 @@ MonoBehaviour:
   ID:
     _value: card_lettuce
   Name: Lettuce
-  Icon: {fileID: 6585668884048488018, guid: e7b252851c7f00c46947c3e5beb21ce7, type: 3}
+  Icon: {fileID: 3042585798291172828, guid: 35b222cd08fa158428931cc5649a78c6, type: 3}
   Type: 0
   BaseSellValue: 3
   CropToPlant: {fileID: 11400000, guid: 0788edf2b9aa5c74aa726db849337dd7, type: 2}

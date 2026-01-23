@@ -133,6 +133,12 @@ public class HandOrganizer : MonoBehaviour
     {
         if (orderedCards == null || orderedCards.Count == 0) return;
 
+        // 1. Atualiza a ordem interna do HandManager
+        // Isso garante que quando uma carta for removida, o RecalculateLayoutTargets
+        // vai usar a ordem correta (shuffled/sorted) ao invés da ordem original
+        _handManager.ReorderActiveCards(orderedCards);
+
+        // 2. Atualiza os targets visuais de cada carta
         for (int i = 0; i < orderedCards.Count; i++)
         {
             RepositionCard(orderedCards[i], i, orderedCards.Count);

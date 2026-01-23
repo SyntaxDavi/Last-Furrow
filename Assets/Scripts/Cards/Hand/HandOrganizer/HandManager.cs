@@ -267,4 +267,16 @@ public class HandManager : MonoBehaviour
     {
         return _handOrganizer;
     }
+
+    /// <summary>
+    /// Reordena internamente a lista de cartas ativas.
+    /// Usado pelo HandOrganizer para manter a ordem após shuffle/sort.
+    /// </summary>
+    public void ReorderActiveCards(List<CardView> newOrder)
+    {
+        if (newOrder == null || newOrder.Count != _activeCards.Count) return;
+
+        _activeCards.Clear();
+        _activeCards.AddRange(newOrder);
+    }
 }
