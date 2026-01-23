@@ -3,66 +3,81 @@ using System;
 
 public class RunManager : MonoBehaviour, IRunManager
 {
-    [Header("Configura��o de Jogo")]
+    [Header("Configuração de Jogo")]
     [SerializeField] private ProgressionSettingsSO _progressionSettings;
 
+    // Dependências injetadas
     private ISaveManager _saveManager;
+    private GridConfiguration _gridConfiguration;
+    private TimeEvents _timeEvents;
+    private IGameStateProvider _gameStateProvider;
+    private Action _onWeeklyResetCallback;
 
-    // Estado privado, leitura p�blica
+    // Estado privado, leitura pública
     private RunPhase _currentPhase;
     public RunPhase CurrentPhase => _currentPhase;
 
     private const int DAYS_IN_PRODUCTION = 5;
     private const int DAY_WEEKEND_START = 6;
 
-    // --- NOVOS EVENTOS DE FLUXO (O FlowController escuta estes) ---
+    // --- EVENTOS DE FLUXO (O FlowController escuta estes) ---
     public event Action<RunData> OnWeekendStarted;
     public event Action<RunData> OnProductionStarted;
 
-    // --- INICIALIZA��O ---
-    public void Initialize(ISaveManager saveManager)
+    // --- INICIALIZAÇÃO ---
+    /// <summary>
+    /// Inicializa o RunManager com todas as dependências necessárias.
+    /// SOLID: Injeção de Dependência Explícita - sem acesso a AppCore.Instance.
+    /// </summary>
+    public void Initialize(
+        ISaveManager saveManager,
+        GridConfiguration gridConfiguration,
+        TimeEvents timeEvents,
+        IGameStateProvider gameStateProvider,
+        Action onWeeklyResetCallback)
     {
         _saveManager = saveManager;
+        _gridConfiguration = gridConfiguration;
+        _timeEvents = timeEvents;
+        _gameStateProvider = gameStateProvider;
+        _onWeeklyResetCallback = onWeeklyResetCallback;
 
         // Restaura o estado correto ao carregar o jogo
         if (IsRunActive)
         {
             RefreshPhaseState(_saveManager.Data.CurrentRun);
         }
+        
+        Debug.Log("[RunManager] ✓ Inicializado com injeção de dependências");
     }
 
-    public bool IsRunActive => _saveManager.Data?.CurrentRun != null;
+    public bool IsRunActive => _saveManager?.Data?.CurrentRun != null;
 
     // --- CONTROLE DE DADOS ---
 
     public void StartNewRun()
     {
-        // Obt�m config do AppCore
-        var gridConfig = AppCore.Instance.GridConfiguration;
-        
-        // 1. Cria��o Pura de Dados (Domain)
-        RunData newRun = RunData.CreateNewRun(gridConfig);
-        
+        // 1. Criação Pura de Dados (Domain) - usa dependência injetada
+        RunData newRun = RunData.CreateNewRun(_gridConfiguration);
+
         // Ajusta meta inicial se settings existirem
         if (_progressionSettings != null)
         {
-             newRun.WeeklyGoalTarget = _progressionSettings.GetGoalForWeek(1);
+            newRun.WeeklyGoalTarget = _progressionSettings.GetGoalForWeek(1);
         }
 
-        // 2. Persist�ncia
+        // 2. Persistência
         _saveManager.Data.CurrentRun = newRun;
         _saveManager.SaveGame();
 
         // 3. Atualiza estado interno
         RefreshPhaseState(newRun);
 
-        // 4. Notifica��es
-        // Aviso gen�rico de tempo (para HUDs simples)
-        AppCore.Instance.Events.Time.TriggerRunStarted();
-        AppCore.Instance.Events.Time.TriggerDayChanged(newRun.CurrentDay);
+        // 4. Notificações - usa dependência injetada
+        _timeEvents.TriggerRunStarted();
+        _timeEvents.TriggerDayChanged(newRun.CurrentDay);
 
-        // Aviso de Fluxo: O jogo come�a em modo Produ��o
-        // (Futuro: Voc� pode criar um ProductionFlowController que ouve isso)
+        // Aviso de Fluxo: O jogo começa em modo Produção
         OnProductionStarted?.Invoke(newRun);
     }
 
@@ -79,7 +94,7 @@ public class RunManager : MonoBehaviour, IRunManager
         _saveManager.SaveGame();
     }
 
-    // --- L�GICA DE FASE (PURE DOMAIN) ---
+    // --- LÓGICA DE FASE (PURE DOMAIN) ---
 
     private void ProcessDayPhase(RunData run)
     {
@@ -88,7 +103,7 @@ public class RunManager : MonoBehaviour, IRunManager
         {
             HandleProductionDay(run);
         }
-        // Caso 2: Chegou o S�bado (Dia 6)
+        // Caso 2: Chegou o Sábado (Dia 6)
         else if (run.CurrentDay == DAY_WEEKEND_START)
         {
             StartWeekendPhase(run);
@@ -104,12 +119,12 @@ public class RunManager : MonoBehaviour, IRunManager
     {
         _currentPhase = RunPhase.Production;
 
-        // Avisa sistemas passivos (HUD de rel�gio)
-        AppCore.Instance.Events.Time.TriggerDayChanged(run.CurrentDay);
+        // Avisa sistemas passivos (HUD de relógio) - usa dependência injetada
+        _timeEvents.TriggerDayChanged(run.CurrentDay);
 
         if (run.CurrentDay == DAYS_IN_PRODUCTION)
         {
-            Debug.Log(">>> ALERTA: �ltimo dia de colheita da semana! <<<");
+            Debug.Log(">>> ALERTA: Último dia de colheita da semana! <<<");
         }
     }
 
@@ -122,11 +137,10 @@ public class RunManager : MonoBehaviour, IRunManager
         _currentPhase = RunPhase.Weekend;
 
         // 2. Dispara Fato
-        // O WeekendFlowController vai pegar isso e rodar o pipeline (Fade -> UI -> Shop)
         OnWeekendStarted?.Invoke(run);
 
-        // Mantemos o evento legado de tempo para outros sistemas menores
-        AppCore.Instance.Events.Time.TriggerWeekendStarted();
+        // Mantemos o evento legado de tempo - usa dependência injetada
+        _timeEvents.TriggerWeekendStarted();
     }
 
     // Chamado quando o dia vira 7 (resetando para 1)
@@ -141,21 +155,15 @@ public class RunManager : MonoBehaviour, IRunManager
         // 2. Atualiza Dado
         _currentPhase = RunPhase.Production;
 
-        // ? ONDA 4: Reset semanal do Pattern Tracking
-        // Limpa hist�rico de padr�es quebrados (para bonus de recria��o)
-        AppCore.Instance.OnWeeklyReset();
+        // ONDA 4: Reset semanal do Pattern Tracking - usa callback injetado
+        _onWeeklyResetCallback?.Invoke();
 
         // 3. Dispara Fato
-        // O WeekendFlowController (no ExitPipeline) ou um ProductionFlowController vai pegar isso
         OnProductionStarted?.Invoke(run);
 
-        // ? CORRE��O: N�O chama ProcessDailyDraw aqui!
-        // O draw de cartas deve ser feito pelo pipeline (WeekendCardDrawStep no pipeline de sa�da do weekend)
-        // Isso evita duplica��o de cartas e segue o princ�pio de Single Source of Truth
-        
-        // Eventos legados de tempo
-        AppCore.Instance.Events.Time.TriggerWeekChanged(run.CurrentWeek);
-        AppCore.Instance.Events.Time.TriggerDayChanged(1);
+        // Eventos legados de tempo - usa dependência injetada
+        _timeEvents.TriggerWeekChanged(run.CurrentWeek);
+        _timeEvents.TriggerDayChanged(1);
     }
 
     public void EndRun(RunEndReason reason)
@@ -164,10 +172,9 @@ public class RunManager : MonoBehaviour, IRunManager
         _saveManager.Data.CurrentRun = null;
         _saveManager.SaveGame();
 
-        // Aqui o GameState muda para GameOver. 
-        // Idealmente, isso tamb�m seria um evento para um "GameOverFlow", mas pode ficar assim por enquanto.
-        AppCore.Instance.GameStateManager.SetState(GameState.GameOver);
-        AppCore.Instance.Events.Time.TriggerRunEnded(reason);
+        // Usa dependências injetadas
+        _gameStateProvider.SetState(GameState.GameOver);
+        _timeEvents.TriggerRunEnded(reason);
     }
 
     // --- HELPERS ---
@@ -181,8 +188,8 @@ public class RunManager : MonoBehaviour, IRunManager
     private bool CanAdvanceDay()
     {
         if (!IsRunActive) return false;
-        // Valida��o b�sica de seguran�a
-        var s = AppCore.Instance.GameStateManager.CurrentState;
+        // Usa dependência injetada
+        var s = _gameStateProvider.CurrentState;
         return s == GameState.Playing || s == GameState.Shopping;
     }
 }

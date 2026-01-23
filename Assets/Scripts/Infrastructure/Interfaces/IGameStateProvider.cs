@@ -1,14 +1,10 @@
 /// <summary>
-/// Interface para acesso read-only ao estado do jogo.
 /// Permite desacoplamento de GameStateManager concreto.
-/// 
+///
 /// RESPONSABILIDADE:
-/// - Fornecer acesso somente-leitura ao GameState atual
-/// - Permitir mock em testes unitários
-/// 
-/// BENEFÍCIOS:
-/// - Testável: Mock retorna qualquer estado desejado
-/// - Desacoplado: Código não depende de GameStateManager concreto
+/// - Fornecer acesso ao GameState atual
+/// - Permitir alteraÃ§Ã£o de estado
+/// - Permitir mock em testes unitÃ¡rios
 /// </summary>
 public interface IGameStateProvider
 {
@@ -18,12 +14,17 @@ public interface IGameStateProvider
     GameState CurrentState { get; }
 
     /// <summary>
-    /// Estado anterior do jogo (útil para transições).
+    /// Estado anterior do jogo (Ãºtil para transiÃ§Ãµes).
     /// </summary>
     GameState PreviousState { get; }
 
     /// <summary>
-    /// Verifica se o gameplay está ativo (Playing).
+    /// Altera o estado do jogo.
+    /// </summary>
+    void SetState(GameState newState);
+
+    /// <summary>
+    /// Verifica se o gameplay estÃ¡ ativo (Playing).
     /// </summary>
     bool IsGameplayActive();
 }

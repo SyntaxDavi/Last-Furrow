@@ -95,8 +95,14 @@ public class AppCore : MonoBehaviour
             Debug.Log("[AppCore] GameLibrary Inicializada.");
         }
 
-        // 2. Inicializa Domínio    
-        RunManager.Initialize(SaveManager);
+        // 2. Inicializa Domínio com injeção de dependências
+        RunManager.Initialize(
+            SaveManager,
+            _gridConfiguration,
+            Events.Time,
+            GameStateManager,
+            OnWeeklyReset
+        );
 
         // --- MUDANÇA AQUI: CRIAR SERVIÇOS PUROS PRIMEIRO ---
         // Eles precisam existir antes que o DailyResolutionSystem tente acessá-los.
