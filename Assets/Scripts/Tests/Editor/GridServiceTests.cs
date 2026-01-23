@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 /// <summary>
 /// Testes unitários para o GridService.
@@ -12,6 +13,7 @@ public class GridServiceTests
     private GridService _gridService;
     private MockGameStateProvider _mockState;
     private RunData _runData;
+    private GridConfiguration _mockConfig;
 
     [SetUp]
     public void SetUp()
@@ -19,20 +21,32 @@ public class GridServiceTests
         _mockState = new MockGameStateProvider();
         _runData = new RunData();
         
+        // Cria configuração mock para o grid (ScriptableObject)
+        _mockConfig = ScriptableObject.CreateInstance<GridConfiguration>();
+        _mockConfig.Columns = 3;
+        _mockConfig.Rows = 3;
+        
         // Setup de um grid pequeno 3x3 para teste
         _runData.GridSlots = new CropState[9];
-        // FIX: CropState requer CropID
         for (int i = 0; i < 9; i++) _runData.GridSlots[i] = new CropState(CropID.Empty);
         _runData.SlotStates = new GridSlotState[9];
         for (int i = 0; i < 9; i++) _runData.SlotStates[i] = new GridSlotState(true); // Tudo liberado
 
-        // Inicializa com dependências mínimas (Mocks/Nulls onde não for testado)
+        // Inicializa com dependências
         _gridService = new GridService(
             _runData,
             null, // Library não necessária para este teste
             _mockState,
-            null  // Config não necessária para este teste
+            _mockConfig
         );
+    }
+    
+    [TearDown]
+    public void TearDown()
+    {
+        // Limpa ScriptableObject criado
+        if (_mockConfig != null)
+            Object.DestroyImmediate(_mockConfig);
     }
 
     [Test]
