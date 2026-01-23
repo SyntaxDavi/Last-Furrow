@@ -6,7 +6,8 @@ using System.Collections;
 /// 
 /// ARQUITETURA:
 /// - Usa Strategy Pattern (ICameraFitStrategy) para calcular bounds
-/// - Respeita Pixel Perfect com snap múltiplo de 4 (PPU=32)
+/// - Interpolação suave (Movimento fluido e diagonal)
+/// - PPU oficial = 24 (conforme GameSettings)
 /// - Sem zoom (simplificado conforme requisitos)
 /// 
 /// FILOSOFIA:
@@ -23,7 +24,7 @@ public class GameCameraController : MonoBehaviour
 
     [Header("Movimento")]
     [SerializeField] private float _moveSmoothTime = 0.25f;
-    [SerializeField] private bool _snapPositionToPixels = true;
+    [SerializeField] private bool _snapPositionToPixels = GameSettings.USE_PIXEL_PERFECT;
 
     private Camera _cam;
     private ICameraFitStrategy _fitStrategy;
@@ -208,9 +209,9 @@ public class GameCameraController : MonoBehaviour
     /// Ajusta orthographic size para enquadrar bounds com pixel perfect.
     /// 
     /// PIXEL PERFECT:
-    /// - Converte world units ? pixels
-    /// - Arredonda para múltiplo de 4 (PPU=32)
-    /// - Converte de volta ? orthographic size
+    /// - Converte world units -> pixels
+    /// - PPU oficial = 24 (conforme GameSettings)
+    /// - Converte de volta -> orthographic size
     /// </summary>
     private void FitBounds(float width, float height)
     {
@@ -246,12 +247,11 @@ public class GameCameraController : MonoBehaviour
         // 2. Converte para pixels
         float requiredHeightInPixels = requiredHeightInUnits * _pixelConfig.PPU;
 
-        // 3. ⭐ SNAP MÚLTIPLO DE 4 (PPU=32)
-        // Garante alinhamento perfeito com pixel grid
-        // Arredonda para CIMA para não cortar nada
+        // 3. Determina altura final em pixels
         float snappedHeightPixels = Mathf.Ceil(requiredHeightInPixels);
-
-        if (_framingConfig.SnapToMultipleOf4)
+        
+        // Snap desativado por padrão para permitir interpolação suave
+        if (_framingConfig.SnapToMultipleOf4 && GameSettings.USE_PIXEL_PERFECT)
         {
             // Arredonda para próximo múltiplo de 4
             float remainder = snappedHeightPixels % 4f;

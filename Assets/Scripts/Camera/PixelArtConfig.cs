@@ -5,7 +5,7 @@ public class PixelArtConfig : ScriptableObject
 {
     [Header("Core Settings")]
     [Tooltip("Quantos pixels cabem em 1 unidade da Unity.")]
-    public int PPU = 32;
+    public int PPU = GameSettings.TARGET_PPU;
 
     [Tooltip("Resolu��o vertical de refer�ncia (ex: 180, 240, 360).")]
     public int ReferenceVerticalPixels = 360;
@@ -15,7 +15,7 @@ public class PixelArtConfig : ScriptableObject
     /// </summary>
     public float SnapToPixel(float value)
     {
-        if (PPU == 0) return value;
+        if (!GameSettings.USE_PIXEL_PERFECT || PPU == 0) return value;
         return Mathf.Round(value * PPU) / PPU;
     }
 

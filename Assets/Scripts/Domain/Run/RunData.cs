@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,19 +10,19 @@ public class RunData
     public int GridConfigVersion;
 
     [Header("Grid Unlock State")]
-    [Tooltip("? AUTORIDADE: Seed usado para gerar padr„o inicial de desbloqueamento.")]
+    [Tooltip("‚ö° AUTORIDADE: Seed usado para gerar padr√£o inicial de desbloqueamento.")]
     public int UnlockPatternSeed;
 
-    [Tooltip("? CONTRATO EXPLÕCITO: Flag que indica se grid foi inicializado. Previne reinicializaÁıes acidentais.")]
+    [Tooltip("üìë CONTRATO EXPL√çCITO: Flag que indica se grid foi inicializado. Previne reinicializa√ß√µes acidentais.")]    
     public bool IsGridInitialized;
 
-    [Tooltip("Cache do padr„o gerado (pode ser regenerado a partir do Seed se necess·rio).")]
+    [Tooltip("Cache do padr√£o gerado (pode ser regenerado a partir do Seed se necess√°rio).")]
     public GridUnlockState UnlockState;
 
-    [Header("Progress„o Semanal")]
+    [Header("Progress√£o Semanal")]
     public int CurrentWeeklyScore;
-    public int WeeklyGoalTarget;
-    public int CurrentLives;
+    public int WeeklyGoalTarget;  
+    public int CurrentLives;      
     public int MaxLives;
     public int CurrentWeek;
     public int CurrentDay;
@@ -33,44 +33,44 @@ public class RunData
     public List<CardInstance> Hand = new List<CardInstance>();
 
 
-    public int MaxHandSize = 10;
-    public int CardsDrawPerDay = 3;
+    public int MaxHandSize = GameSettings.DEFAULT_MAX_HAND_SIZE;
+    public int CardsDrawPerDay = GameSettings.DEFAULT_CARDS_DRAW_PER_DAY;
 
     public int Money;
     public int TotalMoneyEarned;
-    
+
     // ===== ONDA 4: Pattern Tracking =====
-    
+
     [Header("Pattern System - Tracking")]
-    [Tooltip("Total de padrıes detectados durante toda a run.")]
+    [Tooltip("Total de padr√µes detectados durante toda a run.")]
     public int TotalPatternsDetected;
-    
-    [Tooltip("Maior pontuaÁ„o de padrıes em um ˙nico dia.")]
+
+    [Tooltip("Maior pontua√ß√£o de padr√µes em um √∫nico dia.")]
     public int HighestDailyPatternScore;
-    
-    [Tooltip("Contador de quantas vezes cada tipo de padr„o foi completado. Usa PatternID (ex: 'FULL_LINE').")]
+
+    [Tooltip("Contador de quantas vezes cada tipo de padr√£o foi completado. Usa PatternID (ex: 'FULL_LINE').")]
     public Dictionary<string, int> PatternCompletionCount;
-    
-    [Tooltip("Padrıes atualmente ativos com seus dados de decay. Indexado por InstanceID.")]
+
+    [Tooltip("Padr√µes atualmente ativos com seus dados de decay. Indexado por InstanceID.")]
     public Dictionary<string, PatternInstanceData> ActivePatterns;
-    
-    [Tooltip("Lista de PatternIDs que foram quebrados (para detectar recriaÁ„o e dar bonus).")]
+
+    [Tooltip("Lista de PatternIDs que foram quebrados (para detectar recria√ß√£o e dar bonus).")]
     public List<string> BrokenPatternIDs;
 
     [Header("Daily State Tracking")]
-    [Tooltip("CRÕTICO: Garante que o draw di·rio aconteÁa apenas uma vez por dia lÛgico.")]
+    [Tooltip("CR√çTICO: Garante que o draw di√°rio aconte√ßa apenas uma vez por dia l√≥gico.")]
     public bool HasDrawnDailyHand = false;
 
-    // Construtor padr„o (usado pelo JSON Utility ou Serializer)
+    // Construtor padr√£o (usado pelo JSON Utility ou Serializer)
     // Mantemos ele "burro" apenas alocando listas para evitar NullReference
     public RunData()
     {
         DeckIDs = new List<string>();
-        // Inicializa zerado ou com mÌnimo para evitar nulls imediatos, 
-        // mas o tamanho real ser· corrigido pelo GridService.
-        GridSlots = new CropState[0]; 
+        // Inicializa zerado ou com m√≠nimo para evitar nulls imediatos,
+        // mas o tamanho real ser√° corrigido pelo GridService.
+        GridSlots = new CropState[0];
         SlotStates = new GridSlotState[0];
-        
+
         // Pattern Tracking (Onda 4)
         PatternCompletionCount = new Dictionary<string, int>();
         ActivePatterns = new Dictionary<string, PatternInstanceData>();
@@ -78,8 +78,8 @@ public class RunData
     }
 
 
-    // FACTORY METHOD (A Regra de NegÛcio mora aqui)
-    // … aqui que definimos como uma Run comeÁa de verdade.
+    // FACTORY METHOD (A Regra de Neg√≥cio mora aqui)
+    // √â aqui que definimos como uma Run come√ßa de verdade.
 
     public bool IsHealthFull()
     {
@@ -94,23 +94,23 @@ public class RunData
         {
             CurrentLives = MaxLives;
         }
-        // Nota: N„o disparamos evento aqui porque RunData È apenas DADOS.
+        // Nota: N√£o disparamos evento aqui porque RunData √© apenas DADOS.
         // Quem chama (Service ou Item) dispara o evento.
     }
     public static RunData CreateNewRun(GridConfiguration config)
     {
         if (config == null)
         {
-            throw new System.ArgumentNullException(nameof(config), 
-                "[RunData] GridConfiguration n„o pode ser null ao criar nova run!");
+            throw new System.ArgumentNullException(nameof(config),
+                "[RunData] GridConfiguration n√£o pode ser null ao criar nova run!");
         }
 
-        int initialGoal = 150; // Valor padr„o se n„o houver settings
+        int initialGoal = GameSettings.INITIAL_WEEKLY_GOAL; 
         int slotCount = config.TotalSlots;
 
         var run = new RunData
         {
-            // ? VERSIONAMENTO: Armazena hash da config
+            // üî¢ VERSIONAMENTO: Armazena hash da config
             GridConfigVersion = config.GetVersionHash(),
 
             CurrentWeek = 1,
@@ -119,68 +119,64 @@ public class RunData
             SlotStates = new GridSlotState[slotCount],
             Hand = new List<CardInstance>(),
 
-            MaxHandSize = 10,
-            CardsDrawPerDay = 3,
+            MaxHandSize = GameSettings.DEFAULT_MAX_HAND_SIZE,
+            CardsDrawPerDay = GameSettings.DEFAULT_CARDS_DRAW_PER_DAY,
 
             CurrentWeeklyScore = 0,
-            WeeklyGoalTarget = initialGoal, 
-            CurrentLives = 3,
-            MaxLives = 3
+            WeeklyGoalTarget = initialGoal,
+            CurrentLives = GameSettings.INITIAL_MAX_LIVES,
+            MaxLives = GameSettings.INITIAL_MAX_LIVES
         };
 
-        // --- CORRE«√O AQUI ---
-        // Antes vocÍ adicionava strings em DeckIDs.
-        // Agora criamos inst‚ncias reais na lista Hand.
-
-        AddStartingCard(run, "card_carrot");
-        AddStartingCard(run, "card_corn");
-        AddStartingCard(run, "card_harvest");
-        AddStartingCard(run, "card_shovel");
-        AddStartingCard(run, "card_water");
+        // --- DECK INICIAL CENTRALIZADO ---
+        foreach (var cardID in GameSettings.STARTING_DECK_IDS)
+        {
+            AddStartingCard(run, cardID);
+        }
 
         return run;
     }
 
     /// <summary>
     /// Helper para adicionar carta inicial na run.
-    /// 
-    /// ? VALIDA«√O: Garante que o CardID n„o È vazio.
-    /// Se o ID for inv·lido, loga erro mas n„o quebra a criaÁ„o da run.
-    /// 
+    ///
+    /// üïµÔ∏è VALIDA√á√ÉO: Garante que o CardID n√£o √© vazio.
+    /// Se o ID for inv√°lido, loga erro mas n√£o quebra a cria√ß√£o da run.
+    ///
     /// ARQUITETURA: Idealmente, isso deveria vir de uma config (StartingDeckSO),
-    /// mas por simplicidade inicial, est· hardcoded aqui.
+    /// mas por simplicidade inicial, est√° hardcoded no GameSettings.
     /// </summary>
     private static void AddStartingCard(RunData run, string cardIDString)
     {
-        // ValidaÁ„o b·sica
+        // Valida√ß√£o b√°sica
         if (string.IsNullOrEmpty(cardIDString))
         {
             Debug.LogError("[RunData] Tentativa de adicionar carta inicial com ID vazio!");
             return;
         }
 
-        // Convers„o explÌcita (segura para Value Objects)
+        // Convers√£o expl√≠cita (segura para Value Objects)
         CardID id = (CardID)cardIDString;
 
-        // ValidaÁ„o extra do Value Object
+        // Valida√ß√£o extra do Value Object
         if (!id.IsValid)
         {
-            Debug.LogError($"[RunData] CardID inv·lido ao criar run: '{cardIDString}'");
+            Debug.LogError($"[RunData] CardID inv√°lido ao criar run: '{cardIDString}'");
             return;
         }
 
-        // Cria inst‚ncia e adiciona na m„o
+        // Cria inst√¢ncia e adiciona na m√£o
         CardInstance instance = new CardInstance(id);
         run.Hand.Add(instance);
     }
 
     /// <summary>
-    /// Valida se esta RunData È compatÌvel com uma GridConfiguration.
-    /// 
-    /// POLÕTICA: Se os hashes n„o baterem, o save È INCOMPATÕVEL.
-    /// N„o h· migraÁ„o - o jogador deve iniciar uma nova run.
-    /// 
-    /// Isso previne corrupÁ„o de dados quando o mundo muda estruturalmente.
+    /// Valida se esta RunData √© compat√≠vel com uma GridConfiguration.
+    ///
+    /// POL√çTICA: Se os hashes n√£o baterem, o save √© INCOMPAT√çVEL.
+    /// N√£o h√° migra√ß√£o - o jogador deve iniciar uma nova run.
+    ///
+    /// Isso previne corrup√ß√£o de dados quando o mundo muda estruturalmente.
     /// </summary>
     public bool IsCompatibleWith(GridConfiguration config)
     {
@@ -196,13 +192,14 @@ public class RunData
         if (!isCompatible)
         {
             Debug.LogWarning(
-                $"[RunData] Save incompatÌvel detectado!\n" +
+                $"[RunData] Save incompat√≠vel detectado!\n" +
                 $"Save Version: {GridConfigVersion}\n" +
                 $"Config Atual: {currentConfigHash}\n" +
-                $"DiferenÁa: Grid foi alterado desde a criaÁ„o deste save."
+                $"Diferen√ßa: Grid foi alterado desde a cria√ß√£o deste save."
             );
         }
 
         return isCompatible;
     }
 }
+

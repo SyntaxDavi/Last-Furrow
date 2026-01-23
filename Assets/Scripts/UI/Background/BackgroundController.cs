@@ -1,24 +1,24 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// Controlador de ambiente top-down: ch„o + objetos decorativos.
+/// Controlador de ambiente top-down: ch√£o + objetos decorativos.
 /// 
 /// RESPONSABILIDADE:
-/// - Spawnar ch„o base (grama/terra)
-/// - Spawnar props individuais (pedras, ·rvores, arbustos)
-/// - Manter pixel perfect (PPU=32)
-/// - MODO AUTO: Calcula tamanho da c‚mera automaticamente
+/// - Spawnar ch√£o base (grama/terra)
+/// - Spawnar props individuais (pedras, √°rvores, arbustos)
+/// - Interpola√ß√£o suave (PPU=24 conforme GameSettings)
+/// - MODO AUTO: Calcula tamanho da c√¢mera automaticamente
 /// 
 /// USO:
-/// 1. Atribua sprite do ch„o
+/// 1. Atribua sprite do ch√£o
 /// 2. Marque "Auto Fit Camera" para preencher tela inteira
 /// 3. Play = ambiente spawna automaticamente
 /// </summary>
 public class BackgroundController : MonoBehaviour
 {
-    [Header("Ch„o Base")]
-    [Tooltip("Sprite do ch„o (grama, terra)")]
+    [Header("Ch√£o Base")]
+    [Tooltip("Sprite do ch√£o (grama, terra)")]
     [SerializeField] private Sprite _groundSprite;
     
     [Tooltip("AUTO: Preenche tela inteira | MANUAL: usa Ground Size")]
@@ -27,13 +27,13 @@ public class BackgroundController : MonoBehaviour
     [Tooltip("(Apenas se Auto Fit desligado) Tamanho manual")]
     [SerializeField] private Vector2 _groundSize = new Vector2(12f, 8f);
 
-    [Header("Props Decorativos (Pedras, ¡rvores)")]
+    [Header("Props Decorativos (Pedras, √Årvores)")]
     [Tooltip("Lista de objetos ao redor do grid")]
     [SerializeField] private List<PropSetup> _props = new List<PropSetup>();
 
     [Header("Config")]
     [SerializeField] private PixelArtConfig _pixelConfig;
-    [SerializeField] private bool _snapToPixels = true;
+    [SerializeField] private bool _snapToPixels = GameSettings.USE_PIXEL_PERFECT;
 
     private SpriteRenderer _groundRenderer;
     private List<SpriteRenderer> _spawnedProps = new List<SpriteRenderer>();
@@ -64,7 +64,7 @@ public class BackgroundController : MonoBehaviour
         _groundRenderer.sortingLayerName = "Background";
         _groundRenderer.sortingOrder = -100;
 
-        // ? MODO AUTO: Calcula tamanho exato da c‚mera
+        // ? MODO AUTO: Calcula tamanho exato da c√¢mera
         if (_autoFitCamera && _mainCamera != null)
         {
             Vector2 cameraSize = CalculateCameraSize();
@@ -85,13 +85,13 @@ public class BackgroundController : MonoBehaviour
     }
     
     /// <summary>
-    /// Calcula tamanho da c‚mera em unidades Unity.
+    /// Calcula tamanho da c√¢mera em unidades Unity.
     /// </summary>
     private Vector2 CalculateCameraSize()
     {
         if (_mainCamera == null)
         {
-            Debug.LogWarning("[BackgroundController] Camera n„o encontrada! Usando tamanho padr„o.");
+            Debug.LogWarning("[BackgroundController] Camera n√£o encontrada! Usando tamanho padr√£o.");
             return new Vector2(12f, 8f);
         }
 
@@ -132,11 +132,11 @@ public class BackgroundController : MonoBehaviour
 #if UNITY_EDITOR
     private void OnDrawGizmos()
     {
-        // ¡rea do ch„o
+        // √Årea do ch√£o
         Gizmos.color = new Color(0, 1, 0, 0.2f);
         Gizmos.DrawCube(transform.position, new Vector3(_groundSize.x, _groundSize.y, 0.1f));
 
-        // PosiÁıes dos props
+        // Posi√ß√µes dos props
         foreach (var prop in _props)
         {
             Gizmos.color = prop.InFrontOfGrid ? Color.yellow : Color.cyan;

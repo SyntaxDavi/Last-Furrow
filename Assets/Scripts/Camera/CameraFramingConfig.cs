@@ -1,33 +1,33 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 
 /// <summary>
-/// ConfiguraÁ„o de enquadramento da c‚mera.
-/// 
+/// Configura√ß√£o de enquadramento da c√¢mera.
+///
 /// FILOSOFIA DE DESIGN:
-/// - "Mundo È protagonista" ? Padding generoso para arte de fundo
-/// - "Grid È estrutura" ? C‚mera protege o grid, n„o compensa UI
-/// - "EspaÁo artÌstico" ? Padding È decis„o estÈtica, n„o resÌduo tÈcnico
-/// 
+/// - "Mundo √© protagonista" : Padding generoso para arte de fundo
+/// - "Grid √© estrutura" : C√¢mera protege o grid, n√£o compensa UI
+/// - "Espa√ßo art√≠stico" : Padding √© decis√£o est√©tica, n√£o res√≠duo t√©cnico
+///
 /// PIXEL ART:
-/// - Snap sempre m˙ltiplo de 4 (alinhado com PPU=32)
-/// - Garante sem bleeding/artefatos
+/// - PPU oficial = 24 (conforme GameSettings)
+/// - Interpola√ß√£o ativada para movimento suave e diagonal de cartas
 /// </summary>
 [CreateAssetMenu(fileName = "CameraFramingConfig", menuName = "Last Furrow/Camera/Framing Config")]
 public class CameraFramingConfig : ScriptableObject
 {
     [Header("Padding (World Units) - Separado por Lado")]
-    [Tooltip("EspaÁo extra em volta do grid para arte de fundo e ambientaÁ„o.\nPermite composiÁ„o assimÈtrica (ex: mais cÈu que ch„o).")]
+    [Tooltip("Espa√ßo extra em volta do grid para arte de fundo e ambienta√ß√£o.\nPermite composi√ß√£o assim√©trica (ex: mais c√©u que ch√£o).")]
     public float PaddingLeft = 3f;
     public float PaddingRight = 3f;
     public float PaddingTop = 3.5f;
     public float PaddingBottom = 2f;
 
-    [Header("Pixel Perfect Settings")]
-    [Tooltip("Garante que o tamanho da c‚mera seja m˙ltiplo de 4 pixels.\nEssencial para evitar artefatos com PPU=32.")]
-    public bool SnapToMultipleOf4 = true;
+    [Header("Pixel Art Settings")]
+    [Tooltip("Garante que o tamanho da c√¢mera seja m√∫ltiplo de 4 pixels.\nDesativado por padr√£o para permitir interpola√ß√£o suave (PPU=24).")]
+    public bool SnapToMultipleOf4 = false;
 
     [Header("Debug")]
-    [Tooltip("Desenha gizmos mostrando bounds do grid e ·rea visÌvel da c‚mera.")]
+    [Tooltip("Desenha gizmos mostrando bounds do grid e √°rea vis√≠vel da c√¢mera.")]
     public bool ShowDebugBounds = true;
     public Color GridBoundsColor = Color.green;
     public Color CameraBoundsColor = Color.cyan;
