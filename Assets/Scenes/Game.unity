@@ -7476,8 +7476,10 @@ GameObject:
   m_Component:
   - component: {fileID: 2132860108}
   - component: {fileID: 2132860107}
+  - component: {fileID: 2132860110}
+  - component: {fileID: 2132860109}
   m_Layer: 0
-  m_Name: DailyVisualBootstrapper
+  m_Name: '[DAILYBOOTSRAPPER]'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7514,6 +7516,32 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2132860109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2132860106}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67aec30908b38b549b4ffe4a4bf3e8d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DailyResolutionBootstrapper
+  _resolutionSystem: {fileID: 2132860110}
+  _visualBootstrapper: {fileID: 2132860107}
+--- !u!114 &2132860110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2132860106}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 568b60f662d01d949a3625447f61ff2e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DailyResolutionSystem
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

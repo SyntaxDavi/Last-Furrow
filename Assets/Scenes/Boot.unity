@@ -192,14 +192,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 2026137997213601888, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: _progressionSettings
-      value: 
-      objectReference: {fileID: 11400000, guid: ec9251d361cfa6f4ab7879e6c9e8f50c, type: 2}
-    - target: {fileID: 2458983469160152068, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: MasterVolume
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 4628717499939712119, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -245,48 +237,8 @@ PrefabInstance:
       value: AppCore
       objectReference: {fileID: 0}
     - target: {fileID: 7086375328797191102, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: _patternLibrary
+      propertyPath: DailyResolutionSystem
       value: 
-      objectReference: {fileID: 11400000, guid: db2c5d139cc3e2d43a70c5477290d560, type: 2}
-    - target: {fileID: 7086375328797191102, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: _gridConfiguration
-      value: 
-      objectReference: {fileID: 11400000, guid: 449f559565c270944a7aba4dcdc0bd96, type: 2}
-    - target: {fileID: 7086375328797191102, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: _patternWeightConfig
-      value: 
-      objectReference: {fileID: 11400000, guid: bbc77d19213b45841bb0332bca68caf6, type: 2}
-    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: _uiY
-      value: 100
-      objectReference: {fileID: 0}
-    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: _progressionSettings
-      value: 
-      objectReference: {fileID: 11400000, guid: ec9251d361cfa6f4ab7879e6c9e8f50c, type: 2}
-    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: _quickSpawnCardIDs.Array.size
-      value: 6
-      objectReference: {fileID: 0}
-    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: '_quickSpawnCardIDs.Array.data[2]'
-      value: card_expansion
-      objectReference: {fileID: 0}
-    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: '_quickSpawnCardIDs.Array.data[3]'
-      value: card_harvest
-      objectReference: {fileID: 0}
-    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: '_quickSpawnCardIDs.Array.data[4]'
-      value: card_shovel
-      objectReference: {fileID: 0}
-    - target: {fileID: 7645439710493714262, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
-      propertyPath: '_quickSpawnCardIDs.Array.data[5]'
-      value: card_water
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

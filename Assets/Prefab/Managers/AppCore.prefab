@@ -17,7 +17,6 @@ GameObject:
   - component: {fileID: 2458983469160152068}
   - component: {fileID: 7645439710493714262}
   - component: {fileID: 403808487855815489}
-  - component: {fileID: 2460188282646121636}
   - component: {fileID: 6733796699465726355}
   m_Layer: 0
   m_Name: AppCore
@@ -54,7 +53,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _gameDatabase: {fileID: 11400000, guid: b446a172f8996d947a109c603930a1b8, type: 2}
+  _gridConfiguration: {fileID: 11400000, guid: 449f559565c270944a7aba4dcdc0bd96, type: 2}
+  _patternWeightConfig: {fileID: 11400000, guid: bbc77d19213b45841bb0332bca68caf6, type: 2}
   _progressionSettings: {fileID: 11400000, guid: ec9251d361cfa6f4ab7879e6c9e8f50c, type: 2}
+  _patternLibrary: {fileID: 11400000, guid: db2c5d139cc3e2d43a70c5477290d560, type: 2}
   _defaultShop: {fileID: 11400000, guid: 8358f38becfe960478a7e54d10d77e95, type: 2}
   _specialShops: []
   SaveManager: {fileID: 6774691640661748804}
@@ -63,7 +65,7 @@ MonoBehaviour:
   TimeManager: {fileID: 7047140990777372177}
   InputManager: {fileID: 5558657295551827975}
   AudioManager: {fileID: 2458983469160152068}
-  DailyResolutionSystem: {fileID: 2460188282646121636}
+  DailyResolutionSystem: {fileID: 0}
   WeekendFlowController: {fileID: 6733796699465726355}
   _firstSceneName: Game
 --- !u!114 &6774691640661748804
@@ -90,6 +92,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6def6c23e7ad914f9c2917560ae89c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _progressionSettings: {fileID: 11400000, guid: ec9251d361cfa6f4ab7879e6c9e8f50c, type: 2}
 --- !u!114 &5558657295551827975
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -144,7 +147,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13e8c56876c9f604eb9e54c67af54eae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _showDebugUI: 1
+  _toggleKey: 282
+  _uiX: 20
+  _uiY: 100
+  _uiWidth: 280
+  _uiHeight: 600
+  _defaultMoneyAmount: 100
+  _quickSpawnCardIDs:
+  - card_corn
+  - card_carrot
+  - card_expansion
+  - card_harvest
+  - card_shovel
+  - card_water
 --- !u!114 &403808487855815489
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -157,20 +172,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a60717ba6baa0c74db1103b8d918b906, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &2460188282646121636
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5398887748843182172}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 568b60f662d01d949a3625447f61ff2e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _baseDelayPerSlot: 0.3
-  _fastDelayPerSlot: 0.05
 --- !u!114 &6733796699465726355
 MonoBehaviour:
   m_ObjectHideFlags: 0
