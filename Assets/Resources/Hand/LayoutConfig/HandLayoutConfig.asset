@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: HandLayoutConfig
   m_EditorClassIdentifier: 
   CardSpacing: 2.2
-  MaxHandWidth: 13.5
+  MaxHandWidth: 15
   ArcHeight: 0.4
   RotationIntensity: 10.5
   SpawnDelay: 0.1

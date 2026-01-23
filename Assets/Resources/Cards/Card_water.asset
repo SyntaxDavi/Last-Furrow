@@ -15,9 +15,9 @@ MonoBehaviour:
   ID:
     _value: card_water
   Name: Water
-  Icon: {fileID: 0}
+  Icon: {fileID: 6585668884048488018, guid: e7b252851c7f00c46947c3e5beb21ce7, type: 3}
   Type: 1
-  Cost: 5
+  BaseSellValue: 2
   CropToPlant: {fileID: 0}
   GrowthAcceleration: 0
   ValueMultiplier: 0

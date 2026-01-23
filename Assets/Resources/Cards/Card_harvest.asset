@@ -15,9 +15,8 @@ MonoBehaviour:
   ID:
     _value: card_harvest
   Name: Harvest
-  Icon: {fileID: 0}
+  Icon: {fileID: 6585668884048488018, guid: e7b252851c7f00c46947c3e5beb21ce7, type: 3}
   Type: 2
-  Cost: 0
   BaseSellValue: 10
   CropToPlant: {fileID: 0}
   GrowthAcceleration: 0
