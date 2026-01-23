@@ -1,0 +1,94 @@
+using UnityEngine;
+
+public class CoreModule : BaseModule
+{
+    public CoreModule(ServiceRegistry registry, AppCore app) : base(registry, app) { }
+
+    public override void Initialize()
+    {
+        var saveManager = App.SaveManager;
+        var gridConfig = App.GridConfiguration;
+        var events = App.Events;
+
+        // 1. Inicializa MonoBehaviours Básicos
+        if (App.GameStateManager == null) 
+            App.GameStateManager = App.GetComponent<GameStateManager>() ?? App.gameObject.AddComponent<GameStateManager>();
+        
+        App.InputManager.Initialize();
+        App.AudioManager.Initialize();
+
+        // 2. Registra no Registry
+        Registry.RegisterCore(saveManager, gridConfig, events);
+        Registry.RegisterSystems(App.GameStateManager, App.TimeManager, App.InputManager);
+
+        // 3. Inicializa SaveManager
+        if (gridConfig != null)
+            saveManager.Initialize(gridConfig);
+        else
+            saveManager.Initialize();
+
+        Debug.Log("[CoreModule] ✓ Inicializado com sucesso.");
+    }
+}
+
+public class DomainModule : BaseModule
+{
+    private readonly ProgressionSettingsSO _progressionSettings;
+
+    public DomainModule(ServiceRegistry registry, AppCore app, ProgressionSettingsSO settings) : base(registry, app)
+    {
+        _progressionSettings = settings;
+    }
+
+    public override void Initialize()
+    {
+        // 1. Inicializa RunManager
+        App.RunManager.Initialize(
+            Registry.Save,
+            Registry.GridConfig,
+            Registry.Events.Time,
+            Registry.State,
+            App.OnWeeklyReset
+        );
+
+        // 2. Cria Serviços Puros
+        var economy = new EconomyService(App.RunManager, Registry.Save);
+        var dailyHand = new DailyHandSystem(App.GameLibrary, economy, new SeasonalCardStrategy(), Registry.Events.Player);
+        var weeklyGoal = new WeeklyGoalSystem(App.GameLibrary, Registry.Events.Progression, _progressionSettings);
+
+        // 3. Registra no Registry
+        Registry.RegisterDomain(App.RunManager, economy, dailyHand, weeklyGoal);
+
+        Debug.Log("[DomainModule] ✓ Inicializado com sucesso.");
+    }
+}
+
+public class PatternModule : BaseModule
+{
+    private readonly PatternLibrary _patternLibrary;
+
+    public PatternModule(ServiceRegistry registry, AppCore app, PatternLibrary library) : base(registry, app)
+    {
+        _patternLibrary = library;
+    }
+
+    public override void Initialize()
+    {
+        if (_patternLibrary == null)
+        {
+            Debug.LogError("[PatternModule] PatternLibrary não atribuída!");
+            return;
+        }
+
+        // 1. Cria Factory e Serviços
+        var factory = new PatternFactory();
+        var detector = new PatternDetector(_patternLibrary, factory);
+        var calculator = new PatternScoreCalculator(App.GameLibrary);
+        var shop = new ShopService(Registry.Economy, App.SaveManager, App.GameLibrary, Registry.Events);
+
+        // 2. Registra no Registry
+        Registry.RegisterGameplay(shop, detector, calculator);
+
+        Debug.Log("[PatternModule] ✓ Inicializado com sucesso.");
+    }
+}

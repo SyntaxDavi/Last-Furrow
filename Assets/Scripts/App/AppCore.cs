@@ -1,60 +1,61 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Collections.Generic; 
+using System.Collections.Generic;
 
+/// <summary>
+/// AppCore Modularizado - Ponto de entrada global do jogo.
+/// SOLID: Atua agora como o Orquestrador/Bootstrapper Global, delegando 
+/// a gestão de instâncias para o ServiceRegistry e a inicialização para Módulos.
+/// </summary>
 public class AppCore : MonoBehaviour
 {
     public static AppCore Instance { get; private set; }
 
-    // Serviços Globais
-    public IGameLibrary GameLibrary { get; private set; }
-    public GameEvents Events { get; private set; }
-    public IEconomyService EconomyService { get; private set; }
-    public DailyHandSystem DailyHandSystem { get; private set; }
-    public WeeklyGoalSystem WeeklyGoalSystem { get; private set; }
-    public ShopService ShopService { get; private set; }
-    public PatternDetector PatternDetector { get; private set; }
-    public PatternScoreCalculator PatternCalculator { get; private set; }
-    public PatternTrackingService PatternTracking { get; private set; }
+    // Registro Central de Serviços (SOLID: Service Locator / Registry)
+    public ServiceRegistry Services { get; private set; }
 
-    [Header("Data")]
+    [Header("Data & Configuration")]
     [SerializeField] private GameDatabaseSO _gameDatabase;
     [SerializeField] private GridConfiguration _gridConfiguration;
     [SerializeField] private PatternWeightConfig _patternWeightConfig;
-
-    [Header("Game Design Configs")]
     [SerializeField] private ProgressionSettingsSO _progressionSettings;
-    
-    [Header("Pattern System")]
     [SerializeField] private PatternLibrary _patternLibrary;
 
-    public GridConfiguration GridConfiguration => _gridConfiguration;
-    public PatternWeightConfig PatternWeightConfig => _patternWeightConfig;
-
-    [Header("Configuração de Loja (Para o Flow)")]
+    [Header("Shop Configuration")]
     [SerializeField] private ShopProfileSO _defaultShop;
     [SerializeField] private List<ShopProfileSO> _specialShops;
 
-    [Header("Sistemas Globais (MonoBehaviours)")]
+    [Header("Global MonoBehaviours (Scene References)")]
     public SaveManager SaveManager;
     public RunManager RunManager;
     public GameStateManager GameStateManager;
     public TimeManager TimeManager;
     public InputManager InputManager;
     public AudioManager AudioManager;
-    public DailyResolutionSystem DailyResolutionSystem; // Mantido para referência mas injeção agora é via Bootstrapper
-
-
-    // O Controlador do Flow (Arraste na cena)
+    public DailyResolutionSystem DailyResolutionSystem;
     public WeekendFlowController WeekendFlowController;
 
-    private IGridService _gridService;  
-    
-    // Propriedade publica para GridService (read-only)
-    public IGridService GridService => _gridService;
-
-    [Header("Configuração")]
+    [Header("Scene Config")]
     [SerializeField] private string _firstSceneName = "Game";
+
+    // --- PROPRIEDADES DE COMPATIBILIDADE (Não quebram o código atual) ---
+    public IGameLibrary GameLibrary => Services?.GameLibrary;
+    public GameEvents Events => Services?.Events;
+    public IEconomyService EconomyService => Services?.Economy;
+    public DailyHandSystem DailyHandSystem => Services?.DailyHand;
+    public WeeklyGoalSystem WeeklyGoalSystem => Services?.WeeklyGoal;
+    public ShopService ShopService => Services?.Shop;
+    public PatternDetector PatternDetector => Services?.PatternDetector;
+    public PatternScoreCalculator PatternCalculator => Services?.PatternCalculator;
+    public PatternTrackingService PatternTracking => Services?.PatternTracking;
+    public IGridService GridService => Services?.GridConfig != null ? _gridService : null; // Mantido via registro manual para cenas
+    
+    public GridConfiguration GridConfiguration => _gridConfiguration;
+    public PatternWeightConfig PatternWeightConfig => _patternWeightConfig;
+
+    private IGridService _gridService;
+
+    // --- CICLO DE VIDA ---
 
     private void Awake()
     {
@@ -67,123 +68,65 @@ public class AppCore : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        Events = new GameEvents();
-        InitializeGlobalServices();
+        InitializeModularArchitecture();
     }
 
-    private void InitializeGlobalServices()
+    private void InitializeModularArchitecture()
     {
-        // 1. MonoBehaviours Básicos (Sem dependências complexas)
-        if (GameStateManager == null) GameStateManager = GetComponent<GameStateManager>() ?? gameObject.AddComponent<GameStateManager>();
-        InputManager.Initialize();
-        AudioManager.Initialize();
+        Debug.Log("[AppCore] 🏗️ Iniciando Arquitetura Modular...");
+
+        // 1. Setup do Registro
+        Services = new ServiceRegistry(this);
+        var events = new GameEvents(); // Criado cedo pois módulos dependem dele
+
+        // 2. Módulo Core (Sistemas Base e Infra)
+        var coreModule = new CoreModule(Services, this);
+        coreModule.Initialize();
+
+        // 3. Módulo Domínio (Regras de Negócio e Serviços Puros)
+        var domainModule = new DomainModule(Services, this, _progressionSettings);
+        domainModule.Initialize();
+
+        // 4. Módulo Gameplay (Sistemas Específicos)
+        var patternModule = new PatternModule(Services, this, _patternLibrary);
+        patternModule.Initialize();
+
+        // 5. Injeções de Dependência Complexas (Cross-Module)
+        InitializeLegacyCrossInjections();
+
+        // 6. Finalização
+        InputManager.OnAnyInputDetected += () => Events.Player.TriggerAnyInput();
+        SceneManager.sceneLoaded += OnSceneLoaded;
         
-        // ⭐ INJEÇÃO: SaveManager recebe GridConfiguration explicitamente
-        if (_gridConfiguration != null)
-        {
-            SaveManager.Initialize(_gridConfiguration);
-        }
-        else
-        {
-            Debug.LogError("[AppCore] GridConfiguration não atribuída! SaveManager não poderá validar compatibilidade.");
-            SaveManager.Initialize(); // Fallback (legacy)
-        }
+        Debug.Log("[AppCore] ✅ Arquitetura Modular pronta. Carregando cena inicial...");
+        SceneManager.LoadScene(_firstSceneName);
+    }
 
-        if (_gameDatabase != null)
-        {
-            GameLibrary = new GameLibraryService(_gameDatabase);
-            Debug.Log("[AppCore] GameLibrary Inicializada.");
-        }
-
-        // 2. Inicializa Domínio com injeção de dependências
-        RunManager.Initialize(
+    private void InitializeLegacyCrossInjections()
+    {
+        // 1. CardInteractionBootstrapper (Ainda usa estático, refatorar depois)
+        CardInteractionBootstrapper.Initialize(
+            RunManager,
             SaveManager,
-            _gridConfiguration,
-            Events.Time,
-            GameStateManager,
-            OnWeeklyReset
+            EconomyService,
+            GameLibrary,
+            Events.Player,
+            Events,
+            null
         );
 
-        // --- MUDANÇA AQUI: CRIAR SERVIÇOS PUROS PRIMEIRO ---
-        // Eles precisam existir antes que o DailyResolutionSystem tente acessá-los.
-
-        EconomyService = new EconomyService(RunManager, SaveManager);
-        DailyHandSystem = new DailyHandSystem(GameLibrary, EconomyService, new SeasonalCardStrategy(), Events.Player);
-        WeeklyGoalSystem = new WeeklyGoalSystem(GameLibrary, Events.Progression, _progressionSettings);
-        ShopService = new ShopService(EconomyService, SaveManager, GameLibrary, Events);
-        
-        // ⭐ NOVO: Pattern System (Onda 5.5 - SOLID Refactor)
-        if (_patternLibrary == null)
-        {
-            Debug.LogError("[AppCore] PatternLibrary não atribuída! Pattern System não funcionará.");
-        }
-        
-        // Criar Factory (type-safe, sem reflexão)
-        var patternFactory = new PatternFactory();
-        
-        // Criar Detector com Factory (Dependency Inversion)
-        PatternDetector = new PatternDetector(_patternLibrary, patternFactory);
-        
-        // Criar Calculator com Library
-        PatternCalculator = new PatternScoreCalculator(GameLibrary);
-        
-        // NOTA: PatternTracking é inicializado depois, quando RunData estiver disponível
-        // Ver InitializePatternTracking() chamado pelo RunManager ou GameplayBootstrapper
-        Debug.Log("[AppCore] ✓ Pattern System inicializado (Onda 5.5 - SOLID)");
-
-        // Injeta RunIdentityContext (imutável) em TODAS as estratégias
-        // Grid será adicionado depois (via SetGridService)
-        // Ninguém mais acessa AppCore para pegar EconomyService nas estratégias
-        // Tudo vem via injeção explícita
-        try
-        {
-            CardInteractionBootstrapper.Initialize(
-                RunManager,
-                SaveManager,
-                EconomyService,
-                GameLibrary,
-                Events.Player,
-                Events,
-                null // GridService será definido quando a scene carregar
-            );
-            Debug.Log("[AppCore] ✓ CardInteractionBootstrapper inicializado com sucesso!");
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError($"[AppCore] ERRO crítico ao inicializar CardInteractionBootstrapper: {ex.Message}");
-            throw;
-        }
-
-        // ----------------------------------------------------
-
-        // ----------------------------------------------------
-
-        // 3. Inicializa Sistemas de Regra
-        GameStateManager.Initialize();
-
-        // 4. Injeção de Dependência do Flow (Weekend)
+        // 2. Weekend Flow
         if (WeekendFlowController != null)
         {
-            var weekendStateFlow = new WeekendStateFlow(GameStateManager);
-            var weekendUIFlow = new WeekendUIFlow(Events.UI);
-            var weekendContentResolver = new WeekendContentResolver(ShopService, _defaultShop, _specialShops);
-
             var weekendBuilder = new DefaultWeekendFlowBuilder(
-                weekendStateFlow,
-                weekendUIFlow,
-                weekendContentResolver,
+                new WeekendStateFlow(GameStateManager),
+                new WeekendUIFlow(Events.UI),
+                new WeekendContentResolver(ShopService, _defaultShop, _specialShops),
                 DailyHandSystem,
                 new CardDrawPolicy()
             );
-
             WeekendFlowController.Initialize(RunManager, weekendBuilder);
         }
-
-        InputManager.OnAnyInputDetected += () => Events.Player.TriggerAnyInput();
-
-
-        SceneManager.sceneLoaded += OnSceneLoaded;
-        SceneManager.LoadScene(_firstSceneName);
     }
 
     private void OnDestroy()
@@ -191,102 +134,63 @@ public class AppCore : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
         if (InputManager != null) InputManager.OnAnyInputDetected -= Events.Player.TriggerAnyInput;
         
-        // Garante que todas as dependências injetadas sejam limpas
         try
         {
             CardInteractionBootstrapper.Cleanup();
-            Debug.Log("[AppCore] ✓ CardInteractionBootstrapper limpeza concluída.");
+            Debug.Log("[AppCore] ✓ Limpeza concluída.");
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[AppCore] Erro ao fazer cleanup do CardInteractionBootstrapper: {ex.Message}");
+            Debug.LogError($"[AppCore] Erro no cleanup: {ex.Message}");
         }
     }
 
-    public void ReturnToMainMenu()
-    {
-        GameStateManager.SetState(GameState.MainMenu);
-        SceneManager.LoadScene("MainMenu");
-    }
+    // --- REGISTRO DE SERVIÇOS DE CENA (Injeção Dinâmica) ---
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (scene.name == "Boot") return;
+        
+        // Setup de Câmera Global para Input
         Camera activeCamera = Camera.main;
         if (activeCamera != null) InputManager.SetCamera(activeCamera);
-    }
-    // --- REGISTRO DE SERVIÇOS DE CENA ---
-
-    public IGridService GetGridLogic()
-    {
-        if (_gridService == null)
-        {
-            Debug.LogError("FATAL: GridService não encontrado!");
-            return null;
-        }
-        return _gridService;
     }
 
     public void RegisterGridService(IGridService service)
     {
         _gridService = service;
         
-        // Sem re-inicialização de nada - muito mais seguro
         if (CardInteractionBootstrapper.IsInitialized)
         {
-            try
-            {
-                CardInteractionBootstrapper.SetGridService(service);
-                Debug.Log("[AppCore] ✓ GridService injetado no RunRuntimeContext!");
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"[AppCore] Erro ao injetar GridService: {ex.Message}");
-            }
+            CardInteractionBootstrapper.SetGridService(service);
+            Debug.Log("[AppCore] ✓ GridService injetado no contexto de runtime.");
         }
     }
 
-    public void UnregisterGridService()
-    {
-        _gridService = null;
-    }
-
-    // --- REGISTRO DE RESOLUÇÃO ---
+    public void UnregisterGridService() => _gridService = null;
 
     public void RegisterDailyResolutionSystem(DailyResolutionSystem system)
     {
         DailyResolutionSystem = system;
-        Debug.Log("[AppCore] ✓ DailyResolutionSystem registrado da cena.");
+        Debug.Log("[AppCore] ✓ DailyResolutionSystem registrado dinamicamente.");
     }
 
-    public void UnregisterDailyResolutionSystem()
-    {
-        DailyResolutionSystem = null;
-    }
-    
-    // ===== ONDA 4: Pattern Tracking =====
-    
-    /// <summary>
-    /// Inicializa o PatternTrackingService quando o RunData estiver disponível.
-    /// Chamado pelo GameplayBootstrapper após carregar/criar uma run.
-    /// </summary>
+    public void UnregisterDailyResolutionSystem() => DailyResolutionSystem = null;
+
+    // ---pattern Tracking Orchestration ---
+
     public void InitializePatternTracking(RunData runData)
     {
-        if (runData == null)
-        {
-            Debug.LogError("[AppCore] Não é possível inicializar PatternTracking sem RunData!");
-            return;
-        }
-        
-        PatternTracking = new PatternTrackingService(runData);
-        Debug.Log("[AppCore] ✓ PatternTrackingService inicializado");
+        if (runData == null) return;
+        Services.SetPatternTracking(new PatternTrackingService(runData));
+        Debug.Log("[AppCore] ✓ PatternTrackingService inicializado para nova run.");
     }
-    
-    /// <summary>
-    /// Chamado no início de uma nova semana para resetar tracking.
-    /// </summary>
-    public void OnWeeklyReset()
+
+    public void OnWeeklyReset() => PatternTracking?.OnWeeklyReset();
+
+    public void ReturnToMainMenu()
     {
-        PatternTracking?.OnWeeklyReset();
+        GameStateManager.SetState(GameState.MainMenu);
+        SceneManager.LoadScene("MainMenu");
     }
 }

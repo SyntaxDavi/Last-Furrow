@@ -4,9 +4,9 @@ public class GameplayBootstrapper : MonoBehaviour
 {
     [Header("Controllers da Cena")]
     [SerializeField] private GameCameraController _gameCamera;
-    [SerializeField] private GridManager _gridManager;
+    [SerializeField] private GridManager _gridManager;       
     [SerializeField] private PlayerInteraction _playerInteraction;
-    [SerializeField] private HandManager _handManager;
+    [SerializeField] private HandManager _handManager;       
 
     private IGridService _gridService;
 
@@ -18,51 +18,49 @@ public class GameplayBootstrapper : MonoBehaviour
         if (runData == null)
         {
             Debug.LogWarning("[Bootstrapper] Sem RunData ativo. Criando Run de Teste.");
-            AppCore.Instance.RunManager.StartNewRun();
+            AppCore.Instance.RunManager.StartNewRun();       
             runData = AppCore.Instance.SaveManager.Data.CurrentRun;
         }
 
         InitializeGameplaySystems(runData);
     }
 
-    private void InitializeGameplaySystems(RunData runData)
+    private void InitializeGameplaySystems(RunData runData)  
     {
         Debug.Log("[Bootstrapper] Inicializando sistemas de gameplay...");
 
         var library = AppCore.Instance.GameLibrary;
         _playerInteraction.Initialize(AppCore.Instance.InputManager);
 
-        // --- CRIA«√O CENTRALIZADA ---
-        // 1. Cria a inst‚ncia
+        // --- CRIA√á√ÉO CENTRALIZADA ---
+        // 1. Cria a inst√¢ncia
         _gridService = new GridService(
            runData,
            library,
            AppCore.Instance.GameStateManager,
-           AppCore.Instance.GridConfiguration, // InjeÁ„o da Config
-           AppCore.Instance.PatternWeightConfig 
+           AppCore.Instance.GridConfiguration,
+           AppCore.Instance.PatternWeightConfig
        );
 
         // 2. Registra no Global (para DailyResolution, CheatManager, etc)
-        AppCore.Instance.RegisterGridService(_gridService);
-        
+        AppCore.Instance.RegisterGridService(_gridService);  
+
         // 2.5 ONDA 4: Inicializa Pattern Tracking com RunData
-        AppCore.Instance.InitializePatternTracking(runData);
+        AppCore.Instance.InitializePatternTracking(runData); 
 
         // 3. Configura eventos locais
         _gridService.OnDataDirty += () => AppCore.Instance.SaveManager.SaveGame();
 
         // 4. Injeta nos consumidores da cena
-        // GridManager agora È inicializado por GridVisualBootstrapper
+        // GridManager agora √© inicializado por GridVisualBootstrapper
 
         if (_handManager != null)
         {
-            _handManager.Configure(runData, library);
+            _handManager.Configure(runData, library);        
         }
 
-        // 5. ? Configura C‚mera Din‚mica (SOLID - Usa Strategy Pattern)
-        // NOVO: N„o depende mais de GridManager.GetGridWorldSize()
-        // C‚mera recebe dados puros e calcula bounds usando Strategy
-        if (_gameCamera != null && _gridManager != null)
+        // 5. Configura C√¢mera Din√¢mica
+        if (_gameCamera != null && _gridManager != null)     
         {
             _gameCamera.ConfigureFromGrid(
                 AppCore.Instance.GridConfiguration,
@@ -77,10 +75,11 @@ public class GameplayBootstrapper : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (AppCore.Instance != null)
+        // REMOVIDO: AppCore.Instance.UnregisterGridService() 
+        // Isso causava race condition em trocas de cena
+        if (AppCore.Instance != null && AppCore.Instance.Events != null)
         {
             AppCore.Instance.Events.Time.OnDayChanged -= HandleDayChanged;
-            AppCore.Instance.UnregisterGridService();
         }
     }
 
