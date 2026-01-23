@@ -141,8 +141,9 @@ public class AppCore : MonoBehaviour
     private void OnDestroy()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
-        if (InputManager != null) InputManager.OnAnyInputDetected -= Events?.Player?.TriggerAnyInput;
-        
+        if (InputManager != null && Events != null && Events.Player != null)
+            InputManager.OnAnyInputDetected -= Events.Player.TriggerAnyInput;
+
         try
         {
             CardInteractionBootstrapper.Cleanup();
