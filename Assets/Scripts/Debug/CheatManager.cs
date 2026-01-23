@@ -33,8 +33,6 @@ public class CheatManager : MonoBehaviour
     [SerializeField] private float _uiWidth = 280f;
     [SerializeField] private float _uiHeight = 600f;
 
-    [Header("Money Settings")]
-    [SerializeField] private int _defaultMoneyAmount = 100;
 
     [Header("Card Spawn")]
     [SerializeField] private List<string> _quickSpawnCardIDs = new List<string>

@@ -21,7 +21,8 @@ public class GridServiceTests
         
         // Setup de um grid pequeno 3x3 para teste
         _runData.GridSlots = new CropState[9];
-        for (int i = 0; i < 9; i++) _runData.GridSlots[i] = new CropState();
+        // FIX: CropState requer CropID
+        for (int i = 0; i < 9; i++) _runData.GridSlots[i] = new CropState(CropID.Empty);
         _runData.SlotStates = new GridSlotState[9];
         for (int i = 0; i < 9; i++) _runData.SlotStates[i] = new GridSlotState(true); // Tudo liberado
 
@@ -39,6 +40,7 @@ public class GridServiceTests
     {
         // Setup: Estado do jogo é Shopping, não Playing
         _mockState.CurrentState = GameState.Shopping;
+        _mockState.PreviousState = GameState.None;
         var card = new CardData(); // Dummy card
 
         // Act
@@ -53,7 +55,7 @@ public class GridServiceTests
     public void ApplyCard_ReturnsFail_WhenIndexIsInvalid()
     {
         // Setup: Estado correto mas índice fora do grid
-        _mockState.CurrentState = GameState.Playing;
+        _mockState.SetState(GameState.Playing);
         var card = new CardData();
 
         // Act
@@ -68,10 +70,15 @@ public class GridServiceTests
 
     private class MockGameStateProvider : IGameStateProvider
     {
-        public GameState CurrentState { get; set; }
-        public void SetState(GameState newState) => CurrentState = newState;
-        // Interface pode exigir estes eventos, implementamos vazio
-        public event System.Action<GameState> OnStateChanged { add { } remove { } }
-        public event System.Action<GameState, GameState> OnStateTransition { add { } remove { } }
+        public GameState CurrentState { get; set; } = GameState.Playing;
+        public GameState PreviousState { get; set; } = GameState.None;
+
+        public bool IsGameplayActive() => CurrentState == GameState.Playing;
+
+        public void SetState(GameState newState)
+        {
+            PreviousState = CurrentState;
+            CurrentState = newState;
+        }
     }
 }
