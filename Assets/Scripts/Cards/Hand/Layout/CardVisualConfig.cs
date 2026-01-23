@@ -1,12 +1,12 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 [CreateAssetMenu(fileName = "CardVisualConfig", menuName = "Last Furrow/Card Visual Config")]
 public class CardVisualConfig : ScriptableObject
 {
-    [Header("1. Física & Suavização")]
+    [Header("1. Fisica & Suavizacao")]
     public float PositionSmoothTime = 0.1f;
     public float ScaleSmoothTime = 0.1f;
-    public float RotationSpeed = 15f; 
+    public float RotationSpeed = 15f;
 
     [Header("2. Profundidade (Z-Depth)")]
     public float IdleZ = 0f;
@@ -33,4 +33,14 @@ public class CardVisualConfig : ScriptableObject
     [Header("7. Feedback de Clique (Juice)")]
     public float ClickSquashAmount = 0.15f;
     public float ClickRecoverySpeed = 15f;
+
+    [Header("8. Elevacao da Mao (Hover Sequencial)")]
+    [Tooltip("Quanto a carta sobe quando a mao esta elevada.")]
+    public float HandElevationOffset = 0.5f;
+    
+    [Tooltip("Velocidade da animacao de elevacao (maior = mais rapido).")]
+    public float HandElevationSpeed = 8f;
+    
+    [Tooltip("Delay entre cada carta na sequencia (segundos).")]
+    public float HandElevationSequenceDelay = 0.05f;
 }

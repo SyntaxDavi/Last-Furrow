@@ -7,27 +7,27 @@ using System.Collections.Generic;
 public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickHandler
 {
     // ==============================================================================================
-    // 1. INSPECTOR & DEPENDÊNCIAS
+    // 1. INSPECTOR & DEPENDÃŠNCIAS
     // ==============================================================================================
-    [Header("Referências Externas")]
+    [Header("ReferÃªncias Externas")]
     [SerializeField] private CardMovementController _movement;
     [SerializeField] private SpriteRenderer _artRenderer;
     [SerializeField] private TextMeshPro _nameText;
 
-    [Header("Interação")]
+    [Header("InteraÃ§Ã£o")]
     [SerializeField] private int _interactionPriority = 100; // Cartas = 100 (acima do grid)
 
     private CardVisualConfig _config;
     private InputManager _inputManager;
 
     // ==============================================================================================
-    // 2. ESTADO PÚBLICO
+    // 2. ESTADO PÃšBLICO
     // ==============================================================================================
     public CardVisualState CurrentState { get; private set; } = CardVisualState.Idle;
     public CardData Data { get; private set; }
     public CardInstance Instance { get; private set; }
     public bool IsHovered { get; private set; }
-    
+
     // IInteractable
     public int InteractionPriority => _interactionPriority;
 
@@ -43,6 +43,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
 
     // Extensibilidade
     private List<ICardVisualModifier> _activeModifiers = new List<ICardVisualModifier>();
+    private HandElevationModifier _elevationModifier;
 
     // ==============================================================================================
     // 4. EVENTOS
@@ -52,11 +53,11 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     public event Action<CardView> OnClickEvent;
 
     // ==============================================================================================
-    // CICLO DE VIDA & INICIALIZAÇÃO
+    // CICLO DE VIDA & INICIALIZAÃ‡ÃƒO
     // ==============================================================================================
     public void Initialize(CardData data, CardInstance instance, CardVisualConfig config, InputManager inputManager)
     {
-        // Injeção de Dependência
+        // InjeÃ§Ã£o de DependÃªncia
         Data = data;
         Instance = instance;
         _config = config;
@@ -65,6 +66,10 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         // Setup Inicial
         _randomSeed = UnityEngine.Random.Range(0f, 100f);
         _movement.ResetPhysicsState();
+        
+        // Inicializa modificadores
+        _elevationModifier = new HandElevationModifier();
+        _activeModifiers.Add(_elevationModifier);
 
         // Setup Visual
         if (Data != null)
@@ -87,7 +92,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     }
 
     // ==============================================================================================
-    // PIPELINE VISUAL (O Coração da Renderização)
+    // PIPELINE VISUAL (O CoraÃ§Ã£o da RenderizaÃ§Ã£o)
     // ==============================================================================================
     private void CalculateAndApplyVisuals()
     {
@@ -99,7 +104,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
 
     private void CalculateVisualTarget(out CardVisualTarget target, out CardMovementProfile profile, out int sortOrder)
     {
-        // 1. INICIALIZAÇÃO
+        // 1. INICIALIZAÃ‡ÃƒO
         target = CardVisualTarget.Create(_baseLayoutTarget.Position, _baseLayoutTarget.Rotation, 1f);
         profile = GetMovementProfile();
         sortOrder = _baseLayoutTarget.SortingOrder;
@@ -111,8 +116,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         // 3. PIPELINE DE ESTADO
         ApplyStateVisuals(ref target, ref sortOrder, interactionPoint, time, ref profile);
 
-        // 4. MODIFICADORES EXTERNOS (AQUI! O loop que faltava)
-        // Isso resolve o warning. Mesmo que a lista esteja vazia, a arquitetura está ativa.
+        // 4. MODIFICADORES EXTERNOS
         foreach (var modifier in _activeModifiers)
         {
             modifier.Apply(ref target, _config, time);
@@ -127,12 +131,12 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     // ==============================================================================================
      private CardMovementProfile GetMovementProfile()
     {
-        // Cria o perfil base de física
+        // Cria o perfil base de fÃ­sica
         return new CardMovementProfile
         {
             PositionSmoothTime = _config.PositionSmoothTime,
             ScaleSmoothTime = _config.ScaleSmoothTime,
-            RotationSmoothTime = 0.15f, // Valor padrão suave para rotação
+            RotationSmoothTime = 0.15f, // Valor padrÃ£o suave para rotaÃ§Ã£o
             MovementStretchAmount = 0.05f // O efeito "Splash/Juice"
         };
     }
@@ -141,9 +145,6 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     {
         switch (CurrentState)
         {
-            // AQUI ESTÁ A CONFIRMAÇÃO:
-            // O estado Selected agora usa a mesma lógica visual do Idle.
-            // Removemos o código que fazia ele subir (SelectedYOffset) e girar (LookRotation).
             case CardVisualState.Idle:
             case CardVisualState.Selected:
                 ApplyIdleVisuals(ref target, ref sortOrder, interactionPoint, time, ref profile);
@@ -154,9 +155,10 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
                 break;
         }
     }
+    
     private void ApplyIdleVisuals(ref CardVisualTarget target, ref int sortOrder, Vector3 interactionPoint, float time, ref CardMovementProfile profile)
     {
-        // A. Flutuação (Senoide)
+        // A. FlutuaÃ§Ã£o (Senoide)
         float floatY = Mathf.Sin(time * _config.IdleFloatSpeed) * _config.IdleFloatAmount;
         float floatRot = Mathf.Cos(time * (_config.IdleFloatSpeed * 0.5f)) * _config.IdleRotationAmount;
 
@@ -176,8 +178,8 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
             // Tilt 3D
             ApplyDynamicTilt(ref target, interactionPoint);
 
-            // Perfil mais rápido para resposta ao tilt
-            profile.RotationSmoothTime = 0.08f; // Mais responsivo que o padrão
+            // Perfil mais rÃ¡pido para resposta ao tilt
+            profile.RotationSmoothTime = 0.08f;
         }
     }
 
@@ -186,7 +188,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         // Segue o mouse
         target.Position = new Vector3(focusPoint.x, focusPoint.y, _config.DragZ);
 
-        // Inclinação baseada na "velocidade" (distância do centro)
+        // InclinaÃ§Ã£o baseada na "velocidade" (distÃ¢ncia do centro)
         float deltaX = (target.Position.x - transform.position.x) * -2f;
         float tiltZ = Mathf.Clamp(deltaX * _config.DragTiltAmount, -_config.DragTiltAmount, _config.DragTiltAmount);
         target.Rotation = Quaternion.Euler(0, 0, tiltZ);
@@ -226,22 +228,19 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     }
     private void OnDestroy()
     {
-        // Se a carta for destruída (ex: queimada, vendida) enquanto o jogador arrasta,
+        // Se a carta for destruÃ­da (ex: queimada, vendida) enquanto o jogador arrasta,
         // precisamos avisar o sistema para soltar o mouse.
         if (CurrentState == CardVisualState.Dragging)
         {
             OnDragEndEvent?.Invoke(this);
         }
 
-        // Limpar lista para ajudar o Garbage Collector (opcional, mas boa prática)
+        // Limpar lista para ajudar o Garbage Collector
         _activeModifiers.Clear();
     }
     public void OnDragUpdate(Vector2 worldPos)
     {
         // INTENCIONALMENTE VAZIO.
-        // Motivo: O CardView usa o Update() padrão para ler o InputManager quando 
-        // o estado é 'Dragging'. Este método existe apenas para satisfazer 
-        // a interface IDraggable usada pelo PlayerInteraction.
     }
     public void OnDragEnd()
     {
@@ -253,7 +252,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     public void OnHoverEnter() => IsHovered = true;
     public void OnHoverExit() => IsHovered = false;
 
-    // Mantemos Select/Deselect para lógica do HandManager, mas visualmente é igual Idle
+    // Mantemos Select/Deselect para lÃ³gica do HandManager, mas visualmente Ã© igual Idle
     public void Select() { if (CanChangeState()) SetState(CardVisualState.Selected); }
     public void Deselect() { if (CurrentState == CardVisualState.Selected) SetState(CardVisualState.Idle); }
 
@@ -276,7 +275,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     {
         if (CurrentState == newState) return;
 
-        // Saída
+        // SaÃ­da
         if (CurrentState == CardVisualState.Dragging) OnDragEndEvent?.Invoke(this);
 
         CurrentState = newState;
@@ -293,4 +292,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
 
     // API Externa
     public void UpdateLayoutTarget(HandLayoutCalculator.CardTransformTarget target) => _baseLayoutTarget = target;
+    
+    // [NEW] API para controle de elevaÃ§Ã£o
+    public void SetHandElevation(bool isRaised) => _elevationModifier?.SetRaised(isRaised);
 }

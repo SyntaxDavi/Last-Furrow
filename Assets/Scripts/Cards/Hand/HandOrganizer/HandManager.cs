@@ -2,18 +2,25 @@
 using System.Collections.Generic;
 using System.Linq;
 
+/// <summary>
+/// Gerencia as cartas na mao do jogador.
+/// Coordena spawn, layout, selecao e eventos de cartas.
+/// </summary>
 public class HandManager : MonoBehaviour
 {
-    [Header("Data Configs")]
+    [Header("Layout")]
     [SerializeField] private HandLayoutConfig _layoutConfig;
-    [SerializeField] private CardVisualConfig _visualConfig; 
+    [SerializeField] private CardVisualConfig _visualConfig;
 
     [Header("Scene Refs")]
     [SerializeField] private CardView _cardPrefab;
     [SerializeField] private Transform _handCenter;
 
-    [Header("Organização")]
+    [Header("Organizacao")]
     [SerializeField] private HandOrganizer _handOrganizer;
+    
+    [Header("Hover Controller")]
+    [SerializeField] private HandHoverController _hoverController;
 
     // Runtime State
     private List<CardView> _activeCards = new List<CardView>();
@@ -32,6 +39,12 @@ public class HandManager : MonoBehaviour
         if (_handOrganizer != null)
         {
             _handOrganizer.Initialize(this);
+        }
+        
+        // Inicializa o HoverController se estiver presente
+        if (_hoverController != null)
+        {
+            _hoverController.Initialize(this);
         }
     }
 
@@ -64,8 +77,8 @@ public class HandManager : MonoBehaviour
 
     private void Update()
     {
-        // Se a mão mudou, recalculamos APENAS os alvos (Targets).
-        // A física das cartas (SmoothDamp) roda independente no Update delas.
+        // Se a mao mudou, recalculamos APENAS os alvos (Targets).
+        // A fisica das cartas (SmoothDamp) roda independente no Update delas.
         if (_isLayoutDirty)
         {
             RecalculateLayoutTargets();
@@ -73,7 +86,7 @@ public class HandManager : MonoBehaviour
         }
     }
 
-    // --- LÓGICA DE SPAWN (O "Fan Out" acontece aqui) ---
+    // --- LOGICA DE SPAWN (O "Fan Out" acontece aqui) ---
 
     private void InitializeHandFromRun()
     {
@@ -97,8 +110,8 @@ public class HandManager : MonoBehaviour
             var instance = _pendingCards.Dequeue();
             CreateCardView(instance);
 
-            // O "Fan Out" visual é criado por este delay.
-            // A carta nasce no Deck e corre para a mão suavemente.
+            // O "Fan Out" visual e criado por este delay.
+            // A carta nasce no Deck e corre para a mao suavemente.
             yield return new WaitForSeconds(_layoutConfig.SpawnDelay);
         }
 
@@ -240,20 +253,28 @@ public class HandManager : MonoBehaviour
 
     private void OnCardDragEnd(CardView card) { }
 
-    // ==============================================================================================
-    // API PÚBLICA (Para HandOrganizer e outros)
-    // ==============================================================================================
+    // ==========================================================================
+    // API PUBLICA (Para HandOrganizer, HandHoverController e outros)
+    // ==========================================================================
 
     /// <summary>
-    /// Retorna uma cópia da lista de cartas ativas
+    /// Retorna uma copia da lista de cartas ativas (para modificacao segura)
     /// </summary>
     public List<CardView> GetActiveCards()
     {
         return new List<CardView>(_activeCards);
     }
+    
+    /// <summary>
+    /// Retorna lista somente-leitura das cartas ativas (mais eficiente para iteracao)
+    /// </summary>
+    public IReadOnlyList<CardView> GetActiveCardsReadOnly()
+    {
+        return _activeCards.AsReadOnly();
+    }
 
     /// <summary>
-    /// Retorna a posição do centro da mão
+    /// Retorna a posicao do centro da mao
     /// </summary>
     public Vector3 GetHandCenterPosition()
     {
@@ -267,10 +288,18 @@ public class HandManager : MonoBehaviour
     {
         return _handOrganizer;
     }
+    
+    /// <summary>
+    /// Retorna o HandHoverController
+    /// </summary>
+    public HandHoverController GetHoverController()
+    {
+        return _hoverController;
+    }
 
     /// <summary>
     /// Reordena internamente a lista de cartas ativas.
-    /// Usado pelo HandOrganizer para manter a ordem após shuffle/sort.
+    /// Usado pelo HandOrganizer para manter a ordem apos shuffle/sort.
     /// </summary>
     public void ReorderActiveCards(List<CardView> newOrder)
     {
