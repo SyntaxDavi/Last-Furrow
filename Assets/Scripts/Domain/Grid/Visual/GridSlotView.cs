@@ -48,7 +48,8 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _isLocked = false;
 
         // 1. Configura Overlay
-        if (_highlightOverlayRenderer != null && _baseRenderer != null)
+        // SÓ atribui o sprite da base se o overlay estiver sem sprite (permitindo bordas customizadas no prefab)
+        if (_highlightOverlayRenderer != null && _highlightOverlayRenderer.sprite == null && _baseRenderer != null)
         {
             _highlightOverlayRenderer.sprite = _baseRenderer.sprite;
         }

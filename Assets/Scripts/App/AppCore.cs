@@ -82,7 +82,7 @@ public class AppCore : MonoBehaviour
         }
 
         // 1. Setup do Registro e Eventos Base
-        Services = new ServiceRegistry(this);
+        Services = new ServiceRegistry();
         var events = new GameEvents(); 
 
         // 2. Módulo Core (Sistemas Base e Infra)
@@ -106,11 +106,16 @@ public class AppCore : MonoBehaviour
         InitializeLegacyCrossInjections();
 
         // 6. Finalização
-        InputManager.OnAnyInputDetected += () => Events?.Player?.TriggerAnyInput();
+        InputManager.OnAnyInputDetected += HandleAnyInput;
         SceneManager.sceneLoaded += OnSceneLoaded;
         
         Debug.Log("[AppCore] ✅ Arquitetura Modular pronta. Carregando cena inicial...");
         SceneManager.LoadScene(_firstSceneName);
+    }
+
+    private void HandleAnyInput()
+    {
+        Events?.Player?.TriggerAnyInput();
     }
 
     private void InitializeLegacyCrossInjections()
@@ -141,14 +146,17 @@ public class AppCore : MonoBehaviour
     private void OnDestroy()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
-        if (InputManager != null && Events != null && Events.Player != null)
-            InputManager.OnAnyInputDetected -= Events.Player.TriggerAnyInput;
-
+        if (InputManager != null) 
+            InputManager.OnAnyInputDetected -= HandleAnyInput;
+        
         try
         {
             CardInteractionBootstrapper.Cleanup();
         }
-        catch (System.Exception) { }
+        catch (System.Exception ex) 
+        {
+            Debug.LogError($"[AppCore] Failed to cleanup CardInteractionBootstrapper: {ex}");
+        }
     }
 
     // --- REGISTRO DE SERVIÇOS DE CENA ---

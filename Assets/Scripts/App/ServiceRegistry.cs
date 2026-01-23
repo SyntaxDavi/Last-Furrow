@@ -31,12 +31,8 @@ public class ServiceRegistry
     public PatternScoreCalculator PatternCalculator { get; private set; }
     public PatternTrackingService PatternTracking { get; private set; }
     
-    // Referência ao AppCore para contextos de Unity
-    private readonly AppCore _app;
-
-    public ServiceRegistry(AppCore app)
+    public ServiceRegistry()
     {
-        _app = app;
     }
 
     public void RegisterCore(ISaveManager save, GridConfiguration gridConfig, GameEvents events, IGameLibrary library)
