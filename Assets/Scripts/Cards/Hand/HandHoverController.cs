@@ -17,7 +17,10 @@ public class HandHoverController : MonoBehaviour
     [SerializeField] private Collider2D _handAreaCollider;
     
     [Tooltip("Tamanho da área de detecção ao redor de cada carta (Largura, Altura).")]
-    [SerializeField] private Vector2 _cardDetectionSize = new Vector2(1.5f, 2.2f);
+    [SerializeField] private Vector2 _cardDetectionSize = new Vector2(3.0f, 4.0f); // Aumentado para cobrir PPU 24 (~72x96px)
+    
+    [Tooltip("Deslocamento do centro da área de detecção em relação ao pivô da carta.")]
+    [SerializeField] private Vector2 _detectionCenterOffset = new Vector2(0f, 0.5f); // Levemente para cima para cobrir elevação
     
     [Header("Debug")]
     [SerializeField] private bool _showDebugGizmos = false;
@@ -90,12 +93,12 @@ public class HandHoverController : MonoBehaviour
         
         foreach (var card in cards)
         {
-            // Pega a posição alvo do layout (estável)
-            Vector3 cardBasePos = card.BaseLayoutTarget.Position;
+            // Pega a posição alvo do layout e aplica o offset configurado
+            Vector3 centerPos = card.BaseLayoutTarget.Position + (Vector3)_detectionCenterOffset;
             
             // Check AABB simples ao redor da carta
-            bool insideX = mousePos.x >= cardBasePos.x - halfWidth && mousePos.x <= cardBasePos.x + halfWidth;
-            bool insideY = mousePos.y >= cardBasePos.y - halfHeight && mousePos.y <= cardBasePos.y + halfHeight;
+            bool insideX = mousePos.x >= centerPos.x - halfWidth && mousePos.x <= centerPos.x + halfWidth;
+            bool insideY = mousePos.y >= centerPos.y - halfHeight && mousePos.y <= centerPos.y + halfHeight;
             
             if (insideX && insideY)
             {
