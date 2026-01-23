@@ -13,8 +13,11 @@ public class HandHoverController : MonoBehaviour
     [SerializeField] private CardVisualConfig _visualConfig;
     
     [Header("Detecção de Área")]
-    [Tooltip("Collider que define a área da mão. Se null, usa bounds das cartas.")]
+    [Tooltip("Collider que define a área da mão. Se null, usa detecção precisa por carta.")]
     [SerializeField] private Collider2D _handAreaCollider;
+    
+    [Tooltip("Tamanho da área de detecção ao redor de cada carta (Largura, Altura).")]
+    [SerializeField] private Vector2 _cardDetectionSize = new Vector2(1.5f, 2.2f);
     
     [Header("Debug")]
     [SerializeField] private bool _showDebugGizmos = false;
@@ -27,11 +30,6 @@ public class HandHoverController : MonoBehaviour
     private bool _isHandHovered = false;
     private bool _isSequenceRunning = false;
     private Coroutine _currentSequence;
-    
-    // Cache de bounds (para detecção sem collider)
-    private Bounds _handBounds;
-    private float _boundsUpdateInterval = 0.1f;
-    private float _lastBoundsUpdate;
     
     // ==================================================================================
     // INICIALIZAÇÃO
@@ -49,15 +47,6 @@ public class HandHoverController : MonoBehaviour
     private void Update()
     {
         if (_handManager == null) return;
-        
-        // Atualiza bounds periodicamente (evita cálculo todo frame)
-        if (Time.time - _lastBoundsUpdate > _boundsUpdateInterval)
-        {
-            UpdateHandBounds();
-            _lastBoundsUpdate = Time.time;
-        }
-        
-        // Verifica hover
         CheckHoverState();
     }
     
@@ -79,42 +68,42 @@ public class HandHoverController : MonoBehaviour
     
     private bool IsMouseOverHandArea()
     {
-        // Se temos collider, usa detecção de collider
+        // 1. Se temos collider definido manualmente, usa ele
         if (_handAreaCollider != null)
         {
             Vector2 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             return _handAreaCollider.OverlapPoint(mouseWorld);
         }
         
-        // Fallback: usa bounds calculados
-        Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mouseWorldPos.z = 0;
-        return _handBounds.Contains(mouseWorldPos);
-    }
-    
-    private void UpdateHandBounds()
-    {
+        // 2. Fallback Preciso: União dos Retângulos das Cartas
+        // Verifica se o mouse está próximo da posição BASE de qualquer carta.
+        // Usamos a posição BASE (LayoutTarget) e não a visual para evitar flickering quando a carta sobe.
+        
         var cards = _handManager?.GetActiveCardsReadOnly();
-        if (cards == null || cards.Count == 0)
-        {
-            _handBounds = new Bounds(transform.position, Vector3.zero);
-            return;
-        }
+        if (cards == null || cards.Count == 0) return false;
         
-        // Inicializa com a primeira carta
-        _handBounds = new Bounds(cards[0].transform.position, Vector3.one);
+        Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        mousePos.z = 0; // Ignora profundidade para o check 2D
         
-        // Expande para incluir todas as cartas
+        float halfWidth = _cardDetectionSize.x * 0.5f;
+        float halfHeight = _cardDetectionSize.y * 0.5f;
+        
         foreach (var card in cards)
         {
-            // Considera tamanho aproximado da carta
-            Vector3 cardSize = new Vector3(1.5f, 2f, 0.1f);
-            Bounds cardBounds = new Bounds(card.transform.position, cardSize);
-            _handBounds.Encapsulate(cardBounds);
+            // Pega a posição alvo do layout (estável)
+            Vector3 cardBasePos = card.BaseLayoutTarget.Position;
+            
+            // Check AABB simples ao redor da carta
+            bool insideX = mousePos.x >= cardBasePos.x - halfWidth && mousePos.x <= cardBasePos.x + halfWidth;
+            bool insideY = mousePos.y >= cardBasePos.y - halfHeight && mousePos.y <= cardBasePos.y + halfHeight;
+            
+            if (insideX && insideY)
+            {
+                return true;
+            }
         }
         
-        // Adiciona padding
-        _handBounds.Expand(new Vector3(0.5f, 1f, 0));
+        return false;
     }
     
     // ==================================================================================
@@ -214,10 +203,21 @@ public class HandHoverController : MonoBehaviour
     
     private void OnDrawGizmos()
     {
-        if (!_showDebugGizmos) return;
+        if (!_showDebugGizmos || _handManager == null) return;
         
-        // Desenha bounds da mão
         Gizmos.color = _isHandHovered ? Color.green : Color.yellow;
-        Gizmos.DrawWireCube(_handBounds.center, _handBounds.size);
+        var cards = _handManager.GetActiveCardsReadOnly();
+        if (cards == null) return;
+        
+        foreach (var card in cards)
+        {
+            if (card != null)
+            {
+                 // Nota: Em editor time (sem play), BaseLayoutTarget pode estar zerado se não inicializado.
+                 // Fallback para transform.position no Gizmo se necessário.
+                 Vector3 pos = Application.isPlaying ? card.BaseLayoutTarget.Position : card.transform.position;
+                 Gizmos.DrawWireCube(pos, new Vector3(_cardDetectionSize.x, _cardDetectionSize.y, 0.1f));
+            }
+        }
     }
 }

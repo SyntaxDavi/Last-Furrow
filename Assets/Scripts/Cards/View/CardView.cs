@@ -291,6 +291,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     private bool CanChangeState() => CurrentState != CardVisualState.Consuming;
 
     // API Externa
+    public HandLayoutCalculator.CardTransformTarget BaseLayoutTarget => _baseLayoutTarget;
     public void UpdateLayoutTarget(HandLayoutCalculator.CardTransformTarget target) => _baseLayoutTarget = target;
     
     // [NEW] API para controle de elevação
