@@ -82,7 +82,7 @@ public static class GridInitializer
                 if (i < oldSlots.Length)
                     runData.GridSlots[i] = oldSlots[i];
                 else
-                    runData.GridSlots[i] = new CropState();
+                    runData.GridSlots[i] = new CropState(default(CropID));
             }
         }
     }

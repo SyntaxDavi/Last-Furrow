@@ -10,10 +10,12 @@ public class PlantCardCommand : CardCommand
     public PlantCardCommand(CardInstance instance, CardData data, int slotIndex, RunIdentityContext context)
         : base(instance, data, slotIndex)
     {
-        _context = context ?? throw new System.ArgumentNullException(nameof(context));
+        if (context.Equals(default(RunIdentityContext)))
+            throw new System.ArgumentNullException(nameof(context));
+        _context = context;
     }
 
-    public override ValidationResult Validate(IGridService gridService, RunData runData)
+    public override ValidationResult Validate(IGridService gridService, RunData runData)    
     {
         if (TargetSlotIndex < 0 || TargetSlotIndex >= gridService.SlotCount)
             return ValidationResult.Fail("Slot inválido.");

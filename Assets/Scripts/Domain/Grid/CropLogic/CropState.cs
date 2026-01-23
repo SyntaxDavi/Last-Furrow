@@ -11,7 +11,7 @@ public class CropState : IReadOnlyCropState
     public bool IsWatered;
 
     // --- CONSTRUTORES ---
-    public CropState() => Clear(); // Construtor padrão já nasce limpo
+    public CropState(IReadOnlyCropState slot) => Clear(); // Construtor padrão já nasce limpo
 
     public CropState(CropID cropID)
     {

@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   ID:
     _value: card_onion
+  CropID:
+    _value: 
   Name: Onion
-  Icon: {fileID: 6585668884048488018, guid: e7b252851c7f00c46947c3e5beb21ce7, type: 3}
+  Icon: {fileID: 5244442778245778248, guid: cc6028a18dc9fcd428fc4f017b720b0e, type: 3}
   Type: 0
   BaseSellValue: 5
   CropToPlant: {fileID: 11400000, guid: 3672a286177bb034eb51a933ddd2f658, type: 2}

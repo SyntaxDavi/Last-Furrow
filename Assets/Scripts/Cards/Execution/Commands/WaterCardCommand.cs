@@ -7,7 +7,7 @@ public class WaterCardCommand : CardCommand
 {
     private readonly RunIdentityContext _identityContext;
     private readonly RunRuntimeContext _runtimeContext;
-
+    
     public WaterCardCommand(
         CardInstance instance, 
         CardData data, 
@@ -16,8 +16,13 @@ public class WaterCardCommand : CardCommand
         RunRuntimeContext runtimeContext)
         : base(instance, data, slotIndex)
     {
-        _identityContext = identityContext ?? throw new System.ArgumentNullException(nameof(identityContext));
-        _runtimeContext = runtimeContext ?? throw new System.ArgumentNullException(nameof(runtimeContext));
+        if (identityContext.Equals(default(RunIdentityContext)))
+            throw new System.ArgumentNullException(nameof(identityContext));
+        _identityContext = identityContext;
+
+        if (runtimeContext == null)
+            throw new System.ArgumentNullException(nameof(runtimeContext));
+        _runtimeContext = runtimeContext;
     }
 
     public override ValidationResult Validate(IGridService gridService, RunData runData)

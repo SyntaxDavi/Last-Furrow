@@ -10,7 +10,9 @@ public class ExpansionCardCommand : CardCommand
     public ExpansionCardCommand(CardInstance instance, CardData data, int slotIndex, RunIdentityContext context)
         : base(instance, data, slotIndex)
     {
-        _context = context ?? throw new System.ArgumentNullException(nameof(context));
+        if (context.Equals(default(RunIdentityContext)))
+            throw new System.ArgumentNullException(nameof(context));
+        _context = context;
     }
 
     public override ValidationResult Validate(IGridService gridService, RunData runData)

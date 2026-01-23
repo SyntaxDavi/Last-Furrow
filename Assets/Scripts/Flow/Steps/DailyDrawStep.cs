@@ -40,8 +40,11 @@ public class DailyDrawStep : IFlowStep
             return;
         }
 
+        Debug.Log($"[DailyDrawStep] Estado inicial: HasDrawnDailyHand={_runData.HasDrawnDailyHand}");
+
         // SOLID: Usa pol�tica para decidir se deve dar cartas
         bool shouldDraw = _drawPolicy.ShouldDrawCards(_runData, _runManager.CurrentPhase);
+        Debug.Log($"[DailyDrawStep] ShouldDrawCards retornou: {shouldDraw}");
         
         if (shouldDraw)
         {

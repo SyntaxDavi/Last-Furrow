@@ -5,6 +5,7 @@ public class CardData : ScriptableObject
 {
     [Header("Identificação")]
     public CardID ID;
+    public CropID CropID;
     public string Name;
     public Sprite Icon;
 

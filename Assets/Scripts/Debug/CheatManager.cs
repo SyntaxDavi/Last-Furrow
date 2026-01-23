@@ -41,6 +41,9 @@ public class CheatManager : MonoBehaviour
     {
         "card_corn",
         "card_carrot",
+        "card_onion",
+        "card_potato",
+        "card_lettuce",
         "card_water",
         "card_fertilizer"
     };
@@ -413,7 +416,7 @@ public class CheatManager : MonoBehaviour
         {
             if (!run.GridSlots[i].IsEmpty)
             {
-                run.GridSlots[i] = new CropState();
+                run.GridSlots[i] = new CropState(default(CropID));
                 clearedCount++;
             }
         }

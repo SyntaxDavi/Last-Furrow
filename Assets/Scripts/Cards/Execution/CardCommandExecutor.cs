@@ -57,7 +57,7 @@ public class CardCommandExecutor
 
         try
         {
-            snapshot = command.CreateSnapshot(_gridService, _runData);
+            snapshot = command.CreateSnapshotPublic(_gridService, _runData);
             executionResult = command.Execute(_gridService, _runData);
 
             if (!executionResult.IsSuccess)
@@ -142,5 +142,14 @@ public class ExecutionResult
         IsSuccess = isSuccess;
         Message = message;
         ShouldConsumeCard = consumeCard;
+    }
+}
+
+public static class CardCommandExtensions
+{
+    // Adicione este método público à classe CardCommand:
+    public static StateSnapshot CreateSnapshotPublic(this CardCommand cardCommand, IGridService gridService, RunData runData)
+    {
+        return cardCommand.CreateSnapshotPublic(gridService, runData);
     }
 }

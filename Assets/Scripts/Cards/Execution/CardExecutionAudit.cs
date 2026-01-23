@@ -80,7 +80,7 @@ public class CardExecutionAudit
             Timestamp = DateTime.UtcNow,
             EventType = type,
             CommandID = command?.CommandID,
-            CardID = command?.CardData?.ID?.ToString(),
+            CardID = command?.CardData?.ID.ToString(),
             SlotIndex = command?.TargetSlotIndex ?? -1,
             Message = message
         });

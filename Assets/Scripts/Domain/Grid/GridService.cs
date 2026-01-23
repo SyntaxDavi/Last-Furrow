@@ -46,7 +46,8 @@ public class GridService : IGridService
     public IReadOnlyCropState GetSlotReadOnly(int index)
     {
         if (IsValidIndex(index)) return _runData.GridSlots[index];
-        return new CropState();
+        // Corrigido: Fornece um CropState vazio usando o construtor correto
+        return new CropState(default(CropID));
     }
 
     public CropState GetSlot(int index)
