@@ -68,10 +68,11 @@ public class DailyPipelineBuilder : IDailyFlowBuilder
             context.Events.Progression
         ));
         
-        // STEP 4: Avançar Tempo (Dia -> Próximo Dia)
+        // STEP 4: Avançar Tempo (Dia -> Próximo Dia) + Reset Draw Flag
         pipeline.Add(new AdvanceTimeStep(
             context.RunManager,
-            context.SaveManager
+            context.SaveManager,
+            runData
         ));
         
         // STEP 5: Draw de Novas Cartas

@@ -57,6 +57,10 @@ public class RunData
     [Tooltip("Lista de PatternIDs que foram quebrados (para detectar recriação e dar bonus).")]
     public List<string> BrokenPatternIDs;
 
+    [Header("Daily State Tracking")]
+    [Tooltip("CRÍTICO: Garante que o draw diário aconteça apenas uma vez por dia lógico.")]
+    public bool HasDrawnDailyHand = false;
+
     // Construtor padrão (usado pelo JSON Utility ou Serializer)
     // Mantemos ele "burro" apenas alocando listas para evitar NullReference
     public RunData()
