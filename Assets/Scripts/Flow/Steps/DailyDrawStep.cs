@@ -1,52 +1,65 @@
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
+/// <summary>
+/// SOLID: Single Responsibility - Apenas executa o draw diï¿½rio seguindo a polï¿½tica.
+/// </summary>
 public class DailyDrawStep : IFlowStep
 {
     private readonly DailyHandSystem _handSystem;
     private readonly RunManager _runManager;
     private readonly RunData _runData;
+    private readonly CardDrawPolicy _drawPolicy;
+    
     public string Name => "Daily Draw";
-    public DailyDrawStep(DailyHandSystem handSystem, RunManager runManager, RunData runData)
+    
+    public DailyDrawStep(
+        DailyHandSystem handSystem, 
+        RunManager runManager, 
+        RunData runData,
+        CardDrawPolicy drawPolicy)
     {
         _handSystem = handSystem;
         _runManager = runManager;
         _runData = runData;
+        _drawPolicy = drawPolicy ?? new CardDrawPolicy();
     }
 
     public async UniTask Execute(FlowControl control)
     {
         if (_handSystem == null || _runData == null)
         {
-            Debug.LogError("[DailyDrawStep] Dependências nulas. Pulando step.");
+            Debug.LogError("[DailyDrawStep] Dependï¿½ncias nulas. Pulando step.");
             return;
         }
 
-        // PROTEÇÃO: Se já deu draw hoje, não dá de novo
+        // PROTEï¿½ï¿½O: Se jï¿½ deu draw hoje, nï¿½o dï¿½ de novo
         if (_runData.HasDrawnDailyHand)
         {
-            Debug.LogWarning("[DailyDrawStep] Cartas já foram distribuídas hoje. Pulando draw para evitar duplicação.");
+            Debug.LogWarning("[DailyDrawStep] Cartas jï¿½ foram distribuï¿½das hoje. Pulando draw para evitar duplicaï¿½ï¿½o.");
             return;
         }
 
-        // REGRA DE OURO: Só dá cartas se for dia de trabalho
-        if (_runManager.CurrentPhase == RunPhase.Production)
+        // SOLID: Usa polï¿½tica para decidir se deve dar cartas
+        bool shouldDraw = _drawPolicy.ShouldDrawCards(_runData, _runManager.CurrentPhase);
+        
+        if (shouldDraw)
         {
-            Debug.Log("[Step] Iniciando Draw Diário...");
+            Debug.Log($"[DailyDrawStep] Iniciando Draw Diï¿½rio (Dia {_runData.CurrentDay}, Semana {_runData.CurrentWeek})...");
             
-            // Marca que as cartas foram distribuídas ANTES do draw
+            // Marca que as cartas foram distribuï¿½das ANTES do draw (idempotï¿½ncia)
             _runData.HasDrawnDailyHand = true;
             
             _handSystem.ProcessDailyDraw(_runData);
 
-            // Tempo para animação "Fan Out" (0.8s = 800ms)
+            // Tempo para animaï¿½ï¿½o "Fan Out" (0.8s = 800ms)
             await UniTask.Delay(800);
         }
         else
         {
-            Debug.Log("[Step] Fim de Semana: Sem cartas hoje.");
-            // Marca como "drawn" mesmo que não tenha dado cartas
-            // para evitar re-execução
+            Debug.Log($"[DailyDrawStep] Sem cartas hoje (Dia {_runData.CurrentDay}, Fase: {_runManager.CurrentPhase}).");
+            // Marca como "drawn" mesmo que nï¿½o tenha dado cartas
+            // para evitar re-execuï¿½ï¿½o
             _runData.HasDrawnDailyHand = true;
             
             // Pequeno respiro (0.5s = 500ms)

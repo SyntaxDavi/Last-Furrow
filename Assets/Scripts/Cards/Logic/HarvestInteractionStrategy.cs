@@ -1,14 +1,14 @@
 using UnityEngine;
 
 /// <summary>
-/// Estratégia para colheita de plantas.
+/// Estratï¿½gia para colheita de plantas.
 /// 
-/// Recebe RunIdentityContext via injeção (não acessa AppCore).
+/// Recebe RunIdentityContext via injeï¿½ï¿½o (nï¿½o acessa AppCore).
 /// Interface fica limpa: Execute(slot, card).
 /// 
-/// Validações robustas contra:
+/// Validaï¿½ï¿½es robustas contra:
 /// - Null references
-/// - Estados inválidos
+/// - Estados invï¿½lidos
 /// - Dados desconhecidos
 /// </summary>
 public class HarvestInteractionStrategy : ICardInteractionStrategy
@@ -17,14 +17,14 @@ public class HarvestInteractionStrategy : ICardInteractionStrategy
 
     public HarvestInteractionStrategy(RunIdentityContext context)
     {
-        // Validação no construtor
+        // Validaï¿½ï¿½o no construtor
         if (context.Library == null)
             throw new System.ArgumentNullException(nameof(context), 
-                "[HarvestInteractionStrategy] RunIdentityContext.Library é nulo!");
+                "[HarvestInteractionStrategy] RunIdentityContext.Library ï¿½ nulo!");
         
         if (context.Economy == null)
             throw new System.ArgumentNullException(nameof(context), 
-                "[HarvestInteractionStrategy] RunIdentityContext.Economy é nulo!");
+                "[HarvestInteractionStrategy] RunIdentityContext.Economy ï¿½ nulo!");
         
         _context = context;
     }
@@ -37,13 +37,13 @@ public class HarvestInteractionStrategy : ICardInteractionStrategy
         if (slot == null || card == null)
             return false;
 
-        // Proteções básicas
+        // Proteï¿½ï¿½es bï¿½sicas
         if (slot.IsEmpty || slot.IsWithered)
             return false;
 
-        // IMPORTANTE: Não apenas verificar CurrentGrowth,
-        // mas garantir que a planta foi plantada há pelo menos 1 dia
-        // Uma planta no DIA 0 não pode ser colhida mesmo que acelerada
+        // IMPORTANTE: Nï¿½o apenas verificar CurrentGrowth,
+        // mas garantir que a planta foi plantada hï¿½ pelo menos 1 dia
+        // Uma planta no DIA 0 nï¿½o pode ser colhida mesmo que acelerada
         return slot.DaysMature >= 0 && slot.CurrentGrowth > 0;
     }
 
@@ -51,43 +51,43 @@ public class HarvestInteractionStrategy : ICardInteractionStrategy
     {
         var slot = grid.GetSlot(index);
 
-        // Validações defensivas
+        // Validaï¿½ï¿½es defensivas
         if (slot == null)
-             return InteractionResult.Fail("[ERRO] CropState não encontrado!");
+             return InteractionResult.Fail("[ERRO] CropState nï¿½o encontrado!");
 
         if (card == null)
-            return InteractionResult.Fail("[ERRO] CardData é null!");
+            return InteractionResult.Fail("[ERRO] CardData ï¿½ null!");
 
         if (slot.IsEmpty)
             return InteractionResult.Fail("Nada para colher.");
 
         if (slot.IsWithered)
-            return InteractionResult.Fail("A planta está morta e não pode ser colhida.");
+            return InteractionResult.Fail("A planta estï¿½ morta e nï¿½o pode ser colhida.");
 
         // 1. Busca dados com erro tratado
         if (!_context.Library.TryGetCrop(slot.CropID, out CropData cropData))
         {
             Debug.LogWarning($"[HarvestInteractionStrategy] Crop desconhecido: {slot.CropID}");
-            return InteractionResult.Fail("Dados da planta não encontrados no sistema.");
+            return InteractionResult.Fail("Dados da planta nï¿½o encontrados no sistema.");
         }
 
         if (cropData == null)
             return InteractionResult.Fail("Dados da planta corrompidos.");
 
-        // 2. Validação de Maturação
+        // 2. Validaï¿½ï¿½o de Maturaï¿½ï¿½o
         bool isMature = slot.CurrentGrowth >= cropData.DaysToMature;
         if (!isMature)
         {
             int remainingDays = cropData.DaysToMature - slot.CurrentGrowth;
-            return InteractionResult.Fail($"A planta ainda não está madura! Faltam {remainingDays} dias.");
+            return InteractionResult.Fail($"A planta ainda nï¿½o estï¿½ madura! Faltam {remainingDays} dias.");
         }
 
-        // 3. Validação de Tempo Mínimo
+        // 3. Validaï¿½ï¿½o de Tempo Mï¿½nimo
         // Garante que pelo menos 1 dia passou (CurrentGrowth > 0)
         if (slot.CurrentGrowth <= 0)
-            return InteractionResult.Fail("A planta foi plantada hoje. Espere até amanhã.");
+            return InteractionResult.Fail("A planta foi plantada hoje. Espere atï¿½ amanhï¿½.");
 
-        // 4. Economia - com proteção contra valores inválidos
+        // 4. Economia - com proteï¿½ï¿½o contra valores invï¿½lidos
         int value = cropData.BaseSellValue;
         if (value < 0)
         {
@@ -95,13 +95,32 @@ public class HarvestInteractionStrategy : ICardInteractionStrategy
             value = 0;
         }
 
+        // ? VALIDAï¿½ï¿½O EXTRA: Garantir que EconomyService estï¿½ disponï¿½vel
+        if (_context.Economy == null)
+        {
+            Debug.LogError("[HarvestInteractionStrategy] EconomyService ï¿½ NULL! Nï¿½o ï¿½ possï¿½vel processar colheita.");
+            return InteractionResult.Fail("Sistema econï¿½mico nï¿½o disponï¿½vel. Tente novamente.");
+        }
+
         try
         {
+            int moneyBefore = _context.Economy.CurrentMoney;
             _context.Economy.Earn(value, TransactionType.Harvest);
+            int moneyAfter = _context.Economy.CurrentMoney;
+            
+            // Validaï¿½ï¿½o pï¿½s-transaï¿½ï¿½o: verificar se o dinheiro realmente aumentou
+            if (moneyAfter < moneyBefore + value)
+            {
+                Debug.LogError($"[HarvestInteractionStrategy] ERRO: Dinheiro nï¿½o foi adicionado corretamente! Antes: ${moneyBefore}, Depois: ${moneyAfter}, Esperado: ${moneyBefore + value}");
+                return InteractionResult.Fail("Erro ao processar pagamento. Tente novamente.");
+            }
+            
+            Debug.Log($"[HarvestInteractionStrategy] ? Colheita processada: +${value} (${moneyBefore} -> ${moneyAfter})");
         }
         catch (System.Exception ex)
         {
             Debug.LogError($"[HarvestInteractionStrategy] Erro ao ganhar moedas: {ex.Message}");
+            Debug.LogError($"StackTrace: {ex.StackTrace}");
             return InteractionResult.Fail("Erro ao processar colheita. Tente novamente.");
         }
 

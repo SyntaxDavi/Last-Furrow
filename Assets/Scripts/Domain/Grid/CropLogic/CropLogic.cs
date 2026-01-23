@@ -1,21 +1,19 @@
 public struct CropSimulationResult
 {
     public GrowthEventType EventType;
-    public string DebugMessage; // Apenas para log, não para UI final
+    public string DebugMessage; // Apenas para log, nï¿½o para UI final
 }
 
 public static class CropLogic
 {
     /// <summary>
     /// Processa o ciclo natural da noite (Envelhecimento).
+    /// 
+    /// NOTA: A remoï¿½ï¿½o de ï¿½gua (IsWatered = false) ï¿½ feita por GridService.ProcessNightCycleForSlot
+    /// antes de chamar este mï¿½todo, para garantir que TODOS os slots sejam processados corretamente.
     /// </summary>
     public static CropSimulationResult ProcessNightlyGrowth(CropState state, CropData data)
     {
-        // --- REGRA UNIVERSAL DA NATUREZA ---
-        // O sol nasce e seca a terra, independente se tem planta viva, morta ou nada.
-        // Isso deve acontecer ANTES de qualquer verificação de "return".
-        state.IsWatered = false;
-
         var result = new CropSimulationResult { EventType = GrowthEventType.None };
 
         // Agora sim, verificamos se vale a pena processar biologia
@@ -53,7 +51,7 @@ public static class CropLogic
             else if (state.DaysMature == data.FreshnessWindow)
             {
                 result.EventType = GrowthEventType.LastFreshDayWarning;
-                result.DebugMessage = "Cuidado! Vai apodrecer amanhã.";
+                result.DebugMessage = "Cuidado! Vai apodrecer amanhï¿½.";
             }
         }
 
@@ -61,8 +59,8 @@ public static class CropLogic
     }
 
     /// <summary>
-    /// Aplica aceleração externa (Água/Fertilizante).
-    /// Centraliza a regra de "Risco Tático".
+    /// Aplica aceleraï¿½ï¿½o externa (ï¿½gua/Fertilizante).
+    /// Centraliza a regra de "Risco Tï¿½tico".
     /// </summary>
     public static CropSimulationResult ApplyAcceleration(CropState state, CropData data, int amount)
     {
@@ -75,15 +73,15 @@ public static class CropLogic
 
         if (isMature)
         {
-            // REGRA: Se já está madura, água consome a janela de frescor.
-            // RISCO TÁTICO: Se acelerar no último dia, morre instantaneamente.
+            // REGRA: Se jï¿½ estï¿½ madura, ï¿½gua consome a janela de frescor.
+            // RISCO Tï¿½TICO: Se acelerar no ï¿½ltimo dia, morre instantaneamente.
 
-            // Verifica se a aceleração empurra para além do limite
+            // Verifica se a aceleraï¿½ï¿½o empurra para alï¿½m do limite
             if (state.DaysMature + amount > data.FreshnessWindow)
             {
                 state.IsWithered = true;
                 result.EventType = GrowthEventType.WitheredByOverdose;
-                result.DebugMessage = "Água demais na fase final matou a planta!";
+                result.DebugMessage = "ï¿½gua demais na fase final matou a planta!";
             }
             else
             {
@@ -97,12 +95,12 @@ public static class CropLogic
             // CRESIMENTO ACELERADO
             state.CurrentGrowth += amount;
 
-            // Checa se maturou com a aceleração
+            // Checa se maturou com a aceleraï¿½ï¿½o
             if (state.CurrentGrowth >= data.DaysToMature)
             {
                 result.EventType = GrowthEventType.Matured;
                 // Nota: Opcionalmente, o excedente poderia virar DaysMature aqui
-                // mas vamos manter simples: teta na maturação.
+                // mas vamos manter simples: teta na maturaï¿½ï¿½o.
             }
             else
             {

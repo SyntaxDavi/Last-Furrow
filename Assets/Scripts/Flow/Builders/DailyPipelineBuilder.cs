@@ -2,45 +2,45 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Builder Pattern (SOLID): Constrói o pipeline de resolução diária.
+/// Builder Pattern (SOLID): Constrï¿½i o pipeline de resoluï¿½ï¿½o diï¿½ria.
 /// 
 /// RESPONSABILIDADES (SRP):
 /// - Definir ordem dos steps
-/// - Injetar dependências corretas em cada step
+/// - Injetar dependï¿½ncias corretas em cada step
 /// - Configurar pipeline baseado em contexto
 /// 
-/// BENEFÍCIOS:
-/// - DailyResolutionSystem não conhece steps específicos
-/// - Fácil criar pipelines alternativos (debug, teste, weekend)
-/// - Testável (mock do builder retorna steps fake)
-/// - Configurável (diferentes pipelines para diferentes modos)
+/// BENEFï¿½CIOS:
+/// - DailyResolutionSystem nï¿½o conhece steps especï¿½ficos
+/// - Fï¿½cil criar pipelines alternativos (debug, teste, weekend)
+/// - Testï¿½vel (mock do builder retorna steps fake)
+/// - Configurï¿½vel (diferentes pipelines para diferentes modos)
 /// </summary>
 public class DailyPipelineBuilder : IDailyFlowBuilder
 {
     /// <summary>
-    /// Constrói pipeline padrão do dia (produção).
+    /// Constrï¿½i pipeline padrï¿½o do dia (produï¿½ï¿½o).
     /// </summary>
     public List<IFlowStep> BuildPipeline(
         DailyResolutionContext context,
         DailyVisualContext visualContext,
         RunData runData)
     {
-        // Validações de segurança
+        // Validaï¿½ï¿½es de seguranï¿½a
         if (context == null)
         {
-            Debug.LogError("[DailyPipelineBuilder] LogicContext é NULL!");
+            Debug.LogError("[DailyPipelineBuilder] LogicContext ï¿½ NULL!");
             return new List<IFlowStep>();
         }
         
         if (visualContext == null || !visualContext.IsValid())
         {
-            Debug.LogWarning("[DailyPipelineBuilder] VisualContext inválido! Pipeline headless.");
+            Debug.LogWarning("[DailyPipelineBuilder] VisualContext invï¿½lido! Pipeline headless.");
         }
 
-        // CONSTRUÇÃO DO PIPELINE (Single Source of Truth)
+        // CONSTRUï¿½ï¿½O DO PIPELINE (Single Source of Truth)
         var pipeline = new List<IFlowStep>();
         
-        // STEP 1: Crescimento do Grid + Animação Visual
+        // STEP 1: Crescimento do Grid + Animaï¿½ï¿½o Visual
         pipeline.Add(new GrowGridStep(
             context.GridService,
             context.Events,
@@ -49,7 +49,7 @@ public class DailyPipelineBuilder : IDailyFlowBuilder
             visualContext?.Analyzer  // Null-safe: funciona sem visual
         ));
         
-        // STEP 2: Detecção de Padrões + Animações
+        // STEP 2: Detecï¿½ï¿½o de Padrï¿½es + Animaï¿½ï¿½es
         pipeline.Add(new DetectPatternsStep(
             context.GridService,
             context.PatternDetector,
@@ -60,7 +60,7 @@ public class DailyPipelineBuilder : IDailyFlowBuilder
             visualContext?.Scanner  // Null-safe: funciona sem visual
         ));
         
-        // STEP 3: Cálculo de Score + Meta Semanal
+        // STEP 3: Cï¿½lculo de Score + Meta Semanal
         pipeline.Add(new CalculateScoreStep(
             context.GoalSystem,
             context.RunManager,
@@ -68,7 +68,7 @@ public class DailyPipelineBuilder : IDailyFlowBuilder
             context.Events.Progression
         ));
         
-        // STEP 4: Avançar Tempo (Dia -> Próximo Dia) + Reset Draw Flag
+        // STEP 4: Avanï¿½ar Tempo (Dia -> Prï¿½ximo Dia) + Reset Draw Flag
         pipeline.Add(new AdvanceTimeStep(
             context.RunManager,
             context.SaveManager,
@@ -76,13 +76,16 @@ public class DailyPipelineBuilder : IDailyFlowBuilder
         ));
         
         // STEP 5: Draw de Novas Cartas
+        // SOLID: Usa CardDrawPolicy para centralizar regras de negï¿½cio
+        var drawPolicy = new CardDrawPolicy();
         pipeline.Add(new DailyDrawStep(
             context.HandSystem,
             context.RunManager,
-            runData
+            runData,
+            drawPolicy
         ));
         
-        Debug.Log($"[DailyPipelineBuilder] ? Pipeline construído: {pipeline.Count} steps");
+        Debug.Log($"[DailyPipelineBuilder] ? Pipeline construï¿½do: {pipeline.Count} steps");
         return pipeline;
     }
 }

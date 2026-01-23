@@ -19,6 +19,22 @@ public class CropState : IReadOnlyCropState
         CropID = cropID;
     }
 
+    // --- CONSTRUTOR DE CÓPIA (para snapshots) ---
+    public CropState(CropState other)
+    {
+        if (other == null)
+        {
+            Clear();
+            return;
+        }
+
+        CropID = other.CropID;
+        CurrentGrowth = other.CurrentGrowth;
+        DaysMature = other.DaysMature;
+        IsWithered = other.IsWithered;
+        IsWatered = other.IsWatered;
+    }
+
     // --- LÓGICA DE LIMPEZA (SÊNIOR) ---
     // Único ponto de verdade sobre como resetar um slot.
     public void Clear()
@@ -31,6 +47,24 @@ public class CropState : IReadOnlyCropState
         // Se amanhã você adicionar "public int PragaAmount", 
         // você só precisa adicionar "PragaAmount = 0" AQUI.
         // Todas as estratégias (Colheita, Pá, Explosão) serão atualizadas automaticamente.
+    }
+
+    /// <summary>
+    /// Planta um crop neste slot (reseta estado e define crop).
+    /// </summary>
+    public void Plant(CropID cropID)
+    {
+        if (!cropID.IsValid)
+        {
+            Clear();
+            return;
+        }
+
+        CropID = cropID;
+        CurrentGrowth = 0;
+        DaysMature = 0;
+        IsWithered = false;
+        IsWatered = false;
     }
 
     // --- IMPLEMENTAÇÃO DA INTERFACE ---

@@ -4,10 +4,10 @@ using UnityEngine;
 using Cysharp.Threading.Tasks; 
 
 /// <summary>
-/// Orquestra a fase de análise usando Strategy Pattern para detecção de padrões.
+/// Orquestra a fase de anï¿½lise usando Strategy Pattern para detecï¿½ï¿½o de padrï¿½es.
 /// Dispara eventos que outros controllers escutam (highlight, popup, breathing).
-/// SOLID: Single Responsibility - apenas orquestra, detecção delegada aos detectores.
-/// Versão: UniTask (Async/Await)
+/// SOLID: Single Responsibility - apenas orquestra, detecï¿½ï¿½o delegada aos detectores.
+/// Versï¿½o: UniTask (Async/Await)
 /// </summary>
 public class AnalyzingPhaseController : MonoBehaviour
 {
@@ -31,7 +31,7 @@ public class AnalyzingPhaseController : MonoBehaviour
         // ONDA 6.1: Remover FindFirstObjectByType - Validar apenas (atribuir no Inspector)
         if (_uiManager == null)
         {
-            Debug.LogError("[AnalyzingPhaseController] PatternUIManager não atribuído no Inspector!");
+            Debug.LogError("[AnalyzingPhaseController] PatternUIManager nï¿½o atribuï¿½do no Inspector!");
         }
 
         // Obter todos os detectores da factory
@@ -57,11 +57,23 @@ public class AnalyzingPhaseController : MonoBehaviour
             allSlotIndices[i] = allSlots[i].SlotIndex;
         }
 
+        // ? CORREï¿½ï¿½O CRï¿½TICA: Processar TODOS os slots desbloqueados PRIMEIRO
+        // Isso garante que ï¿½gua seja removida de TODOS os slots, nï¿½o apenas dos que estï¿½o em padrï¿½es
+        for (int i = 0; i < allSlotIndices.Length; i++)
+        {
+            int slotIndex = allSlotIndices[i];
+            if (gridService.IsSlotUnlocked(slotIndex))
+            {
+                // Processa ciclo noturno (remove ï¿½gua, cresce plantas, etc.)
+                gridService.ProcessNightCycleForSlot(slotIndex);
+            }
+        }
+
         _processedSlots.Clear();
         var foundPatterns = new List<PatternMatch>();
         int totalPoints = 0;
 
-        // Analisar cada slot
+        // Analisar cada slot para padrï¿½es e pontos passivos
         for (int i = 0; i < allSlots.Length; i++)
         {
             var slot = allSlots[i];
@@ -69,7 +81,7 @@ public class AnalyzingPhaseController : MonoBehaviour
 
             int slotIndex = slot.SlotIndex;
 
-            // Pular se já processado em padrão anterior
+            // Pular se jï¿½ processado em padrï¿½o anterior
             if (_processedSlots.Contains(slotIndex)) continue;
 
             if (!gridService.IsSlotUnlocked(slotIndex)) continue;
@@ -79,10 +91,10 @@ public class AnalyzingPhaseController : MonoBehaviour
             // ONDA 6.5: Verificar se slot tem crop e dar pontos passivos PRIMEIRO
             await ProcessCropPassiveScore(slotIndex, gridService, runData, events, slot);
 
-            // AGUARDAR levitação terminar (pipeline sincronizado)
+            // AGUARDAR levitaï¿½ï¿½o terminar (pipeline sincronizado)
             await LevitateSlot(slot);
 
-            // Tentar detectar padrões neste slot (ordem de prioridade)
+            // Tentar detectar padrï¿½es neste slot (ordem de prioridade)
             PatternMatch foundPattern = null;
 
             foreach (var detector in _detectors)
@@ -95,21 +107,21 @@ public class AnalyzingPhaseController : MonoBehaviour
                     {
                         _config.DebugLog($"Pattern found: {foundPattern.DisplayName} at slot {slotIndex}");
 
-                        // Marcar slots deste padrão como processados
+                        // Marcar slots deste padrï¿½o como processados
                         foreach (int processedSlot in foundPattern.SlotIndices)
                         {
                             _processedSlots.Add(processedSlot);
                         }
 
-                        // Adicionar à lista
+                        // Adicionar ï¿½ lista
                         foundPatterns.Add(foundPattern);
                         totalPoints += foundPattern.BaseScore;
                         
                         // UI atualiza contador ENQUANTO popup aparece
                         int newTotalScore = runData.CurrentWeeklyScore + totalPoints;
                         events.Pattern.TriggerScoreIncremented(
-                            foundPattern.BaseScore,  // Pontos deste padrão
-                            newTotalScore,           // Novo total (previsão)
+                            foundPattern.BaseScore,  // Pontos deste padrï¿½o
+                            newTotalScore,           // Novo total (previsï¿½o)
                             runData.WeeklyGoalTarget // Meta
                         );
 
@@ -148,20 +160,20 @@ public class AnalyzingPhaseController : MonoBehaviour
                             _config.DebugLog($"[Recreation] Pattern {foundPattern.DisplayName} recreated with +10% bonus!");
                         }
 
-                        // Apenas 1 padrão por slot (maior prioridade)
+                        // Apenas 1 padrï¿½o por slot (maior prioridade)
                         break;
                     }
                 }
             }
 
-            // Delay configurável entre slots
+            // Delay configurï¿½vel entre slots
             if (_config.analyzingSlotDelay > 0f)
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(_config.analyzingSlotDelay));
             }
             else
             {
-                // Sempre bom ceder o controle por 1 frame se não houver delay, para evitar travamento
+                // Sempre bom ceder o controle por 1 frame se nï¿½o houver delay, para evitar travamento
                 await UniTask.Yield();
             }
         }
@@ -192,7 +204,7 @@ public class AnalyzingPhaseController : MonoBehaviour
             float t = elapsed / (duration / 2f);
             slot.transform.localPosition = originalPos + Vector3.up * (height * t);
 
-            // Espera o próximo frame
+            // Espera o prï¿½ximo frame
             await UniTask.Yield();
         }
 
@@ -244,13 +256,13 @@ public class AnalyzingPhaseController : MonoBehaviour
         
         if (passivePoints <= 0) return; // Sem pontos
         
-        // Calcular novo total (previsão)
+        // Calcular novo total (previsï¿½o)
         int newTotal = runData.CurrentWeeklyScore + passivePoints;
         
         // Disparar evento para HUD atualizar
         events.Grid.TriggerCropPassiveScore(slotIndex, passivePoints, newTotal, runData.WeeklyGoalTarget);
         
-        // ONDA 6.5: Mostrar pontos no próprio slot (TextMeshPro local)
+        // ONDA 6.5: Mostrar pontos no prï¿½prio slot (TextMeshPro local)
         if (slotView != null)
         {
             slotView.ShowPassiveScore(passivePoints);

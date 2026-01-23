@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic; 
 
@@ -161,10 +161,13 @@ public class AppCore : MonoBehaviour
             var weekendUIFlow = new WeekendUIFlow(Events.UI);
             var weekendContentResolver = new WeekendContentResolver(ShopService, _defaultShop, _specialShops);
 
+            // ⭐ SOLID: Injeta DailyHandSystem para permitir draw de cartas após shop
             var weekendBuilder = new DefaultWeekendFlowBuilder(
                 weekendStateFlow,
                 weekendUIFlow,
-                weekendContentResolver
+                weekendContentResolver,
+                DailyHandSystem,
+                new CardDrawPolicy()
             );
 
             WeekendFlowController.Initialize(RunManager, weekendBuilder);

@@ -20,41 +20,76 @@ public class DailyHandSystem
         _playerEvents = playerEvents;
     }
 
+    /// <summary>
+    /// SOLID: Single Responsibility - Processa o draw diï¿½rio de cartas.
+    /// Idempotente: pode ser chamado mï¿½ltiplas vezes sem duplicar cartas.
+    /// </summary>
     public void ProcessDailyDraw(RunData runData)
     {
-        if (runData == null) return;
-
-        // --- IDEMPOTÊNCIA (GUARD CLAUSE) ---
-        if (runData.HasDrawnDailyHand)
+        if (runData == null)
         {
-            Debug.LogWarning($"[DailyHandSystem] Draw já realizado para o dia {runData.CurrentDay}. Pulando para evitar duplicatas.");
+            Debug.LogError("[DailyHandSystem] RunData ï¿½ NULL! Nï¿½o ï¿½ possï¿½vel processar draw.");
             return;
         }
 
-        Debug.Log($"[DailyHandSystem] Iniciando Draw do Dia {runData.CurrentDay}...");
+        // --- IDEMPOTï¿½NCIA (GUARD CLAUSE) ---
+        if (runData.HasDrawnDailyHand)
+        {
+            Debug.LogWarning($"[DailyHandSystem] Draw jï¿½ realizado para o dia {runData.CurrentDay}, semana {runData.CurrentWeek}. Pulando para evitar duplicatas.");
+            return;
+        }
 
-        // 1. Obter IDs da estratégia
+        // ? VALIDAï¿½ï¿½O: Verificar se estratï¿½gia estï¿½ disponï¿½vel
+        if (_strategy == null)
+        {
+            Debug.LogError("[DailyHandSystem] ICardSourceStrategy ï¿½ NULL! Nï¿½o ï¿½ possï¿½vel gerar cartas.");
+            return;
+        }
+
+        Debug.Log($"[DailyHandSystem] Iniciando Draw do Dia {runData.CurrentDay}, Semana {runData.CurrentWeek}...");
+
+        // 1. Obter IDs da estratï¿½gia
         List<CardID> nextCardIDs = _strategy.GetNextCardIDs(runData.CardsDrawPerDay, runData);
+
+        if (nextCardIDs == null || nextCardIDs.Count == 0)
+        {
+            Debug.LogWarning("[DailyHandSystem] Estratï¿½gia nï¿½o retornou cartas! Verifique a configuraï¿½ï¿½o.");
+            // Mesmo sem cartas, marcamos como feito para evitar re-execuï¿½ï¿½o
+            runData.HasDrawnDailyHand = true;
+            return;
+        }
+
+        int cardsAdded = 0;
+        int cardsOverflowed = 0;
 
         foreach (CardID id in nextCardIDs)
         {
+            // ? VALIDAï¿½ï¿½O: Verificar se ID ï¿½ vï¿½lido
+            if (!id.IsValid)
+            {
+                Debug.LogWarning($"[DailyHandSystem] CardID invï¿½lido ignorado: {id}");
+                continue;
+            }
+
             CardInstance newInstance = new CardInstance(id);
 
             if (CanAddToHand(runData))
             {
                 AddToHand(runData, newInstance);
+                cardsAdded++;
             }
             else
             {
                 HandleOverflow(id);
+                cardsOverflowed++;
             }
         }
 
         // --- COMMIT DO ESTADO ---
         // Marcamos como feito. Se o jogo salvar agora e crashar depois, 
-        // ao recarregar, este método não dará cartas extras.
+        // ao recarregar, este mï¿½todo nï¿½o darï¿½ cartas extras.
         runData.HasDrawnDailyHand = true;
-        Debug.Log("[DailyHandSystem] Draw concluído e flag HasDrawnDailyHand marcada.");
+        Debug.Log($"[DailyHandSystem] ? Draw concluï¿½do: {cardsAdded} cartas adicionadas, {cardsOverflowed} em overflow. Flag HasDrawnDailyHand marcada.");
     }
 
     private bool CanAddToHand(RunData runData) => runData.Hand.Count < runData.MaxHandSize;
