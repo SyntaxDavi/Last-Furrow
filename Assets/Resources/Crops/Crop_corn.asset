@@ -20,7 +20,7 @@ MonoBehaviour:
   FreshnessWindow: 5
   BasePassiveScore: 20
   MatureScoreMultiplier: 1.5
-  BaseSellValue: 0
+  BaseSellValue: 7
   SeedSprite: {fileID: 0}
   GrowthStages: []
   MatureSprite: {fileID: 0}

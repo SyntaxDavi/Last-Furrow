@@ -19,7 +19,7 @@ MonoBehaviour:
   Name: Onion
   Icon: {fileID: 5244442778245778248, guid: cc6028a18dc9fcd428fc4f017b720b0e, type: 3}
   Type: 0
-  BaseSellValue: 5
+  BaseSellValue: 2
   CropToPlant: {fileID: 11400000, guid: 3672a286177bb034eb51a933ddd2f658, type: 2}
   GrowthAcceleration: 0
   ValueMultiplier: 0

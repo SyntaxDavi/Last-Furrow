@@ -14,10 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   ID:
     _value: card_lettuce
+  CropID:
+    _value: 
   Name: Lettuce
   Icon: {fileID: 3042585798291172828, guid: 35b222cd08fa158428931cc5649a78c6, type: 3}
   Type: 0
-  BaseSellValue: 3
+  BaseSellValue: 1
   CropToPlant: {fileID: 11400000, guid: 0788edf2b9aa5c74aa726db849337dd7, type: 2}
   GrowthAcceleration: 0
   ValueMultiplier: 0

@@ -14,10 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   ID:
     _value: card_potato
+  CropID:
+    _value: 
   Name: Potato
-  Icon: {fileID: 6585668884048488018, guid: e7b252851c7f00c46947c3e5beb21ce7, type: 3}
+  Icon: {fileID: 2390262709761998477, guid: da01b0c8e3ffa2849a903c7bdec17149, type: 3}
   Type: 0
-  BaseSellValue: 4
+  BaseSellValue: 1
   CropToPlant: {fileID: 11400000, guid: fe2ea8c53d541804bad1033abf8ccc8a, type: 2}
   GrowthAcceleration: 0
   ValueMultiplier: 0

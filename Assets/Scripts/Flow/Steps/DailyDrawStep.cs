@@ -50,11 +50,8 @@ public class DailyDrawStep : IFlowStep
         {
             Debug.Log($"[DailyDrawStep] Iniciando Draw Di�rio (Dia {_runData.CurrentDay}, Semana {_runData.CurrentWeek})...");
             
-            // Marca que as cartas foram distribu�das ANTES do draw (idempot�ncia)
-            _runData.HasDrawnDailyHand = true;
-            
             _handSystem.ProcessDailyDraw(_runData);
-
+            AppCore.Instance.SaveManager.SaveGame();
             // Tempo para anima��o "Fan Out" (0.8s = 800ms)
             await UniTask.Delay(800);
         }

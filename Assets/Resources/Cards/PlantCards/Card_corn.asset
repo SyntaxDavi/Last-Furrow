@@ -17,9 +17,9 @@ MonoBehaviour:
   CropID:
     _value: 
   Name: Corn
-  Icon: {fileID: 6585668884048488018, guid: e7b252851c7f00c46947c3e5beb21ce7, type: 3}
+  Icon: {fileID: 248084868156320940, guid: bdef7868e13a2de439d780fa95e13c9b, type: 3}
   Type: 0
-  BaseSellValue: 7
+  BaseSellValue: 2
   CropToPlant: {fileID: 11400000, guid: 536834a8918f85e4693e99cb0d6d0103, type: 2}
   GrowthAcceleration: 0
   ValueMultiplier: 0

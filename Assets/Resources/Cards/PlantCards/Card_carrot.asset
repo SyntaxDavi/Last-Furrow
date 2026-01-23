@@ -17,9 +17,9 @@ MonoBehaviour:
   CropID:
     _value: 
   Name: Carrot
-  Icon: {fileID: 248084868156320940, guid: bdef7868e13a2de439d780fa95e13c9b, type: 3}
+  Icon: {fileID: 4387669969854764479, guid: ef84371cf3cc35248a982a0fe57e6d82, type: 3}
   Type: 0
-  BaseSellValue: 2
+  BaseSellValue: 1
   CropToPlant: {fileID: 11400000, guid: 68c2621930556cd4e97955d9488b95d6, type: 2}
   GrowthAcceleration: 0
   ValueMultiplier: 0

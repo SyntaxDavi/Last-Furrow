@@ -47,9 +47,6 @@ public class WeekendCardDrawStep : IFlowStep
 
         Debug.Log($"[WeekendCardDrawStep] Iniciando Draw após Shop (Dia {_runData.CurrentDay}, Semana {_runData.CurrentWeek})...");
         
-        // Marca que as cartas foram distribuídas ANTES do draw (idempotência)
-        _runData.HasDrawnDailyHand = true;
-        
         _handSystem.ProcessDailyDraw(_runData);
 
         // Tempo para animação "Fan Out" (0.8s = 800ms)
