@@ -17,20 +17,18 @@ MonoBehaviour:
   RotationSpeed: 10
   IdleZ: 0
   HoverZ: -1.5
-  SelectedZ: -3
   DragZ: -5
   IdleFloatSpeed: 1.1
   IdleFloatAmount: 0.1
   IdleRotationAmount: 0.7
   PeekScale: 1
   PeekYOffset: 0.2
-  SelectedYOffset: 1.2
-  SelectedScale: 1.25
-  LookRotationStrength: 1
-  MagneticPullStrength: 0.1
-  MaxInteractionDistance: 0.3
-  DragTiltAmount: 18
-  DragTiltSpeed: 8
   TiltAngleMax: 20
   TiltInfluenceRadius: 1.5
   TiltRotationSpeed: 20
+  DragTiltAmount: 18
+  ClickSquashAmount: 0.2
+  ClickRecoverySpeed: 15
+  HandElevationOffset: 2.3
+  HandElevationSpeed: 3.3
+  HandElevationSequenceDelay: 0.03

@@ -152,7 +152,6 @@ MonoBehaviour:
   _uiY: 100
   _uiWidth: 280
   _uiHeight: 600
-  _defaultMoneyAmount: 100
   _quickSpawnCardIDs:
   - card_corn
   - card_carrot

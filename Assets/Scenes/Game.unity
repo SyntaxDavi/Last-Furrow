@@ -4846,6 +4846,8 @@ GameObject:
   - component: {fileID: 1345890250}
   - component: {fileID: 1345890251}
   - component: {fileID: 1345890252}
+  - component: {fileID: 1345890253}
+  - component: {fileID: 1345890254}
   m_Layer: 0
   m_Name: HandSystem
   m_TagString: Untagged
@@ -4886,6 +4888,7 @@ MonoBehaviour:
   _cardPrefab: {fileID: 6941554981388740021, guid: 47e21a452166bc344bf0e6af08ad0e32, type: 3}
   _handCenter: {fileID: 2128607302}
   _handOrganizer: {fileID: 1345890252}
+  _hoverController: {fileID: 1345890253}
 --- !u!114 &1345890252
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4899,6 +4902,67 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _layoutConfig: {fileID: 11400000, guid: 8a3da3928d50c514dbc63bea31cd3b17, type: 2}
+--- !u!114 &1345890253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1345890249}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f69b39cc8e932e4591cf6bad69ee32a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HandHoverController
+  _visualConfig: {fileID: 11400000, guid: e3cf8478dfad57044b0a6fdd75881fe4, type: 2}
+  _handAreaCollider: {fileID: 0}
+  _showDebugGizmos: 1
+--- !u!61 &1345890254
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1345890249}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0.66699624, y: -4.109476}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 7.9162364, y: 1.7602158}
+  m_EdgeRadius: 0
 --- !u!1 &1362975647
 GameObject:
   m_ObjectHideFlags: 0
@@ -7445,7 +7509,7 @@ Transform:
   m_GameObject: {fileID: 2128607301}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -3.1999998, z: 0}
+  m_LocalPosition: {x: 0, y: -4.0600004, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -7464,7 +7528,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AnchorX: 0.5
-  AnchorY: 0.18
+  AnchorY: 0.094
   Offset: {x: 0, y: 0}
 --- !u!1 &2132860106
 GameObject:
