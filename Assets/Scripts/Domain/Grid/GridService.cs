@@ -5,7 +5,7 @@ public class GridService : IGridService
 {
     private readonly RunData _runData;
     private readonly IGameLibrary _library;
-    private readonly GameStateManager _gameStateManager;
+    private readonly IGameStateProvider _gameStateManager;
     private readonly GridConfiguration _config;
     private readonly PatternWeightConfig _patternConfig;
 
@@ -22,7 +22,7 @@ public class GridService : IGridService
     public GridService(
         RunData runData, 
         IGameLibrary library, 
-        GameStateManager gameStateManager, 
+        IGameStateProvider gameStateManager, 
         GridConfiguration config,
         PatternWeightConfig patternConfig = null)
     {

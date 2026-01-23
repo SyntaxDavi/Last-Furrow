@@ -52,13 +52,12 @@ public class DomainModule : BaseModule
         );
 
         // 2. Cria Serviços Puros
-        // EconomyService espera SaveManager (concreto) no construtor
-        var economy = new EconomyService(App.RunManager, App.SaveManager);
-        var dailyHand = new DailyHandSystem(App.GameLibrary, economy, new SeasonalCardStrategy(), Registry.Events.Player);
-        var weeklyGoal = new WeeklyGoalSystem(App.GameLibrary, Registry.Events.Progression, _progressionSettings);
+        var economy = new EconomyService(Registry.Run, Registry.Save);
+        var dailyHand = new DailyHandSystem(Registry.GameLibrary, economy, new SeasonalCardStrategy(), Registry.Events.Player);
+        var weeklyGoal = new WeeklyGoalSystem(Registry.GameLibrary, Registry.Events.Progression, _progressionSettings);
 
         // 3. Registra no Registry
-        Registry.RegisterDomain(App.RunManager, economy, dailyHand, weeklyGoal);
+        Registry.RegisterDomain(Registry.Run, economy, dailyHand, weeklyGoal);
 
         Debug.Log("[DomainModule] ✓ Inicializado com sucesso.");
     }
@@ -84,8 +83,8 @@ public class PatternModule : BaseModule
         // 1. Cria Factory e Serviços
         var factory = new PatternFactory();
         var detector = new PatternDetector(_patternLibrary, factory);
-        var calculator = new PatternScoreCalculator(App.GameLibrary);
-        var shop = new ShopService(Registry.Economy, App.SaveManager, App.GameLibrary, Registry.Events);
+        var calculator = new PatternScoreCalculator(Registry.GameLibrary);
+        var shop = new ShopService(Registry.Economy, Registry.Save, Registry.GameLibrary, Registry.Events);
 
         // 2. Registra no Registry
         Registry.RegisterGameplay(shop, detector, calculator);

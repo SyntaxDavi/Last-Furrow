@@ -2,12 +2,12 @@ using UnityEngine;
 
 public class EconomyService : IEconomyService
 {
-    private readonly RunManager _runManager;
-    private readonly SaveManager _saveManager;
+    private readonly IRunManager _runManager;
+    private readonly ISaveManager _saveManager;
 
     public event System.Action<int, int, TransactionType> OnBalanceChanged;
 
-    public EconomyService(RunManager runManager, SaveManager saveManager)
+    public EconomyService(IRunManager runManager, ISaveManager saveManager)
     {
         _runManager = runManager;
         _saveManager = saveManager;

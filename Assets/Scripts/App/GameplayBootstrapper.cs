@@ -37,7 +37,7 @@ public class GameplayBootstrapper : MonoBehaviour
         _gridService = new GridService(
            runData,
            library,
-           AppCore.Instance.GameStateManager,
+           AppCore.Instance.GameStateManager, // Este tipo concreto implementa IGameStateProvider
            AppCore.Instance.GridConfiguration,
            AppCore.Instance.PatternWeightConfig
        );
