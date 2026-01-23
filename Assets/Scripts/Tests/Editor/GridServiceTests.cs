@@ -40,7 +40,7 @@ public class GridServiceTests
     {
         // Setup: Estado do jogo é Shopping, não Playing
         _mockState.CurrentState = GameState.Shopping;
-        _mockState.PreviousState = GameState.None;
+        _mockState.PreviousState = GameState.Initialization;
         var card = new CardData(); // Dummy card
 
         // Act
@@ -71,7 +71,7 @@ public class GridServiceTests
     private class MockGameStateProvider : IGameStateProvider
     {
         public GameState CurrentState { get; set; } = GameState.Playing;
-        public GameState PreviousState { get; set; } = GameState.None;
+        public GameState PreviousState { get; set; } = GameState.Initialization;
 
         public bool IsGameplayActive() => CurrentState == GameState.Playing;
 

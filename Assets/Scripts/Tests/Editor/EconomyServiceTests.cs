@@ -39,7 +39,7 @@ public class EconomyServiceTests
     public void Earn_IncreasesMoneyAndSaves()
     {
         // Act
-        _economyService.Earn(50, TransactionType.SeedSale);
+        _economyService.Earn(50, TransactionType.Harvest);
 
         // Assert
         Assert.AreEqual(150, _economyService.CurrentMoney);
@@ -77,7 +77,7 @@ public class EconomyServiceTests
         // Setup
         int eventNewBalance = 0;
         int eventDelta = 0;
-        TransactionType eventType = TransactionType.None;
+        TransactionType eventType = TransactionType.Debug;
         
         _economyService.OnBalanceChanged += (balance, delta, type) => {
             eventNewBalance = balance;
@@ -86,12 +86,12 @@ public class EconomyServiceTests
         };
 
         // Act
-        _economyService.Earn(25, TransactionType.SeedSale);
+        _economyService.Earn(25, TransactionType.Harvest);
 
         // Assert
         Assert.AreEqual(125, eventNewBalance);
         Assert.AreEqual(25, eventDelta);
-        Assert.AreEqual(TransactionType.SeedSale, eventType);
+        Assert.AreEqual(TransactionType.Harvest, eventType);
     }
 
     // --- MOCKS AUXILIARES ---
