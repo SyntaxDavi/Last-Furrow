@@ -43,7 +43,11 @@ public class DailyResolutionBootstrapper : MonoBehaviour
         if (_resolutionSystem != null)
         {
             _resolutionSystem.Construct(logicContext, visualContext, pipelineBuilder);
-            Debug.Log("[DailyResolutionBootstrapper] ✓ Sistema inicializado com sucesso via Bootstrapper.");
+            
+            // 6. Registra no AppCore para acesso global (ex: RunManager terminar o dia)
+            AppCore.Instance.RegisterDailyResolutionSystem(_resolutionSystem);
+            
+            Debug.Log("[DailyResolutionBootstrapper] ✓ Sistema inicializado e registrado com sucesso.");
         }
         else
         {

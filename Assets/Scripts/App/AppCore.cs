@@ -208,6 +208,10 @@ public class AppCore : MonoBehaviour
         if (scene.name == "Boot") return;
         Camera activeCamera = Camera.main;
         if (activeCamera != null) InputManager.SetCamera(activeCamera);
+
+        // Limpa referências de cena ao trocar
+        UnregisterGridService();
+        UnregisterDailyResolutionSystem();
     }
     // --- REGISTRO DE SERVIÇOS DE CENA ---
 
@@ -243,6 +247,19 @@ public class AppCore : MonoBehaviour
     public void UnregisterGridService()
     {
         _gridService = null;
+    }
+
+    // --- REGISTRO DE RESOLUÇÃO ---
+
+    public void RegisterDailyResolutionSystem(DailyResolutionSystem system)
+    {
+        DailyResolutionSystem = system;
+        Debug.Log("[AppCore] ✓ DailyResolutionSystem registrado da cena.");
+    }
+
+    public void UnregisterDailyResolutionSystem()
+    {
+        DailyResolutionSystem = null;
     }
     
     // ===== ONDA 4: Pattern Tracking =====
