@@ -12,6 +12,7 @@ public class ServiceRegistry
     public ISaveManager Save { get; private set; }
     public GridConfiguration GridConfig { get; private set; }
     public GameEvents Events { get; private set; }
+    public IGameLibrary GameLibrary { get; private set; }
     
     // Módulo: Domínio (Lógica de Jogo)
     public IRunManager Run { get; private set; }
@@ -38,11 +39,12 @@ public class ServiceRegistry
         _app = app;
     }
 
-    public void RegisterCore(ISaveManager save, GridConfiguration gridConfig, GameEvents events)
+    public void RegisterCore(ISaveManager save, GridConfiguration gridConfig, GameEvents events, IGameLibrary library)
     {
         Save = save;
         GridConfig = gridConfig;
         Events = events;
+        GameLibrary = library;
     }
 
     public void RegisterDomain(IRunManager run, IEconomyService economy, DailyHandSystem dailyHand, WeeklyGoalSystem weeklyGoal)

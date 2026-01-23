@@ -18,7 +18,7 @@ public class CoreModule : BaseModule
         App.AudioManager.Initialize();
 
         // 2. Registra no Registry
-        Registry.RegisterCore(saveManager, gridConfig, events);
+        Registry.RegisterCore(saveManager, gridConfig, events, App.GameLibrary);
         Registry.RegisterSystems(App.GameStateManager, App.TimeManager, App.InputManager);
 
         // 3. Inicializa SaveManager
@@ -52,7 +52,8 @@ public class DomainModule : BaseModule
         );
 
         // 2. Cria Serviços Puros
-        var economy = new EconomyService(App.RunManager, Registry.Save);
+        // EconomyService espera SaveManager (concreto) no construtor
+        var economy = new EconomyService(App.RunManager, App.SaveManager);
         var dailyHand = new DailyHandSystem(App.GameLibrary, economy, new SeasonalCardStrategy(), Registry.Events.Player);
         var weeklyGoal = new WeeklyGoalSystem(App.GameLibrary, Registry.Events.Progression, _progressionSettings);
 
