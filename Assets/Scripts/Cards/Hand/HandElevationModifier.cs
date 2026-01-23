@@ -11,6 +11,9 @@ public class HandElevationModifier : ICardVisualModifier
     private float _currentOffset;
     private float _targetOffset;
     
+    // Pequeno threshold para snap (evita cálculo eterno de Lerp)
+    private const float SNAP_THRESHOLD = 0.001f;
+
     /// <summary>
     /// Define se a carta deve estar elevada ou não.
     /// A transição é suave, controlada pelo Apply().
@@ -19,12 +22,12 @@ public class HandElevationModifier : ICardVisualModifier
     {
         _isRaised = raised;
     }
-    
+
     /// <summary>
     /// Retorna o estado atual de elevação.
     /// </summary>
     public bool IsRaised => _isRaised;
-    
+
     /// <summary>
     /// Aplica o offset de elevação ao target visual.
     /// Chamado automaticamente pelo pipeline de CardView.
@@ -33,18 +36,30 @@ public class HandElevationModifier : ICardVisualModifier
     {
         // Calcula o offset alvo baseado no estado
         _targetOffset = _isRaised ? config.HandElevationOffset : 0f;
-        
-        // Interpola suavemente para o valor alvo
-        _currentOffset = Mathf.Lerp(
-            _currentOffset, 
-            _targetOffset, 
-            Time.deltaTime * config.HandElevationSpeed
-        );
-        
+
+        // Otimização: Se já estivermos no alvo (ou muito perto), snapa e retorna
+        if (Mathf.Abs(_currentOffset - _targetOffset) < SNAP_THRESHOLD)
+        {
+            _currentOffset = _targetOffset;
+        }
+        else
+        {
+            // Interpola suavemente para o valor alvo
+            // Nota: Usamos deltaTime pois é uma transição de estado, não uma função de tempo (como senoide)
+            _currentOffset = Mathf.Lerp(
+                _currentOffset,
+                _targetOffset,
+                Time.deltaTime * config.HandElevationSpeed
+            );
+        }
+
         // Aplica o offset ao target
-        target.Position.y += _currentOffset;
+        if (_currentOffset > 0)
+        {
+            target.Position.y += _currentOffset;
+        }
     }
-    
+
     /// <summary>
     /// Força a elevação instantânea (útil para reset ou inicialização).
     /// </summary>

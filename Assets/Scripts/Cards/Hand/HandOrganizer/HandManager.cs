@@ -258,6 +258,11 @@ public class HandManager : MonoBehaviour
     // ==========================================================================
 
     /// <summary>
+    /// Verifica se alguma carta está sendo arrastada no momento.
+    /// </summary>
+    public bool IsDraggingAnyCard => _activeCards.Any(c => c.CurrentState == CardVisualState.Dragging);
+    
+    /// <summary>
     /// Retorna uma copia da lista de cartas ativas (para modificacao segura)
     /// </summary>
     public List<CardView> GetActiveCards()

@@ -12,45 +12,54 @@ public class HandHoverController : MonoBehaviour
     [Header("Configuração")]
     [SerializeField] private CardVisualConfig _visualConfig;
     
-    [Header("Detecção de Área")]
-    [Tooltip("Collider que define a área da mão. Se null, usa detecção precisa por carta.")]
-    [SerializeField] private Collider2D _handAreaCollider;
-    
+    [Header("Detecção")]
+    [Tooltip("Intervalo entre checagens de hover (segundos) para otimização.")]
+    [SerializeField] private float _hoverCheckInterval = 0.05f;
+
     [Tooltip("Tamanho da área de detecção ao redor de cada carta (Largura, Altura).")]
-    [SerializeField] private Vector2 _cardDetectionSize = new Vector2(3.0f, 4.0f); // Aumentado para cobrir PPU 24 (~72x96px)
+    [SerializeField] private Vector2 _cardDetectionSize = new Vector2(3.0f, 4.0f);
     
     [Tooltip("Deslocamento do centro da área de detecção em relação ao pivô da carta.")]
-    [SerializeField] private Vector2 _detectionCenterOffset = new Vector2(0f, 0.5f); // Levemente para cima para cobrir elevação
+    [SerializeField] private Vector2 _detectionCenterOffset = new Vector2(0f, 0.5f);
     
     [Header("Debug")]
     [SerializeField] private bool _showDebugGizmos = false;
     
     // Referências
     private HandManager _handManager;
-    private IReadOnlyList<CardView> _cachedCards;
+    private Camera _mainCamera;
     
     // Estado
     private bool _isHandHovered = false;
-    private bool _isSequenceRunning = false;
     private Coroutine _currentSequence;
+    private float _lastHoverCheckTime;
     
     // ==================================================================================
     // INICIALIZAÇÃO
     // ==================================================================================
     
-    /// <summary>
-    /// Inicializa o controller com referência ao HandManager.
-    /// Deve ser chamado pelo HandManager no Awake/Start.
-    /// </summary>
     public void Initialize(HandManager handManager)
     {
         _handManager = handManager;
+        _mainCamera = Camera.main;
+    }
+    
+    private void Start()
+    {
+        if (_mainCamera == null) _mainCamera = Camera.main;
     }
     
     private void Update()
     {
         if (_handManager == null) return;
-        CheckHoverState();
+        
+        // Polling Throttled (Industry Standard)
+        // Reduz custo de cpu e ruído de input
+        if (Time.time - _lastHoverCheckTime >= _hoverCheckInterval)
+        {
+            CheckHoverState();
+            _lastHoverCheckTime = Time.time;
+        }
     }
     
     // ==================================================================================
@@ -59,6 +68,17 @@ public class HandHoverController : MonoBehaviour
     
     private void CheckHoverState()
     {
+        // 0. Validações Globais (Fail Fast)
+        if (!CanInteract())
+        {
+            if (_isHandHovered)
+            {
+                _isHandHovered = false;
+                OnHandHoverChanged(false);
+            }
+            return;
+        }
+
         bool isCurrentlyHovered = IsMouseOverHandArea();
         
         // Mudou de estado?
@@ -69,24 +89,38 @@ public class HandHoverController : MonoBehaviour
         }
     }
     
+    private bool CanInteract()
+    {
+        // Bloqueia se estiver arrastando alguma carta (evita comportamento estranho)
+        if (_handManager.IsDraggingAnyCard) return false;
+
+        // Bloqueia se AppCore não estiver pronto ou Estado de jogo não for interativo
+        if (AppCore.Instance == null || AppCore.Instance.GameStateManager == null) return true; // Default to true if decoupled
+        
+        var currentState = AppCore.Instance.GameStateManager.CurrentState;
+        return currentState == GameState.Playing || currentState == GameState.Shopping;
+    }
+    
     private bool IsMouseOverHandArea()
     {
+        if (_mainCamera == null) return false;
+
+        Vector2 mousePosScreen = Input.mousePosition;
+        Vector3 mouseWorldPos = _mainCamera.ScreenToWorldPoint(mousePosScreen);
+        
         // 1. Se temos collider definido manualmente, usa ele
         if (_handAreaCollider != null)
         {
-            Vector2 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            return _handAreaCollider.OverlapPoint(mouseWorld);
+            return _handAreaCollider.OverlapPoint(mouseWorldPos);
         }
         
         // 2. Fallback Preciso: União dos Retângulos das Cartas
-        // Verifica se o mouse está próximo da posição BASE de qualquer carta.
-        // Usamos a posição BASE (LayoutTarget) e não a visual para evitar flickering quando a carta sobe.
-        
         var cards = _handManager?.GetActiveCardsReadOnly();
         if (cards == null || cards.Count == 0) return false;
         
-        Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mousePos.z = 0; // Ignora profundidade para o check 2D
+        // Otimização: não criar vector3 z=0 toda vez, usar float compare direto
+        float mX = mouseWorldPos.x;
+        float mY = mouseWorldPos.y;
         
         float halfWidth = _cardDetectionSize.x * 0.5f;
         float halfHeight = _cardDetectionSize.y * 0.5f;
@@ -94,13 +128,11 @@ public class HandHoverController : MonoBehaviour
         foreach (var card in cards)
         {
             // Pega a posição alvo do layout e aplica o offset configurado
-            Vector3 centerPos = card.BaseLayoutTarget.Position + (Vector3)_detectionCenterOffset;
+            Vector2 centerPos = (Vector2)card.BaseLayoutTarget.Position + _detectionCenterOffset;
             
-            // Check AABB simples ao redor da carta
-            bool insideX = mousePos.x >= centerPos.x - halfWidth && mousePos.x <= centerPos.x + halfWidth;
-            bool insideY = mousePos.y >= centerPos.y - halfHeight && mousePos.y <= centerPos.y + halfHeight;
-            
-            if (insideX && insideY)
+            // Check AABB 2D inlined
+            if (mX >= centerPos.x - halfWidth && mX <= centerPos.x + halfWidth &&
+                mY >= centerPos.y - halfHeight && mY <= centerPos.y + halfHeight)
             {
                 return true;
             }
@@ -115,38 +147,26 @@ public class HandHoverController : MonoBehaviour
     
     private void OnHandHoverChanged(bool isHovered)
     {
-        // Cancela sequência anterior se existir
         if (_currentSequence != null)
         {
             StopCoroutine(_currentSequence);
             _currentSequence = null;
         }
         
-        // Inicia nova sequência
         _currentSequence = StartCoroutine(RunElevationSequence(isHovered));
     }
     
-    /// <summary>
-    /// Executa a sequência de elevação/descida carta por carta.
-    /// Se isRaising=true: começa da esquerda para direita.
-    /// Se isRaising=false: começa da direita para esquerda (efeito cascata).
-    /// </summary>
     private IEnumerator RunElevationSequence(bool isRaising)
     {
-        _isSequenceRunning = true;
+        // _isSequenceRunning removido (código morto)
         
         var cards = _handManager?.GetActiveCardsReadOnly();
-        if (cards == null || cards.Count == 0)
-        {
-            _isSequenceRunning = false;
-            yield break;
-        }
+        if (cards == null || cards.Count == 0) yield break;
         
         float delay = _visualConfig != null 
             ? _visualConfig.HandElevationSequenceDelay 
             : 0.05f;
         
-        // Ordem da sequência: normal para levantar, reversa para abaixar
         int startIndex = isRaising ? 0 : cards.Count - 1;
         int endIndex = isRaising ? cards.Count : -1;
         int step = isRaising ? 1 : -1;
@@ -164,7 +184,6 @@ public class HandHoverController : MonoBehaviour
             }
         }
         
-        _isSequenceRunning = false;
         _currentSequence = null;
     }
     
