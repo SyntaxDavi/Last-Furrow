@@ -4915,7 +4915,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HandHoverController
   _visualConfig: {fileID: 11400000, guid: e3cf8478dfad57044b0a6fdd75881fe4, type: 2}
-  _handAreaCollider: {fileID: 0}
+  _handAreaCollider: {fileID: 1345890254}
+  _hoverCheckInterval: 0.05
+  _cardDetectionSize: {x: 3, y: 4}
+  _detectionCenterOffset: {x: 0, y: 0.5}
   _showDebugGizmos: 1
 --- !u!61 &1345890254
 BoxCollider2D:

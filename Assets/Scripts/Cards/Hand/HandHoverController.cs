@@ -11,7 +11,8 @@ public class HandHoverController : MonoBehaviour
 {
     [Header("Configuração")]
     [SerializeField] private CardVisualConfig _visualConfig;
-    
+    [SerializeField] private Collider2D _handAreaCollider;
+
     [Header("Detecção")]
     [Tooltip("Intervalo entre checagens de hover (segundos) para otimização.")]
     [SerializeField] private float _hoverCheckInterval = 0.05f;
