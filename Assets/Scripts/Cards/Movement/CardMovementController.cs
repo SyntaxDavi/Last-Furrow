@@ -7,16 +7,16 @@ public class CardMovementController : MonoBehaviour
     [Header("Components")]
     [SerializeField] private SortingGroup _sortingGroup;
 
-    // Estado Interno de Física
+    // Estado Interno de Fï¿½sica
     private Vector3 _currentVelocityPos;
-    private Vector3 _currentVelocityScale; // Agora é Vector3 para suportar deformação
-    private float _currentVelocityRot;     // Agora é float (velocidade angular Z)
+    private Vector3 _currentVelocityScale; // Agora ï¿½ Vector3 para suportar deformaï¿½ï¿½o
+    private float _currentVelocityRot;     // Agora ï¿½ float (velocidade angular Z)
 
-    // --- API PÚBLICA ---
+    // --- API Pï¿½BLICA ---
 
     public void SnapTo(CardVisualTarget target)
     {
-        // Proteção contra escala zero
+        // Proteï¿½ï¿½o contra escala zero
         if (target.Scale.x == 0) target.Scale = Vector3.one * 0.01f;
 
         transform.position = target.Position;
@@ -26,12 +26,12 @@ public class CardMovementController : MonoBehaviour
         ResetPhysicsState();
     }
 
-    // Agora aceita deltaTime explicitamente para física determinística
+    // Agora aceita deltaTime explicitamente para fï¿½sica determinï¿½stica
     public void MoveTo(CardVisualTarget target, CardMovementProfile profile, float deltaTime)
     {
         if (deltaTime <= 0.0001f) return;
 
-        // 1. Posição (SmoothDamp)
+        // 1. Posiï¿½ï¿½o (SmoothDamp)
         transform.position = Vector3.SmoothDamp(
             transform.position,
             target.Position,
@@ -41,8 +41,8 @@ public class CardMovementController : MonoBehaviour
             deltaTime
         );
 
-        // 2. Rotação (SmoothDampAngle)
-        // Substitui o Slerp antigo por algo que tem inércia real
+        // 2. Rotaï¿½ï¿½o (SmoothDampAngle)
+        // Substitui o Slerp antigo por algo que tem inï¿½rcia real
         float currentZ = transform.eulerAngles.z;
         float targetZ = target.Rotation.eulerAngles.z;
 
@@ -64,10 +64,10 @@ public class CardMovementController : MonoBehaviour
         if (profile.MovementStretchAmount > 0)
         {
             float speed = _currentVelocityPos.magnitude;
-            // Estica levemente (Clamp para não exagerar)
+            // Estica levemente (Clamp para nï¿½o exagerar)
             float stretchFactor = Mathf.Clamp(speed * profile.MovementStretchAmount, 0f, 0.2f);
 
-            // Soma à escala original (Efeito Gelatina)
+            // Soma ï¿½ escala original (Efeito Gelatina)
             finalTargetScale += Vector3.one * stretchFactor;
         }
 
@@ -97,7 +97,7 @@ public class CardMovementController : MonoBehaviour
         _currentVelocityRot = 0f;
     }
 
-    // Segurança contra NaN (Erros de matemática que fazem o objeto sumir)
+    // Seguranï¿½a contra NaN (Erros de matemï¿½tica que fazem o objeto sumir)
     private void ValidateTransform()
     {
         if (float.IsNaN(transform.position.x)) transform.position = Vector3.zero;
