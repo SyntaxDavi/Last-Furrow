@@ -1,17 +1,17 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 
 /// <summary>
 /// AppCore Modularizado - Ponto de entrada global do jogo.
 /// SOLID: Atua agora como o Orquestrador/Bootstrapper Global, delegando 
-/// a gestão de instâncias para o ServiceRegistry e a inicialização para Módulos.
+/// a gestÃ£o de instÃ¢ncias para o ServiceRegistry e a inicializaÃ§Ã£o para MÃ³dulos.
 /// </summary>
 public class AppCore : MonoBehaviour
 {
     public static AppCore Instance { get; private set; }
 
-    // Registro Central de Serviços
+    // Registro Central de ServiÃ§os
     public ServiceRegistry Services { get; private set; }
 
     [Header("Data & Configuration")]
@@ -73,9 +73,9 @@ public class AppCore : MonoBehaviour
 
     private void InitializeModularArchitecture()
     {
-        Debug.Log("[AppCore] 🏗️ Iniciando Arquitetura Modular...");
+        Debug.Log("[AppCore] ðŸ—ï¸ Iniciando Arquitetura Modular...");
 
-        // 0. Inicializa dependências infra que não são MonoBehaviours
+        // 0. Inicializa dependÃªncias infra que nÃ£o sÃ£o MonoBehaviours
         if (_gameDatabase != null)
         {
             GameLibrary = new GameLibraryService(_gameDatabase);
@@ -85,31 +85,41 @@ public class AppCore : MonoBehaviour
         Services = new ServiceRegistry();
         var events = new GameEvents(); 
 
-        // 2. Módulo Core (Sistemas Base e Infra)
+        // 2. MÃ³dulo Core (Sistemas Base e Infra)
         // Passamos os eventos explicitamente para garantir que o registro ocorra antes de qualquer Initialize()
         var coreModule = new CoreModule(Services, this);
         
-        // REGISTRO PRECOCE para evitar NullRef nos módulos
+        // REGISTRO PRECOCE para evitar NullRef nos mÃ³dulos
         Services.RegisterCore(SaveManager, _gridConfiguration, events, GameLibrary);
         
         coreModule.Initialize();
 
-        // 3. Módulo Domínio (Regras de Negócio e Serviços Puros)
+        // 3. MÃ³dulo DomÃ­nio (Regras de NegÃ³cio e ServiÃ§os Puros)
         var domainModule = new DomainModule(Services, this, _progressionSettings);
         domainModule.Initialize();
 
-        // 4. Módulo Gameplay (Sistemas Específicos)
+        // 4. MÃ³dulo Gameplay (Sistemas EspecÃ­ficos)
         var patternModule = new PatternModule(Services, this, _patternLibrary);
         patternModule.Initialize();
 
-        // 5. Injeções de Dependência Complexas (Cross-Module)
+        // 5. InjeÃ§Ãµes de DependÃªncia Complexas (Cross-Module)
         InitializeLegacyCrossInjections();
 
-        // 6. Finalização
+        // 6. FinalizaÃ§Ã£o
         InputManager.OnAnyInputDetected += HandleAnyInput;
         SceneManager.sceneLoaded += OnSceneLoaded;
         
-        Debug.Log("[AppCore] ✅ Arquitetura Modular pronta. Carregando cena inicial...");
+        Debug.Log("[AppCore] âœ… Arquitetura Modular pronta. Carregando cena inicial...");
+
+        // === EVENT INSPECTOR INTEGRATION ===
+        var eventAdapter = FindObjectOfType<LastFurrow.EventInspector.GameEventAdapter>();
+        var eventLogger = FindObjectOfType<LastFurrow.EventInspector.EventLogger>();
+        Debug.Log("[AppCore] EventLogger found: " + (eventLogger != null) + ", GameEventAdapter found: " + (eventAdapter != null));
+        if (eventAdapter != null)
+        {
+            eventAdapter.Initialize(events);
+            Debug.Log("[AppCore] EventInspector initialized. JSON will be saved to: " + @"C:\Users\davi_\OneDrive\Área de Trabalho\json\");
+        }
         SceneManager.LoadScene(_firstSceneName);
     }
 
@@ -159,7 +169,7 @@ public class AppCore : MonoBehaviour
         }
     }
 
-    // --- REGISTRO DE SERVIÇOS DE CENA ---
+    // --- REGISTRO DE SERVIÃ‡OS DE CENA ---
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
@@ -179,7 +189,7 @@ public class AppCore : MonoBehaviour
 
     public void UnregisterGridService() => _gridService = null;
 
-    // MÉTODO RESTAURADO PARA COMPATIBILIDADE (CheatManager)
+    // MÃ‰TODO RESTAURADO PARA COMPATIBILIDADE (CheatManager)
     public IGridService GetGridLogic() => _gridService;
 
     public void RegisterDailyResolutionSystem(DailyResolutionSystem system)
@@ -203,3 +213,5 @@ public class AppCore : MonoBehaviour
         SceneManager.LoadScene("MainMenu");
     }
 }
+
+

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using LastFurrow.EventInspector;
 
 /// <summary>
 /// Cheat Manager refatorado para desenvolvimento.
@@ -92,6 +93,8 @@ public class CheatManager : MonoBehaviour
         DrawCardsSection(run);
         GUILayout.Space(10);
         DrawPatternSection(run);  // ONDA 4: Pattern Debug
+        GUILayout.Space(10);
+        DrawEventInspectorSection();
         GUILayout.Space(10);
         DrawSaveSection();
 
@@ -374,6 +377,82 @@ public class CheatManager : MonoBehaviour
         
         _resolutionSystem.StartEndDaySequence();
         Debug.Log("[Cheat] Fim de dia iniciado");
+    }
+    
+    // ===== EVENT INSPECTOR SECTION =====
+    
+    private void DrawEventInspectorSection()
+    {
+        GUILayout.Label("📊 EVENT INSPECTOR");
+        
+        var logger = EventLogger.Instance;
+        if (logger == null)
+        {
+            GUILayout.Label("❌ EventLogger não disponível");
+            return;
+        }
+        
+        // Status
+        GUILayout.Label($"Eventos capturados: {logger.EventCount}");
+        GUILayout.Label($"Logger ativo: {(logger.IsEnabled ? "✓ Sim" : "✗ Não")}");
+        GUILayout.Label($"Export on quit: {(logger.ExportOnQuit ? "✓ Sim" : "✗ Não")}");
+        
+        GUILayout.Space(5);
+        
+        // Toggle Logger
+        if (GUILayout.Button(logger.IsEnabled ? "🔴 Desativar Logger" : "🟢 Ativar Logger"))
+        {
+            logger.IsEnabled = !logger.IsEnabled;
+            Debug.Log($"[Cheat] EventLogger {(logger.IsEnabled ? "ATIVADO" : "DESATIVADO")}");
+        }
+        
+        // Export Button
+        GUI.color = Color.green;
+        if (GUILayout.Button("📤 EXPORTAR JSON AGORA"))
+        {
+            CheatExportEvents();
+        }
+        GUI.color = Color.white;
+        
+        // Clear Events
+        GUI.color = Color.yellow;
+        if (GUILayout.Button("🗑️ Limpar Eventos"))
+        {
+            logger.Clear();
+            Debug.Log("[Cheat] Eventos limpos");
+        }
+        GUI.color = Color.white;
+        
+        // Show export path
+        GUILayout.Label($"Pasta: {logger.ExportDirectory}");
+    }
+    
+    private void CheatExportEvents()
+    {
+        var logger = EventLogger.Instance;
+        if (logger == null)
+        {
+            Debug.LogError("[Cheat] EventLogger não disponível!");
+            return;
+        }
+        
+        if (logger.EventCount == 0)
+        {
+            Debug.LogWarning("[Cheat] Nenhum evento para exportar!");
+            return;
+        }
+        
+        string filepath = logger.ExportToFile();
+        if (!string.IsNullOrEmpty(filepath))
+        {
+            Debug.Log($"[Cheat] ✅ JSON exportado com sucesso!");
+            Debug.Log($"[Cheat] 📁 Arquivo: {filepath}");
+            Debug.Log($"[Cheat] 📊 Total de eventos: {logger.EventCount}");
+        }
+        else
+        {
+            Debug.LogError("[Cheat] ❌ Falha ao exportar eventos!");
+        }
     }
 
     private void CheatUnlockAllSlots()
