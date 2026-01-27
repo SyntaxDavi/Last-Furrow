@@ -48,14 +48,24 @@ public class HandHoverController : MonoBehaviour
     private bool _isBoundsDirty = true;
     private readonly List<int> _sequenceIndexBuffer = new List<int>(15);
     
-    // Pequeno threshold para evitar setter spam no fade
-    private const float FADE_CHANGE_THRESHOLD = 0.005f;    
+    // Constantes
+    private const float HOVER_ENTER_THRESHOLD = 0.01f;
+    private const float HOVER_EXIT_THRESHOLD = 0.99f;
+    private const float FADE_CHANGE_THRESHOLD = 0.005f;
+    private const int MAX_CARDS_SUPPORTED = 15;
+    
     // ==================================================================================
     // INICIALIZAÇÃO
     // ==================================================================================
     
     public void Initialize(HandManager handManager)
     {
+        // Limpeza de inscrição anterior (Prevenção de Memory Leak)
+        if (_handManager != null)
+        {
+            _handManager.OnHandLayoutChanged -= InvalidateBoundsCache;
+        }
+
         _handManager = handManager;
         _inputManager = AppCore.Instance?.InputManager;
         
@@ -84,7 +94,7 @@ public class HandHoverController : MonoBehaviour
     
     private void Update()
     {
-        if (_handManager == null) return;
+        if (_handManager == null || _inputManager == null) return;
         
         // Polling Throttled (Industry Standard)
         // Reduz custo de cpu e ruído de input
@@ -112,8 +122,19 @@ public class HandHoverController : MonoBehaviour
         }
 
         float elevationFactor = CalculateElevationFactor();
-        bool isCurrentlyHovered = elevationFactor > 0.01f;
+        bool isCurrentlyHovered = elevationFactor > HOVER_ENTER_THRESHOLD;
         
+        // CORREÇÃO CRÍTICA: Se o mouse está na zona de fade, interrompe a sequência
+        // para dar controle analógico imediato ao jogador.
+        if (elevationFactor > HOVER_ENTER_THRESHOLD && elevationFactor < HOVER_EXIT_THRESHOLD)
+        {
+            if (_currentSequence != null)
+            {
+                StopCoroutine(_currentSequence);
+                _currentSequence = null;
+            }
+        }
+
         // Se mudou radicalmente de estado (entrou ou saiu completamente do box)
         if (isCurrentlyHovered != _isHandHovered)
         {
@@ -321,9 +342,11 @@ public class HandHoverController : MonoBehaviour
         {
             if (index >= 0 && index < cards.Count)
             {
-                // Unificado: usar SetElevationFactor em vez de SetHandElevation
-                // Isso evita conflito de estado entre sequência e fade gradual
-                cards[index].SetElevationFactor(isRaising ? 1f : 0f);
+                var card = cards[index];
+                if (card != null)
+                {
+                    card.SetElevationFactor(isRaising ? 1f : 0f);
+                }
             }
             
             if (delay > 0)
@@ -385,7 +408,7 @@ public class HandHoverController : MonoBehaviour
                 Gizmos.color = new Color(0, 1, 1, 0.2f);
                 foreach(var card in cards)
                 {
-                    if (card == null) continue;
+                    if (card == null || card.BaseLayoutTarget == null) continue;
                     Vector3 cardPos = (Vector3)card.BaseLayoutTarget.Position + (Vector3)_detectionCenterOffset;
                     Gizmos.DrawWireCube(cardPos, (Vector3)_cardDetectionSize);
                 }
