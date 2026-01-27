@@ -294,12 +294,10 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     public HandLayoutCalculator.CardTransformTarget BaseLayoutTarget => _baseLayoutTarget;
     public void UpdateLayoutTarget(HandLayoutCalculator.CardTransformTarget target) => _baseLayoutTarget = target;
     
-    // [NEW] API para controle de elevação
-    public void SetHandElevation(bool isRaised) => _elevationModifier?.SetRaised(isRaised);
-    
+    // API para controle de elevação
     /// <summary>
-    /// Define o fator de elevação (0.0 a 1.0) para transições graduais.
-    /// Usado pelo HandHoverController para efeito de fade out conforme mouse sobe.
+    /// Define o fator de elevação (0.0 a 1.0). 
+    /// 1.0 = Totalmente levantada, 0.0 = Abaixada.
     /// </summary>
     public void SetElevationFactor(float factor) => _elevationModifier?.SetElevationFactor(factor);
 }

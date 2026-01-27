@@ -112,8 +112,8 @@ public class AppCore : MonoBehaviour
         Debug.Log("[AppCore] âœ… Arquitetura Modular pronta. Carregando cena inicial...");
 
         // === EVENT INSPECTOR INTEGRATION ===
-        var eventAdapter = FindObjectOfType<LastFurrow.EventInspector.GameEventAdapter>();
-        var eventLogger = FindObjectOfType<LastFurrow.EventInspector.EventLogger>();
+        var eventAdapter = FindFirstObjectByType<LastFurrow.EventInspector.GameEventAdapter>();
+        var eventLogger = FindFirstObjectByType<LastFurrow.EventInspector.EventLogger>();
         Debug.Log("[AppCore] EventLogger found: " + (eventLogger != null) + ", GameEventAdapter found: " + (eventAdapter != null));
         if (eventAdapter != null)
         {

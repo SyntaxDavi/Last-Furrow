@@ -7,7 +7,6 @@ using UnityEngine;
 /// </summary>
 public class HandElevationModifier : ICardVisualModifier
 {
-    private bool _isRaised;
     private float _elevationFactor = 0f; // 0.0 = abaixado, 1.0 = totalmente elevado
     private float _currentOffset;
     private float _targetOffset;
@@ -16,29 +15,17 @@ public class HandElevationModifier : ICardVisualModifier
     private const float SNAP_THRESHOLD = 0.001f;
 
     /// <summary>
-    /// Define se a carta deve estar elevada ou não (modo boolean).
-    /// A transição é suave, controlada pelo Apply().
-    /// </summary>
-    public void SetRaised(bool raised)
-    {
-        _isRaised = raised;
-        _elevationFactor = raised ? 1f : 0f;
-    }
-    
-    /// <summary>
-    /// Define o fator de elevação (0.0 a 1.0) para transições graduais.
-    /// Usado para efeito de fade out conforme mouse sai da área.
+    /// Define o fator de elevação (0.0 a 1.0) para transições graduais ou sequenciais.
     /// </summary>
     public void SetElevationFactor(float factor)
     {
         _elevationFactor = Mathf.Clamp01(factor);
-        _isRaised = _elevationFactor > 0.01f;
     }
 
     /// <summary>
-    /// Retorna o estado atual de elevação.
+    /// Retorna se a carta está atualmente com algum nível de elevação.
     /// </summary>
-    public bool IsRaised => _isRaised;
+    public bool IsRaised => _elevationFactor > 0.01f;
 
     /// <summary>
     /// Aplica o offset de elevação ao target visual.
@@ -76,8 +63,8 @@ public class HandElevationModifier : ICardVisualModifier
     /// </summary>
     public void ForceImmediate(bool raised, float offset)
     {
-        _isRaised = raised;
-        _currentOffset = raised ? offset : 0f;
-        _targetOffset = _currentOffset;
+        _elevationFactor = raised ? 1f : 0f;
+        _currentOffset = offset;
+        _targetOffset = offset;
     }
 }

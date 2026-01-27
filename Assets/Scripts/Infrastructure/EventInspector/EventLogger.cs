@@ -44,7 +44,7 @@ namespace LastFurrow.EventInspector
             {
                 if (_instance == null)
                 {
-                    _instance = FindObjectOfType<EventLogger>();
+                    _instance = FindFirstObjectByType<EventLogger>();
                     if (_instance == null)
                     {
                         var go = new GameObject("EventLogger");

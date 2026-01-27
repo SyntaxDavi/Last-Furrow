@@ -1,13 +1,13 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
 /// Gerenciador do sistema de vidas visual V2 - ROBUSTO E DEFENSIVO.
 /// 
-/// VERSÃO 2: Null checks completos + validações + logs verbosos
+/// VERSï¿½O 2: Null checks completos + validaï¿½ï¿½es + logs verbosos
 /// 
-/// INSTALAÇÃO:
+/// INSTALAï¿½ï¿½O:
 /// 1. Delete HeartDisplayManager antigo do GameObject
 /// 2. Add Component: HeartDisplayManagerV2
 /// 3. Arraste HeartPrefab no Inspector
@@ -27,8 +27,6 @@ public class HeartDisplayManagerV2 : MonoBehaviour
     [SerializeField] private bool _simultaneousLoss = true;
     [SerializeField] private float _lossAnimationDelay = 0.1f;
 
-    [Header("Debug")]
-    [SerializeField] private bool _showDebugLogs = true;
 
     private List<HeartView> _heartPool = new List<HeartView>();
     private int _currentLives = 0;
@@ -40,20 +38,20 @@ public class HeartDisplayManagerV2 : MonoBehaviour
     {
         if (_isInitialized)
         {
-            Debug.LogWarning("[HeartDisplayManagerV2] Já foi inicializado!");
+            Debug.LogWarning("[HeartDisplayManagerV2] Jï¿½ foi inicializado!");
             return;
         }
 
-        // === VALIDAÇÕES CRÍTICAS ===
+        // === VALIDAï¿½ï¿½ES CRï¿½TICAS ===
         if (context == null)
         {
-            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: UIContext é NULL!");
+            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: UIContext ï¿½ NULL!");
             return;
         }
 
         if (_heartPrefab == null)
         {
-            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: HeartPrefab não atribuído no Inspector!");
+            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: HeartPrefab nï¿½o atribuï¿½do no Inspector!");
             return;
         }
 
@@ -64,16 +62,16 @@ public class HeartDisplayManagerV2 : MonoBehaviour
 
         _context = context;
 
-        // === VALIDAÇÕES DE DADOS ===
+        // === VALIDAï¿½ï¿½ES DE DADOS ===
         if (_context.RunData == null)
         {
-            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: context.RunData é NULL!");
+            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: context.RunData ï¿½ NULL!");
             return;
         }
 
         if (_context.ProgressionEvents == null)
         {
-            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: context.ProgressionEvents é NULL!");
+            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: context.ProgressionEvents ï¿½ NULL!");
             return;
         }
 
@@ -83,7 +81,7 @@ public class HeartDisplayManagerV2 : MonoBehaviour
         // Cria pool
         CreateHeartPool(_maxLives);
 
-        // Spawna com animação
+        // Spawna com animaï¿½ï¿½o
         StartCoroutine(SpawnInitialHearts());
 
         // Escuta eventos
@@ -103,7 +101,7 @@ public class HeartDisplayManagerV2 : MonoBehaviour
 
     private void CreateHeartPool(int count)
     {
-        Debug.Log($"[HeartDisplayManagerV2] ?? Criando pool de {count} corações...");
+        Debug.Log($"[HeartDisplayManagerV2] ?? Criando pool de {count} coraï¿½ï¿½es...");
 
         if (_heartPrefab == null)
         {
@@ -123,7 +121,7 @@ public class HeartDisplayManagerV2 : MonoBehaviour
 
             if (heartObj == null)
             {
-                Debug.LogError($"[HeartDisplayManagerV2] ? Instantiate retornou NULL no índice {i}!");
+                Debug.LogError($"[HeartDisplayManagerV2] ? Instantiate retornou NULL no ï¿½ndice {i}!");
                 continue;
             }
 
@@ -131,7 +129,7 @@ public class HeartDisplayManagerV2 : MonoBehaviour
 
             if (heartView == null)
             {
-                Debug.LogError($"[HeartDisplayManagerV2] ? HeartPrefab não tem componente HeartView!");
+                Debug.LogError($"[HeartDisplayManagerV2] ? HeartPrefab nï¿½o tem componente HeartView!");
                 Destroy(heartObj);
                 continue;
             }
@@ -153,7 +151,7 @@ public class HeartDisplayManagerV2 : MonoBehaviour
         {
             if (_heartPool[i] == null)
             {
-                Debug.LogError($"[HeartDisplayManagerV2] ? HeartPool[{i}] é NULL!");
+                Debug.LogError($"[HeartDisplayManagerV2] ? HeartPool[{i}] ï¿½ NULL!");
                 continue;
             }
 
@@ -163,12 +161,12 @@ public class HeartDisplayManagerV2 : MonoBehaviour
             yield return new WaitForSeconds(_spawnDelay);
         }
 
-        // Corações vazios
+        // Coraï¿½ï¿½es vazios
         for (int i = _currentLives; i < _maxLives && i < _heartPool.Count; i++)
         {
             if (_heartPool[i] == null)
             {
-                Debug.LogError($"[HeartDisplayManagerV2] ? HeartPool[{i}] é NULL!");
+                Debug.LogError($"[HeartDisplayManagerV2] ? HeartPool[{i}] ï¿½ NULL!");
                 continue;
             }
             _heartPool[i].SetState(false, immediate: true);
@@ -179,7 +177,7 @@ public class HeartDisplayManagerV2 : MonoBehaviour
     {
         if (!_isInitialized)
         {
-            Debug.LogWarning("[HeartDisplayManagerV2] ? HandleLivesChanged chamado mas não inicializado!");
+            Debug.LogWarning("[HeartDisplayManagerV2] ? HandleLivesChanged chamado mas nï¿½o inicializado!");
             return;
         }
 

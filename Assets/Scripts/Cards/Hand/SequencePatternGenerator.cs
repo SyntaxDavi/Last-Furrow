@@ -19,111 +19,68 @@ public static class SequencePatternGenerator
     }
     
     /// <summary>
-    /// Gera a ordem de índices baseada no padrão e quantidade de itens.
+    /// Preenche a lista com a ordem de índices baseada no padrão e quantidade de itens.
+    /// Padrão Zero-Allocation: utiliza uma lista existente para evitar GC.
     /// </summary>
+    /// <param name="order">Lista a ser preenchida (será limpa no início)</param>
     /// <param name="count">Número total de itens</param>
     /// <param name="pattern">Padrão de propagação desejado</param>
-    /// <returns>Lista de índices na ordem de execução</returns>
-    public static List<int> GetOrder(int count, SweepPattern pattern)
+    public static void FillOrder(List<int> order, int count, SweepPattern pattern)
     {
-        if (count <= 0) return new List<int>();
+        if (order == null) return;
+        order.Clear();
+        if (count <= 0) return;
         
-        return pattern switch
+        switch (pattern)
         {
-            SweepPattern.LeftToRight => GenerateLeftToRight(count),
-            SweepPattern.RightToLeft => GenerateRightToLeft(count),
-            SweepPattern.CenterOut => GenerateCenterOut(count),
-            SweepPattern.OutsideIn => GenerateOutsideIn(count),
-            _ => GenerateLeftToRight(count)
-        };
-    }
-    
-    /// <summary>
-    /// Esquerda → Direita: 0 1 2 3 4 5
-    /// </summary>
-    private static List<int> GenerateLeftToRight(int count)
-    {
-        var order = new List<int>(count);
-        for (int i = 0; i < count; i++)
-        {
-            order.Add(i);
+            case SweepPattern.LeftToRight: 
+                GenerateLeftToRight(order, count); break;
+            case SweepPattern.RightToLeft: 
+                GenerateRightToLeft(order, count); break;
+            case SweepPattern.CenterOut: 
+                GenerateCenterOut(order, count); break;
+            case SweepPattern.OutsideIn: 
+                GenerateOutsideIn(order, count); break;
+            default:
+                GenerateLeftToRight(order, count); break;
         }
-        return order;
     }
     
-    /// <summary>
-    /// Direita → Esquerda: 5 4 3 2 1 0
-    /// </summary>
-    private static List<int> GenerateRightToLeft(int count)
+    private static void GenerateLeftToRight(List<int> order, int count)
     {
-        var order = new List<int>(count);
-        for (int i = count - 1; i >= 0; i--)
-        {
-            order.Add(i);
-        }
-        return order;
+        for (int i = 0; i < count; i++) order.Add(i);
     }
     
-    /// <summary>
-    /// Centro → Bordas: Para 6 cartas = 2 3 1 4 0 5
-    /// Começa no centro e expande alternadamente para os lados.
-    /// </summary>
-    private static List<int> GenerateCenterOut(int count)
+    private static void GenerateRightToLeft(List<int> order, int count)
     {
-        var order = new List<int>(count);
-        
+        for (int i = count - 1; i >= 0; i--) order.Add(i);
+    }
+    
+    private static void GenerateCenterOut(List<int> order, int count)
+    {
         int center = count / 2;
+        if (count % 2 == 1) order.Add(center);
         
-        // Se ímpar, começa exatamente no centro
-        // Se par, começa no elemento à esquerda do centro
-        if (count % 2 == 1)
-        {
-            order.Add(center);
-        }
-        
-        int offset = count % 2 == 1 ? 1 : 0;
         int left = center - (count % 2 == 1 ? 1 : 1);
         int right = center + (count % 2 == 1 ? 1 : 0);
         
         while (order.Count < count)
         {
-            if (right < count)
-            {
-                order.Add(right);
-                right++;
-            }
-            if (left >= 0 && order.Count < count)
-            {
-                order.Add(left);
-                left--;
-            }
+            if (right < count) { order.Add(right); right++; }
+            if (left >= 0 && order.Count < count) { order.Add(left); left--; }
         }
-        
-        return order;
     }
     
-    /// <summary>
-    /// Bordas → Centro: Para 6 cartas = 0 5 1 4 2 3
-    /// Começa nas bordas e fecha alternadamente para o centro.
-    /// </summary>
-    private static List<int> GenerateOutsideIn(int count)
+    private static void GenerateOutsideIn(List<int> order, int count)
     {
-        var order = new List<int>(count);
-        
         int left = 0;
         int right = count - 1;
-        
         while (left <= right)
         {
             order.Add(left);
-            if (left != right) // Evita adicionar o mesmo índice duas vezes (quando ímpar)
-            {
-                order.Add(right);
-            }
+            if (left != right) order.Add(right);
             left++;
             right--;
         }
-        
-        return order;
     }
 }

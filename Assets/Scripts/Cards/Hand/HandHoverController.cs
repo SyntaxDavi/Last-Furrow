@@ -37,8 +37,16 @@ public class HandHoverController : MonoBehaviour
     private bool _isHandHovered = false;
     private Coroutine _currentSequence;
     private float _lastHoverCheckTime;
+    private float _lastAppliedFactor;
     private int _currentPatternIndex = 0; 
     
+    // Cache de Performance
+    private Bounds _cachedBounds;
+    private bool _isBoundsDirty = true;
+    private readonly List<int> _sequenceIndexBuffer = new List<int>(15);
+    
+    // Pequeno threshold para evitar setter spam no fade
+    private const float FADE_CHANGE_THRESHOLD = 0.005f;    
     // ==================================================================================
     // INICIALIZAÇÃO
     // ==================================================================================
@@ -47,7 +55,25 @@ public class HandHoverController : MonoBehaviour
     {
         _handManager = handManager;
         _inputManager = AppCore.Instance?.InputManager;
+        
+        // Invalida cache quando a mão muda
+        if (AppCore.Instance != null && AppCore.Instance.Events != null)
+        {
+            AppCore.Instance.Events.Player.OnCardAdded += InvalidateBoundsCache;
+            AppCore.Instance.Events.Player.OnCardRemoved += InvalidateBoundsCache;
+        }
     }
+    
+    private void OnDestroy()
+    {
+        if (AppCore.Instance != null && AppCore.Instance.Events != null)
+        {
+            AppCore.Instance.Events.Player.OnCardAdded -= InvalidateBoundsCache;
+            AppCore.Instance.Events.Player.OnCardRemoved -= InvalidateBoundsCache;
+        }
+    }
+    
+    private void InvalidateBoundsCache(CardInstance _) => _isBoundsDirty = true;
     
     private void Start()
     {
@@ -109,12 +135,24 @@ public class HandHoverController : MonoBehaviour
     /// </summary>
     private void ApplyGradualFade(float factor)
     {
+        // Proteção contra setter spam
+        if (Mathf.Abs(factor - _lastAppliedFactor) < FADE_CHANGE_THRESHOLD) return;
+        _lastAppliedFactor = factor;
+
+        // Se estamos degradando gradualmente, a sequência automática deve parar 
+        // para dar controle total ao mouse do jogador.
+        if (_currentSequence != null)
+        {
+            StopCoroutine(_currentSequence);
+            _currentSequence = null;
+        }
+
         var cards = _handManager?.GetActiveCardsReadOnly();
         if (cards == null) return;
         
         foreach (var card in cards)
         {
-            card.SetElevationFactor(factor);
+            if (card != null) card.SetElevationFactor(factor);
         }
     }
     
@@ -179,6 +217,12 @@ public class HandHoverController : MonoBehaviour
     /// </summary>
     private bool TryCalculateHandBounds(out Bounds bounds)
     {
+        if (!_isBoundsDirty)
+        {
+            bounds = _cachedBounds;
+            return true;
+        }
+
         bounds = default;
         
         var cards = _handManager?.GetActiveCardsReadOnly();
@@ -213,11 +257,13 @@ public class HandHoverController : MonoBehaviour
             if (cardMaxY > maxY) maxY = cardMaxY;
         }
         
-        // Cria o bounds
+        // Cria e cacheia o bounds
         Vector3 center = new Vector3((minX + maxX) * 0.5f, (minY + maxY) * 0.5f, 0f);
         Vector3 size = new Vector3(maxX - minX, maxY - minY, 0.1f);
-        bounds = new Bounds(center, size);
+        _cachedBounds = new Bounds(center, size);
+        _isBoundsDirty = false;
         
+        bounds = _cachedBounds;
         return true;
     }
     
@@ -233,6 +279,9 @@ public class HandHoverController : MonoBehaviour
             _currentSequence = null;
         }
         
+        // Só avança o padrão quando está começando a SUBIDA
+        if (isHovered) _currentPatternIndex++;
+        
         _currentSequence = StartCoroutine(RunElevationSequence(isHovered));
     }
     
@@ -245,22 +294,20 @@ public class HandHoverController : MonoBehaviour
             ? _visualConfig.HandElevationSequenceDelay 
             : 0.05f;
         
-        // Obtém o padrão atual do ciclo (avança ANTES de iniciar, evita modificação durante coroutine)
+        // Obtém o padrão atual de forma estável
         var pattern = (SequencePatternGenerator.SweepPattern)(_currentPatternIndex % 4);
-        int patternToUse = _currentPatternIndex;
-        if (isRaising) _currentPatternIndex++; // Só avança quando está SUBINDO
         
-        // Gera a ordem de acordo com o padrão
-        List<int> order = SequencePatternGenerator.GetOrder(cards.Count, pattern);
+        // Gera a ordem de acordo com o padrão usando o buffer zero-allocation
+        SequencePatternGenerator.FillOrder(_sequenceIndexBuffer, cards.Count, pattern);
         
         // Se está descendo, inverte a ordem (efeito espelho)
         if (!isRaising)
         {
-            order.Reverse();
+            _sequenceIndexBuffer.Reverse();
         }
         
         // Executa na ordem gerada
-        foreach (int index in order)
+        foreach (int index in _sequenceIndexBuffer)
         {
             if (index >= 0 && index < cards.Count)
             {
@@ -304,7 +351,7 @@ public class HandHoverController : MonoBehaviour
         
         foreach (var card in cards)
         {
-            card.SetHandElevation(elevated);
+            if (card != null) card.SetElevationFactor(elevated ? 1f : 0f);
         }
         
         _isHandHovered = elevated;

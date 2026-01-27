@@ -1,13 +1,13 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// Controlador do botão "Sleep" V2 - ROBUSTO E DEFENSIVO.
+/// Controlador do botï¿½o "Sleep" V2 - ROBUSTO E DEFENSIVO.
 /// 
-/// VERSÃO 2: Null checks completos + validações + logs verbosos
+/// VERSï¿½O 2: Null checks completos + validaï¿½ï¿½es + logs verbosos
 /// 
-/// INSTALAÇÃO:
+/// INSTALAï¿½ï¿½O:
 /// 1. Delete SleepButtonController antigo do GameObject
 /// 2. Add Component: SleepButtonControllerV2
 /// 3. Arraste TextMeshPro no campo Button Text
@@ -23,8 +23,6 @@ public class SleepButtonControllerV2 : MonoBehaviour
     [SerializeField] private string _normalText = "Sleep";
     [SerializeField] private string _processingText = "Sleeping...";
 
-    [Header("Debug")]
-    [SerializeField] private bool _showDebugLogs = true;
 
     private Button _button;
     private bool _isProcessing = false;
@@ -38,7 +36,7 @@ public class SleepButtonControllerV2 : MonoBehaviour
 
         if (_button == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: Componente Button não encontrado!");
+            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: Componente Button nï¿½o encontrado!");
         }
 
         if (_buttonText == null)
@@ -46,7 +44,7 @@ public class SleepButtonControllerV2 : MonoBehaviour
             _buttonText = GetComponentInChildren<TextMeshProUGUI>();
             if (_buttonText == null)
             {
-                Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: TextMeshProUGUI não encontrado! Arraste no Inspector!");
+                Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: TextMeshProUGUI nï¿½o encontrado! Arraste no Inspector!");
             }
         }
     }
@@ -55,44 +53,44 @@ public class SleepButtonControllerV2 : MonoBehaviour
     {
         if (_isInitialized)
         {
-            Debug.LogWarning("[SleepButtonControllerV2] ? Já foi inicializado!");
+            Debug.LogWarning("[SleepButtonControllerV2] ? Jï¿½ foi inicializado!");
             return;
         }
 
-        // === VALIDAÇÕES CRÍTICAS ===
+        // === VALIDAï¿½ï¿½ES CRï¿½TICAS ===
         if (context == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: UIContext é NULL!");
+            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: UIContext ï¿½ NULL!");
             return;
         }
 
         if (context.RunData == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: context.RunData é NULL!");
+            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: context.RunData ï¿½ NULL!");
             return;
         }
 
         if (context.TimeEvents == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: context.TimeEvents é NULL!");
+            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: context.TimeEvents ï¿½ NULL!");
             return;
         }
 
         if (context.GameStateEvents == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: context.GameStateEvents é NULL!");
+            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: context.GameStateEvents ï¿½ NULL!");
             return;
         }
 
         if (context.TimePolicy == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: context.TimePolicy é NULL!");
+            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: context.TimePolicy ï¿½ NULL!");
             return;
         }
 
         if (_button == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: Button null! Componente não encontrado!");
+            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: Button null! Componente nï¿½o encontrado!");
             return;
         }
 
@@ -110,7 +108,7 @@ public class SleepButtonControllerV2 : MonoBehaviour
         // IMPORTANTE: Marca como inicializado ANTES de UpdateButtonState
         _isInitialized = true;
 
-        // Atualiza estado inicial (agora _isInitialized já é true)
+        // Atualiza estado inicial (agora _isInitialized jï¿½ ï¿½ true)
         UpdateButtonState();
 
         Debug.Log("[SleepButtonControllerV2] ?? INICIALIZADO COM SUCESSO!");
@@ -143,13 +141,13 @@ public class SleepButtonControllerV2 : MonoBehaviour
     {
         if (_isProcessing)
         {
-            Debug.LogWarning("[SleepButtonControllerV2] ? Já está processando!");
+            Debug.LogWarning("[SleepButtonControllerV2] ? Jï¿½ estï¿½ processando!");
             return;
         }
 
         if (!CanActivate())
         {
-            Debug.LogWarning("[SleepButtonControllerV2] ? Botão não pode ser ativado no estado atual.");
+            Debug.LogWarning("[SleepButtonControllerV2] ? Botï¿½o nï¿½o pode ser ativado no estado atual.");
             return;
         }
 
@@ -157,13 +155,13 @@ public class SleepButtonControllerV2 : MonoBehaviour
 
         if (AppCore.Instance == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? AppCore.Instance é NULL!");
+            Debug.LogError("[SleepButtonControllerV2] ? AppCore.Instance ï¿½ NULL!");
             return;
         }
 
         if (AppCore.Instance.DailyResolutionSystem == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? DailyResolutionSystem é NULL!");
+            Debug.LogError("[SleepButtonControllerV2] ? DailyResolutionSystem ï¿½ NULL!");
             return;
         }
 
@@ -172,14 +170,14 @@ public class SleepButtonControllerV2 : MonoBehaviour
 
     private void HandleResolutionStarted()
     {
-        Debug.Log("[SleepButtonControllerV2] ?? Resolution STARTED - Bloqueando botão");
+        Debug.Log("[SleepButtonControllerV2] ?? Resolution STARTED - Bloqueando botï¿½o");
         _isProcessing = true;
         UpdateButtonState();
     }
 
     private void HandleResolutionEnded()
     {
-        Debug.Log("[SleepButtonControllerV2] ?? Resolution ENDED - Desbloqueando botão");
+        Debug.Log("[SleepButtonControllerV2] ?? Resolution ENDED - Desbloqueando botï¿½o");
         _isProcessing = false;
         UpdateButtonState();
     }
@@ -200,7 +198,7 @@ public class SleepButtonControllerV2 : MonoBehaviour
     {
         if (!_isInitialized)
         {
-            Debug.LogWarning("[SleepButtonControllerV2] ? UpdateButtonState chamado mas não inicializado!");
+            Debug.LogWarning("[SleepButtonControllerV2] ? UpdateButtonState chamado mas nï¿½o inicializado!");
             return;
         }
 
@@ -224,14 +222,14 @@ public class SleepButtonControllerV2 : MonoBehaviour
             _buttonText.text = _isProcessing ? _processingText : _normalText;
         }
 
-        Debug.Log($"[SleepButtonControllerV2] ? Botão agora: {(_button.interactable ? "ATIVO ?" : "DESABILITADO ?")}");
+        Debug.Log($"[SleepButtonControllerV2] ? Botï¿½o agora: {(_button.interactable ? "ATIVO ?" : "DESABILITADO ?")}");
     }
 
     private bool CanActivate()
     {
         if (!_isInitialized)
         {
-            Debug.Log("[SleepButtonControllerV2] ? Não inicializado");
+            Debug.Log("[SleepButtonControllerV2] ? Nï¿½o inicializado");
             return false;
         }
 
@@ -244,7 +242,7 @@ public class SleepButtonControllerV2 : MonoBehaviour
         int currentDay = _context.RunData.CurrentDay;
         Debug.Log($"[SleepButtonControllerV2] ?? CurrentDay: {currentDay}");
 
-        // Validação AppCore
+        // Validaï¿½ï¿½o AppCore
         if (AppCore.Instance == null)
         {
             Debug.LogError("[SleepButtonControllerV2] ? AppCore.Instance null!");
