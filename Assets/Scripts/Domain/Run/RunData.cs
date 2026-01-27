@@ -10,10 +10,10 @@ public class RunData
     public int GridConfigVersion;
 
     [Header("Grid Unlock State")]
-    [Tooltip("⚡ AUTORIDADE: Seed usado para gerar padrão inicial de desbloqueamento.")]
+    [Tooltip("AUTORIDADE: Seed usado para gerar padrão inicial de desbloqueamento.")]
     public int UnlockPatternSeed;
 
-    [Tooltip("📑 CONTRATO EXPLÍCITO: Flag que indica se grid foi inicializado. Previne reinicializações acidentais.")]    
+    [Tooltip("CONTRATO EXPLÍCITO: Flag que indica se grid foi inicializado. Previne reinicializações acidentais.")]    
     public bool IsGridInitialized;
 
     [Tooltip("Cache do padrão gerado (pode ser regenerado a partir do Seed se necessário).")]
@@ -59,7 +59,11 @@ public class RunData
 
     [Header("Daily State Tracking")]
     [Tooltip("CRÍTICO: Garante que o draw diário aconteça apenas uma vez por dia lógico.")]
-    public bool HasDrawnDailyHand = false;
+    public int LastDrawnDay = -1;
+    public int LastDrawnWeek = -1;
+
+    // Helper para facilitar a lógica sem quebrar outros sistemas
+    public bool HasDrawnDailyHand => LastDrawnDay == CurrentDay && LastDrawnWeek == CurrentWeek;
 
     // Construtor padrão (usado pelo JSON Utility ou Serializer)
     // Mantemos ele "burro" apenas alocando listas para evitar NullReference
@@ -140,7 +144,7 @@ public class RunData
     /// <summary>
     /// Helper para adicionar carta inicial na run.
     ///
-    /// 🕵️ VALIDAÇÃO: Garante que o CardID não é vazio.
+    /// VALIDAÇÃO: Garante que o CardID não é vazio.
     /// Se o ID for inválido, loga erro mas não quebra a criação da run.
     ///
     /// ARQUITETURA: Idealmente, isso deveria vir de uma config (StartingDeckSO),
@@ -202,4 +206,3 @@ public class RunData
         return isCompatible;
     }
 }
-

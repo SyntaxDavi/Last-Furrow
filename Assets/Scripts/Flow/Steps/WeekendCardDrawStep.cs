@@ -38,13 +38,6 @@ public class WeekendCardDrawStep : IFlowStep
             return;
         }
 
-        // PROTEÇÃO: Se já deu draw hoje, não dá de novo
-        if (_runData.HasDrawnDailyHand)
-        {
-            Debug.LogWarning("[WeekendCardDrawStep] Cartas já foram distribuídas hoje. Pulando draw para evitar duplicação.");
-            return;
-        }
-
         Debug.Log($"[WeekendCardDrawStep] Iniciando Draw após Shop (Dia {_runData.CurrentDay}, Semana {_runData.CurrentWeek})...");
         
         _handSystem.ProcessDailyDraw(_runData);

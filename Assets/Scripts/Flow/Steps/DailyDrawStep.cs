@@ -2,7 +2,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
-/// SOLID: Single Responsibility - Apenas executa o draw di�rio seguindo a pol�tica.
+/// SOLID: Single Responsibility - Apenas executa o draw diário seguindo a política.
 /// </summary>
 public class DailyDrawStep : IFlowStep
 {
@@ -29,40 +29,42 @@ public class DailyDrawStep : IFlowStep
     {
         if (_handSystem == null || _runData == null)
         {
-            Debug.LogError("[DailyDrawStep] Depend�ncias nulas. Pulando step.");
+            Debug.LogError("[DailyDrawStep] Dependências nulas. Pulando step.");
             return;
         }
 
-        // PROTE��O: Se j� deu draw hoje, n�o d� de novo
+        // PROTEÇÃO: Se já deu draw hoje, não dá de novo. 
+        // Agora HasDrawnDailyHand é uma propriedade computada robusta em RunData.
         if (_runData.HasDrawnDailyHand)
         {
-            Debug.LogWarning("[DailyDrawStep] Cartas j� foram distribu�das hoje. Pulando draw para evitar duplica��o.");
+            Debug.LogWarning("[DailyDrawStep] Cartas já foram distribuídas hoje. Pulando draw para evitar duplicação.");
             return;
         }
 
-        Debug.Log($"[DailyDrawStep] Estado inicial: HasDrawnDailyHand={_runData.HasDrawnDailyHand}");
+        Debug.Log($"[DailyDrawStep] Verificando política de Draw (Dia {_runData.CurrentDay}, Semana {_runData.CurrentWeek})");
 
-        // SOLID: Usa pol�tica para decidir se deve dar cartas
+        // SOLID: Usa política para decidir se deve dar cartas
         bool shouldDraw = _drawPolicy.ShouldDrawCards(_runData, _runManager.CurrentPhase);
-        Debug.Log($"[DailyDrawStep] ShouldDrawCards retornou: {shouldDraw}");
         
         if (shouldDraw)
         {
-            Debug.Log($"[DailyDrawStep] Iniciando Draw Di�rio (Dia {_runData.CurrentDay}, Semana {_runData.CurrentWeek})...");
+            Debug.Log($"[DailyDrawStep] Iniciando Draw Diário...");
             
             _handSystem.ProcessDailyDraw(_runData);
             AppCore.Instance.SaveManager.SaveGame();
-            // Tempo para anima��o "Fan Out" (0.8s = 800ms)
+            
+            // Tempo para animação "Fan Out" (0.8s = 800ms)
             await UniTask.Delay(800);
         }
         else
         {
-            Debug.Log($"[DailyDrawStep] Sem cartas hoje (Dia {_runData.CurrentDay}, Fase: {_runManager.CurrentPhase}).");
-            // Marca como "drawn" mesmo que n�o tenha dado cartas
-            // para evitar re-execu��o
-            _runData.HasDrawnDailyHand = true;
+            Debug.Log($"[DailyDrawStep] Sem cartas hoje (Fase: {_runManager.CurrentPhase}). Marcando dia como processado.");
+            // Marcamos o dia atual como "processado" mesmo que não tenha dado cartas
+            // para que o DailyDrawStep não tente rodar de novo em loops de animação ou recarregamento
+            _runData.LastDrawnDay = _runData.CurrentDay;
+            _runData.LastDrawnWeek = _runData.CurrentWeek;
             
-            // Pequeno respiro (0.5s = 500ms)
+            // Pequeno respiro
             await UniTask.Delay(500);
         }
     }

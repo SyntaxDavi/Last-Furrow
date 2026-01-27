@@ -408,7 +408,7 @@ public class HandHoverController : MonoBehaviour
                 Gizmos.color = new Color(0, 1, 1, 0.2f);
                 foreach(var card in cards)
                 {
-                    if (card == null || card.BaseLayoutTarget == null) continue;
+                    if (card == null) continue;
                     Vector3 cardPos = (Vector3)card.BaseLayoutTarget.Position + (Vector3)_detectionCenterOffset;
                     Gizmos.DrawWireCube(cardPos, (Vector3)_cardDetectionSize);
                 }

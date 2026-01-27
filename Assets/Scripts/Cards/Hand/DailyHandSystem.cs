@@ -21,41 +21,42 @@ public class DailyHandSystem
     }
 
     /// <summary>
-    /// SOLID: Single Responsibility - Processa o draw di�rio de cartas.
-    /// Idempotente: pode ser chamado m�ltiplas vezes sem duplicar cartas.
+    /// SOLID: Single Responsibility - Processa o draw diário de cartas.
+    /// Idempotente: pode ser chamado múltiplas vezes sem duplicar cartas.
     /// </summary>
     public void ProcessDailyDraw(RunData runData)
     {
         if (runData == null)
         {
-            Debug.LogError("[DailyHandSystem] RunData � NULL! N�o � poss�vel processar draw.");
+            Debug.LogError("[DailyHandSystem] RunData é NULL! Não é possível processar draw.");
             return;
         }
 
-        // --- IDEMPOT�NCIA (GUARD CLAUSE) ---
+        // --- IDEMPOTÊNCIA (GUARD CLAUSE) ---
+        // Agora usamos comparação cronológica robusta
         if (runData.HasDrawnDailyHand)
         {
-            Debug.LogWarning($"[DailyHandSystem] Draw j� realizado para o dia {runData.CurrentDay}, semana {runData.CurrentWeek}. Pulando para evitar duplicatas.");
+            Debug.LogWarning($"[DailyHandSystem] Draw já realizado para o dia {runData.CurrentDay}, semana {runData.CurrentWeek}. Pulando para evitar duplicatas.");
             return;
         }
 
-        // ? VALIDA��O: Verificar se estrat�gia est� dispon�vel
+        // ? VALIDAÇÃO: Verificar se estratégia está disponível
         if (_strategy == null)
         {
-            Debug.LogError("[DailyHandSystem] ICardSourceStrategy � NULL! N�o � poss�vel gerar cartas.");
+            Debug.LogError("[DailyHandSystem] ICardSourceStrategy é NULL! Não é possível gerar cartas.");
             return;
         }
 
         Debug.Log($"[DailyHandSystem] Iniciando Draw do Dia {runData.CurrentDay}, Semana {runData.CurrentWeek}...");
 
-        // 1. Obter IDs da estrat�gia
+        // 1. Obter IDs da estratégia
         List<CardID> nextCardIDs = _strategy.GetNextCardIDs(runData.CardsDrawPerDay, runData);
 
         if (nextCardIDs == null || nextCardIDs.Count == 0)
         {
-            Debug.LogWarning("[DailyHandSystem] Estrat�gia n�o retornou cartas! Verifique a configura��o.");
-            // Mesmo sem cartas, marcamos como feito para evitar re-execu��o
-            runData.HasDrawnDailyHand = true;
+            Debug.LogWarning("[DailyHandSystem] Estratégia não retornou cartas! Verifique a configuração.");
+            // Mesmo sem cartas, marcamos a data atual como processada para evitar re-execução infinita
+            CommitDrawTime(runData);
             return;
         }
 
@@ -64,10 +65,10 @@ public class DailyHandSystem
 
         foreach (CardID id in nextCardIDs)
         {
-            // ? VALIDA��O: Verificar se ID � v�lido
+            // ? VALIDAÇÃO: Verificar se ID é válido
             if (!id.IsValid)
             {
-                Debug.LogWarning($"[DailyHandSystem] CardID inv�lido ignorado: {id}");
+                Debug.LogWarning($"[DailyHandSystem] CardID inválido ignorado: {id}");
                 continue;
             }
 
@@ -86,10 +87,15 @@ public class DailyHandSystem
         }
 
         // --- COMMIT DO ESTADO ---
-        // Marcamos como feito. Se o jogo salvar agora e crashar depois, 
-        // ao recarregar, este m�todo n�o dar� cartas extras.
-        runData.HasDrawnDailyHand = true;
-        Debug.Log($"[DailyHandSystem] ? Draw conclu�do: {cardsAdded} cartas adicionadas, {cardsOverflowed} em overflow. Flag HasDrawnDailyHand marcada.");
+        // Marcamos a data atual como a última em que houve draw.
+        CommitDrawTime(runData);
+        Debug.Log($"[DailyHandSystem] ✓ Draw concluído: {cardsAdded} cartas adicionadas, {cardsOverflowed} em overflow.");
+    }
+
+    private void CommitDrawTime(RunData runData)
+    {
+        runData.LastDrawnDay = runData.CurrentDay;
+        runData.LastDrawnWeek = runData.CurrentWeek;
     }
 
     private bool CanAddToHand(RunData runData) => runData.Hand.Count < runData.MaxHandSize;

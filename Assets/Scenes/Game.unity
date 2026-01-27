@@ -4366,7 +4366,6 @@ MonoBehaviour:
   _buttonText: {fileID: 1337321134}
   _normalText: Sleep
   _processingText: Sleeping
-  _showDebugLogs: 0
 --- !u!1 &1282445935
 GameObject:
   m_ObjectHideFlags: 0
@@ -4915,9 +4914,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HandHoverController
   _visualConfig: {fileID: 11400000, guid: e3cf8478dfad57044b0a6fdd75881fe4, type: 2}
-  _hoverCheckInterval: 0.05
-  _cardDetectionSize: {x: 3, y: 6}
+  _hoverCheckInterval: 0.08
+  _cardDetectionSize: {x: 3, y: 5}
+  _boundsPadding: {x: 0.5, y: 0.5}
   _detectionCenterOffset: {x: 0, y: 1}
+  _fadeOutZoneHeight: 1.5
   _showDebugGizmos: 1
 --- !u!61 &1345890254
 BoxCollider2D:
@@ -5537,7 +5538,6 @@ MonoBehaviour:
   _spawnDelay: 0.4
   _simultaneousLoss: 1
   _lossAnimationDelay: 0.1
-  _showDebugLogs: 0
 --- !u!1 &1608780529
 GameObject:
   m_ObjectHideFlags: 0
