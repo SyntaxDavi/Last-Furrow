@@ -24,7 +24,7 @@ namespace LastFurrow.EventInspector
         public int MaxEvents = 10000;
 
         [Tooltip("Auto-export on application quit")]
-        public bool ExportOnQuit = true;
+        public bool ExportOnQuit = false; // TEMPORARIAMENTE DESABILITADO
 
         [Header("Export Settings")]
         [Tooltip("Output directory for exported logs")]
