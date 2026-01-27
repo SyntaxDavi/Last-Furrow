@@ -1,0 +1,372 @@
+﻿[
+  {
+    "type": "GAME_STATE_CHANGED",
+    "metadata": {
+      "id": "evt_1769515055194_225bb481",
+      "timestamp": "2026-01-27T11:57:35.1957192Z",
+      "source": "GameState",
+      "sequenceNumber": 0
+    },
+    "payload": {}
+  },
+  {
+    "type": "RESOLUTION_STARTED",
+    "metadata": {
+      "id": "evt_1769515094987_d9b552a1",
+      "timestamp": "2026-01-27T11:58:14.9879445Z",
+      "source": "Time",
+      "sequenceNumber": 1
+    },
+    "payload": {}
+  },
+  {
+    "type": "CROP_PASSIVE_SCORE",
+    "metadata": {
+      "id": "evt_1769515095011_2ed2bace",
+      "timestamp": "2026-01-27T11:58:15.0115891Z",
+      "source": "Grid",
+      "sequenceNumber": 2
+    },
+    "payload": {}
+  },
+  {
+    "type": "CROP_PASSIVE_SCORE",
+    "metadata": {
+      "id": "evt_1769515095507_0f60b8a1",
+      "timestamp": "2026-01-27T11:58:15.5078178Z",
+      "source": "Grid",
+      "sequenceNumber": 3
+    },
+    "payload": {}
+  },
+  {
+    "type": "PROPERTY_CHANGED",
+    "metadata": {
+      "id": "evt_1769515097009_cd201f53",
+      "timestamp": "2026-01-27T11:58:17.0093629Z",
+      "source": "Progression",
+      "sequenceNumber": 4
+    },
+    "payload": {"Path":"progression.score","Reason":"Score: 65/500"}
+  },
+  {
+    "type": "PROPERTY_CHANGED",
+    "metadata": {
+      "id": "evt_1769515097011_e7dbd52f",
+      "timestamp": "2026-01-27T11:58:17.0118682Z",
+      "source": "Time",
+      "sequenceNumber": 5
+    },
+    "payload": {"Path":"time.day","Reason":"Day changed"}
+  },
+  {
+    "type": "CARD_ADDED",
+    "metadata": {
+      "id": "evt_1769515097036_5f9dc526",
+      "timestamp": "2026-01-27T11:58:17.0363147Z",
+      "source": "Player",
+      "sequenceNumber": 6
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_ADDED",
+    "metadata": {
+      "id": "evt_1769515097038_399848ce",
+      "timestamp": "2026-01-27T11:58:17.0388322Z",
+      "source": "Player",
+      "sequenceNumber": 7
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_ADDED",
+    "metadata": {
+      "id": "evt_1769515097038_6fa4f3dc",
+      "timestamp": "2026-01-27T11:58:17.0388322Z",
+      "source": "Player",
+      "sequenceNumber": 8
+    },
+    "payload": {}
+  },
+  {
+    "type": "RESOLUTION_ENDED",
+    "metadata": {
+      "id": "evt_1769515097836_75ef4c72",
+      "timestamp": "2026-01-27T11:58:17.8369496Z",
+      "source": "Time",
+      "sequenceNumber": 9
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_REMOVED",
+    "metadata": {
+      "id": "evt_1769515099050_1c481f30",
+      "timestamp": "2026-01-27T11:58:19.0505902Z",
+      "source": "Player",
+      "sequenceNumber": 10
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_CONSUMED",
+    "metadata": {
+      "id": "evt_1769515099053_5af28e3b",
+      "timestamp": "2026-01-27T11:58:19.0536993Z",
+      "source": "Player",
+      "sequenceNumber": 11
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_REMOVED",
+    "metadata": {
+      "id": "evt_1769515102323_4866067c",
+      "timestamp": "2026-01-27T11:58:22.3239842Z",
+      "source": "Player",
+      "sequenceNumber": 12
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_CONSUMED",
+    "metadata": {
+      "id": "evt_1769515102324_6995c235",
+      "timestamp": "2026-01-27T11:58:22.3245380Z",
+      "source": "Player",
+      "sequenceNumber": 13
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_REMOVED",
+    "metadata": {
+      "id": "evt_1769515104836_8036e563",
+      "timestamp": "2026-01-27T11:58:24.8367181Z",
+      "source": "Player",
+      "sequenceNumber": 14
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_CONSUMED",
+    "metadata": {
+      "id": "evt_1769515104836_4ee47104",
+      "timestamp": "2026-01-27T11:58:24.8367181Z",
+      "source": "Player",
+      "sequenceNumber": 15
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_REMOVED",
+    "metadata": {
+      "id": "evt_1769515105990_bc2989f5",
+      "timestamp": "2026-01-27T11:58:25.9905673Z",
+      "source": "Player",
+      "sequenceNumber": 16
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_CONSUMED",
+    "metadata": {
+      "id": "evt_1769515105990_a7ff2f78",
+      "timestamp": "2026-01-27T11:58:25.9905673Z",
+      "source": "Player",
+      "sequenceNumber": 17
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_REMOVED",
+    "metadata": {
+      "id": "evt_1769515109074_5c3ce481",
+      "timestamp": "2026-01-27T11:58:29.0745244Z",
+      "source": "Player",
+      "sequenceNumber": 18
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_CONSUMED",
+    "metadata": {
+      "id": "evt_1769515109075_3aedf29a",
+      "timestamp": "2026-01-27T11:58:29.0755374Z",
+      "source": "Player",
+      "sequenceNumber": 19
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_REMOVED",
+    "metadata": {
+      "id": "evt_1769515120834_bbe0f9b8",
+      "timestamp": "2026-01-27T11:58:40.8343488Z",
+      "source": "Player",
+      "sequenceNumber": 20
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_CONSUMED",
+    "metadata": {
+      "id": "evt_1769515120834_a46f4c2a",
+      "timestamp": "2026-01-27T11:58:40.8348788Z",
+      "source": "Player",
+      "sequenceNumber": 21
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_REMOVED",
+    "metadata": {
+      "id": "evt_1769515122437_e0253095",
+      "timestamp": "2026-01-27T11:58:42.4371713Z",
+      "source": "Player",
+      "sequenceNumber": 22
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_CONSUMED",
+    "metadata": {
+      "id": "evt_1769515122438_fc54ec7e",
+      "timestamp": "2026-01-27T11:58:42.4386851Z",
+      "source": "Player",
+      "sequenceNumber": 23
+    },
+    "payload": {}
+  },
+  {
+    "type": "RESOLUTION_STARTED",
+    "metadata": {
+      "id": "evt_1769515123135_d35d5b22",
+      "timestamp": "2026-01-27T11:58:43.1353884Z",
+      "source": "Time",
+      "sequenceNumber": 24
+    },
+    "payload": {}
+  },
+  {
+    "type": "CROP_PASSIVE_SCORE",
+    "metadata": {
+      "id": "evt_1769515123150_f94b8336",
+      "timestamp": "2026-01-27T11:58:43.1508378Z",
+      "source": "Grid",
+      "sequenceNumber": 25
+    },
+    "payload": {}
+  },
+  {
+    "type": "CROP_PASSIVE_SCORE",
+    "metadata": {
+      "id": "evt_1769515123368_3bb3f1b9",
+      "timestamp": "2026-01-27T11:58:43.3682744Z",
+      "source": "Grid",
+      "sequenceNumber": 26
+    },
+    "payload": {}
+  },
+  {
+    "type": "CROP_PASSIVE_SCORE",
+    "metadata": {
+      "id": "evt_1769515124157_e0d23801",
+      "timestamp": "2026-01-27T11:58:44.1576444Z",
+      "source": "Grid",
+      "sequenceNumber": 27
+    },
+    "payload": {}
+  },
+  {
+    "type": "CROP_PASSIVE_SCORE",
+    "metadata": {
+      "id": "evt_1769515124421_9ad401ff",
+      "timestamp": "2026-01-27T11:58:44.4211777Z",
+      "source": "Grid",
+      "sequenceNumber": 28
+    },
+    "payload": {}
+  },
+  {
+    "type": "PROPERTY_CHANGED",
+    "metadata": {
+      "id": "evt_1769515125389_4e916484",
+      "timestamp": "2026-01-27T11:58:45.3894995Z",
+      "source": "Progression",
+      "sequenceNumber": 29
+    },
+    "payload": {"Path":"progression.score","Reason":"Score: 110/500"}
+  },
+  {
+    "type": "PROPERTY_CHANGED",
+    "metadata": {
+      "id": "evt_1769515125391_65ec5214",
+      "timestamp": "2026-01-27T11:58:45.3910094Z",
+      "source": "Time",
+      "sequenceNumber": 30
+    },
+    "payload": {"Path":"time.day","Reason":"Day changed"}
+  },
+  {
+    "type": "CARD_ADDED",
+    "metadata": {
+      "id": "evt_1769515125407_722c4e6e",
+      "timestamp": "2026-01-27T11:58:45.4072417Z",
+      "source": "Player",
+      "sequenceNumber": 31
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_ADDED",
+    "metadata": {
+      "id": "evt_1769515125407_cd1467e6",
+      "timestamp": "2026-01-27T11:58:45.4078957Z",
+      "source": "Player",
+      "sequenceNumber": 32
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_ADDED",
+    "metadata": {
+      "id": "evt_1769515125408_ef756e73",
+      "timestamp": "2026-01-27T11:58:45.4089057Z",
+      "source": "Player",
+      "sequenceNumber": 33
+    },
+    "payload": {}
+  },
+  {
+    "type": "RESOLUTION_ENDED",
+    "metadata": {
+      "id": "evt_1769515126206_83514727",
+      "timestamp": "2026-01-27T11:58:46.2063127Z",
+      "source": "Time",
+      "sequenceNumber": 34
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_REMOVED",
+    "metadata": {
+      "id": "evt_1769515158293_b368ce5e",
+      "timestamp": "2026-01-27T11:59:18.2936450Z",
+      "source": "Player",
+      "sequenceNumber": 35
+    },
+    "payload": {}
+  },
+  {
+    "type": "CARD_CONSUMED",
+    "metadata": {
+      "id": "evt_1769515158294_45dc62f8",
+      "timestamp": "2026-01-27T11:59:18.2946335Z",
+      "source": "Player",
+      "sequenceNumber": 36
+    },
+    "payload": {}
+  }
+]

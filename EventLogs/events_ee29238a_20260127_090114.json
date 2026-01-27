@@ -1,0 +1,12 @@
+﻿[
+  {
+    "type": "GAME_STATE_CHANGED",
+    "metadata": {
+      "id": "evt_1769515263344_5a91d639",
+      "timestamp": "2026-01-27T12:01:03.3448108Z",
+      "source": "GameState",
+      "sequenceNumber": 0
+    },
+    "payload": {}
+  }
+]

@@ -33,6 +33,7 @@ public class HandHoverController : MonoBehaviour
     private bool _isHandHovered = false;
     private Coroutine _currentSequence;
     private float _lastHoverCheckTime;
+    private int _currentPatternIndex = 0; // Cicla entre os 4 padrões
     
     // ==================================================================================
     // INICIALIZAÇÃO
@@ -179,8 +180,6 @@ public class HandHoverController : MonoBehaviour
     
     private IEnumerator RunElevationSequence(bool isRaising)
     {
-        // _isSequenceRunning removido (código morto)
-        
         var cards = _handManager?.GetActiveCardsReadOnly();
         if (cards == null || cards.Count == 0) yield break;
         
@@ -188,15 +187,25 @@ public class HandHoverController : MonoBehaviour
             ? _visualConfig.HandElevationSequenceDelay 
             : 0.05f;
         
-        int startIndex = isRaising ? 0 : cards.Count - 1;
-        int endIndex = isRaising ? cards.Count : -1;
-        int step = isRaising ? 1 : -1;
+        // Obtém o padrão atual do ciclo e avança para o próximo
+        var pattern = (SequencePatternGenerator.SweepPattern)(_currentPatternIndex % 4);
+        if (isRaising) _currentPatternIndex++; // Só avança quando está SUBINDO
         
-        for (int i = startIndex; i != endIndex; i += step)
+        // Gera a ordem de acordo com o padrão
+        List<int> order = SequencePatternGenerator.GetOrder(cards.Count, pattern);
+        
+        // Se está descendo, inverte a ordem (efeito espelho)
+        if (!isRaising)
         {
-            if (i >= 0 && i < cards.Count)
+            order.Reverse();
+        }
+        
+        // Executa na ordem gerada
+        foreach (int index in order)
+        {
+            if (index >= 0 && index < cards.Count)
             {
-                cards[i].SetHandElevation(isRaising);
+                cards[index].SetHandElevation(isRaising);
             }
             
             if (delay > 0)
