@@ -20,6 +20,13 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     private CardVisualConfig _config;
     private InputManager _inputManager;
 
+    [Header("Hover Stability")]
+    [SerializeField] private float _hoverExitDelay = 0.15f;
+    [SerializeField] private float _hoverHitboxPadding = 0.3f;
+    private float _hoverExitTimer = -1f;
+    private float _lastHoverChangeTime;
+    private const float HOVER_COOLDOWN = 0.05f;
+
     // ==============================================================================================
     // 2. ESTADO PÚBLICO
     // ==============================================================================================
@@ -88,7 +95,46 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     private void Update()
     {
         if (_config == null) return;
+        
+        ProcessHoverExitTimer();
+        ValidateHoverByBasePosition();
+        
         CalculateAndApplyVisuals();
+    }
+
+    private void ProcessHoverExitTimer()
+    {
+        if (_hoverExitTimer > 0)
+        {
+            _hoverExitTimer -= Time.deltaTime;
+            if (_hoverExitTimer <= 0)
+            {
+                IsHovered = false;
+            }
+        }
+    }
+
+    private void ValidateHoverByBasePosition()
+    {
+        if (!IsHovered) return;
+        
+        // Se o mouse ainda está na área "estendida" da posição BASE (mesmo que o visual tenha subido),
+        // cancelamos o timer de saída. Isso evita flickering.
+        Vector2 mousePos = _inputManager.MouseWorldPosition;
+        Vector2 basePos = _baseLayoutTarget.Position;
+        
+        // Dimensões aproximadas da carta para hit-test lógico
+        float halfWidth = 1.25f; 
+        float halfHeight = 1.75f + _hoverHitboxPadding; 
+        
+        bool isWithinExtendedBounds = 
+            Mathf.Abs(mousePos.x - basePos.x) <= halfWidth &&
+            Mathf.Abs(mousePos.y - basePos.y) <= halfHeight;
+            
+        if (isWithinExtendedBounds && _hoverExitTimer > 0)
+        {
+            _hoverExitTimer = -1f;
+        }
     }
 
     // ==============================================================================================
@@ -173,7 +219,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
             target.Position += Vector3.up * _config.PeekYOffset;
             target.Position.z = _config.HoverZ;
             target.Scale = Vector3.one * _config.PeekScale;
-            sortOrder = CardSortingConstants.HOVER_LAYER;
+            sortOrder = CardSortingConstants.HOVER_LAYER + _baseLayoutTarget.SortingOrder;
 
             // Tilt 3D
             ApplyDynamicTilt(ref target, interactionPoint);
@@ -249,8 +295,25 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     public void OnClick() => PerformClick();
     public void OnPointerClick(PointerEventData d) => PerformClick();
 
-    public void OnHoverEnter() => IsHovered = true;
-    public void OnHoverExit() => IsHovered = false;
+    public void OnHoverEnter() 
+    {
+        if (Time.time - _lastHoverChangeTime < HOVER_COOLDOWN) return;
+        
+        _hoverExitTimer = -1f;
+        if (!IsHovered)
+        {
+            IsHovered = true;
+            _lastHoverChangeTime = Time.time;
+        }
+    }
+
+    public void OnHoverExit() 
+    {
+        if (IsHovered)
+        {
+            _hoverExitTimer = _hoverExitDelay;
+        }
+    }
 
     // Mantemos Select/Deselect para lógica do HandManager, mas visualmente é igual Idle
     public void Select() { if (CanChangeState()) SetState(CardVisualState.Selected); }

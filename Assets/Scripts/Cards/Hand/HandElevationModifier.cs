@@ -54,6 +54,9 @@ public class HandElevationModifier : ICardVisualModifier
         // Aplica o offset ao target
         if (_currentOffset > 0)
         {
+            // Se a carta estiver em hover, podemos reduzir o impacto da elevação da mão
+            // para evitar que ela suba "demais". 
+            // Nota: CardView já aplica o PeekYOffset separadamente.
             target.Position.y += _currentOffset;
         }
     }
