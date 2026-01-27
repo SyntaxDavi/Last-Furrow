@@ -101,7 +101,6 @@ public class HandHoverController : MonoBehaviour
     
     private void CheckHoverState()
     {
-        // 0. Validações Globais (Fail Fast)
         if (!CanInteract())
         {
             if (_isHandHovered)
@@ -112,21 +111,24 @@ public class HandHoverController : MonoBehaviour
             return;
         }
 
-        // Calcula o fator de elevação (0-1) baseado na posição Y
         float elevationFactor = CalculateElevationFactor();
-        bool isCurrentlyHovered = elevationFactor > 0.01f; // Considera hovering se fator > 0
+        bool isCurrentlyHovered = elevationFactor > 0.01f;
         
-        // Se está na zona de fade (fator entre 0 e 1), aplica gradualmente a TODAS as cartas
-        if (elevationFactor > 0.01f && elevationFactor < 0.99f)
-        {
-            ApplyGradualFade(elevationFactor);
-        }
-        
-        // Mudou de estado? (entrou ou saiu completamente)
+        // Se mudou radicalmente de estado (entrou ou saiu completamente do box)
         if (isCurrentlyHovered != _isHandHovered)
         {
             _isHandHovered = isCurrentlyHovered;
             OnHandHoverChanged(_isHandHovered);
+        }
+        else if (isCurrentlyHovered)
+        {
+            // Dentro da área de hover (fade ou full):
+            // Só aplicamos o fade contínuo se não estivermos rodando uma sequência
+            // de animação (evita "briga" entre a coroutine e o mouse)
+            if (_currentSequence == null)
+            {
+                ApplyGradualFade(elevationFactor);
+            }
         }
     }
     

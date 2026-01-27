@@ -317,6 +317,8 @@ public class HandManager : MonoBehaviour
 
         _activeCards.Clear();
         _activeCards.AddRange(newOrder);
-        OnHandLayoutChanged?.Invoke();
+        
+        // Marca para recalcular no Update, que disparará o OnHandLayoutChanged após os alvos mudarem
+        _isLayoutDirty = true;
     }
 }
