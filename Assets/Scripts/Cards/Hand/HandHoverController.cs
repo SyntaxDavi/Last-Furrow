@@ -22,6 +22,10 @@ public class HandHoverController : MonoBehaviour
     [Tooltip("Deslocamento do centro da área de detecção em relação ao pivô da carta.")]
     [SerializeField] private Vector2 _detectionCenterOffset = new Vector2(0f, 0.5f);
     
+    [Header("Fade Gradual")]
+    [Tooltip("Altura extra ACIMA do bounds onde o fade gradual acontece. As cartas vão descendo conforme o mouse sobe nessa zona.")]
+    [SerializeField] private float _fadeOutZoneHeight = 2.0f;
+    
     [Header("Debug")]
     [SerializeField] private bool _showDebugGizmos = false;
     
@@ -33,7 +37,7 @@ public class HandHoverController : MonoBehaviour
     private bool _isHandHovered = false;
     private Coroutine _currentSequence;
     private float _lastHoverCheckTime;
-    private int _currentPatternIndex = 0; // Cicla entre os 4 padrões
+    private int _currentPatternIndex = 0; 
     
     // ==================================================================================
     // INICIALIZAÇÃO
@@ -81,9 +85,17 @@ public class HandHoverController : MonoBehaviour
             return;
         }
 
-        bool isCurrentlyHovered = IsMouseOverHandArea();
+        // Calcula o fator de elevação (0-1) baseado na posição Y
+        float elevationFactor = CalculateElevationFactor();
+        bool isCurrentlyHovered = elevationFactor > 0.01f; // Considera hovering se fator > 0
         
-        // Mudou de estado?
+        // Se está na zona de fade (fator entre 0 e 1), aplica gradualmente a TODAS as cartas
+        if (elevationFactor > 0.01f && elevationFactor < 0.99f)
+        {
+            ApplyGradualFade(elevationFactor);
+        }
+        
+        // Mudou de estado? (entrou ou saiu completamente)
         if (isCurrentlyHovered != _isHandHovered)
         {
             _isHandHovered = isCurrentlyHovered;
@@ -91,31 +103,74 @@ public class HandHoverController : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// Aplica o fator de elevação gradual a todas as cartas.
+    /// Usado quando o mouse está na zona de transição (fade zone).
+    /// </summary>
+    private void ApplyGradualFade(float factor)
+    {
+        var cards = _handManager?.GetActiveCardsReadOnly();
+        if (cards == null) return;
+        
+        foreach (var card in cards)
+        {
+            card.SetElevationFactor(factor);
+        }
+    }
+    
     private bool CanInteract()
     {
         // Bloqueia se estiver arrastando alguma carta (evita comportamento estranho)
-        if (_handManager.IsDraggingAnyCard) return false;
+        if (_handManager == null || _handManager.IsDraggingAnyCard) return false;
 
-        // Bloqueia se AppCore não estiver pronto ou Estado de jogo não for interativo
-        if (AppCore.Instance == null || AppCore.Instance.GameStateManager == null) return true; // Default to true if decoupled
+        // Fail-safe: se não consegue determinar estado, bloqueia
+        if (AppCore.Instance == null || AppCore.Instance.GameStateManager == null) return false;
         
         var currentState = AppCore.Instance.GameStateManager.CurrentState;
         return currentState == GameState.Playing || currentState == GameState.Shopping;
     }
     
-    private bool IsMouseOverHandArea()
+    // IsMouseOverHandArea() removido - usar CalculateElevationFactor() que é mais completo
+    
+    /// <summary>
+    /// Calcula o fator de elevação (0.0 a 1.0) baseado na posição Y do mouse.
+    /// 1.0 = totalmente dentro do bounds (cartas levantadas)
+    /// 0.0 = fora da zona de fade (cartas abaixadas)
+    /// Valores intermediários = transição gradual
+    /// </summary>
+    private float CalculateElevationFactor()
     {
-        if (_inputManager == null) return false;
-
-        // Usa a posição do mouse já calculada corretamente pelo InputManager
+        if (_inputManager == null) return 0f;
+        if (!TryCalculateHandBounds(out Bounds handBounds)) return 0f;
+        
         Vector2 mouseWorldPos = _inputManager.MouseWorldPosition;
         
-        // Calcula bounds dinâmicos que englobam todas as cartas
-        if (!TryCalculateHandBounds(out Bounds handBounds)) return false;
+        // Se o mouse está FORA dos limites X, fator = 0
+        if (mouseWorldPos.x < handBounds.min.x || mouseWorldPos.x > handBounds.max.x)
+        {
+            return 0f;
+        }
         
-        // Verifica se o mouse está dentro dos bounds (2D check)
-        return mouseWorldPos.x >= handBounds.min.x && mouseWorldPos.x <= handBounds.max.x &&
-               mouseWorldPos.y >= handBounds.min.y && mouseWorldPos.y <= handBounds.max.y;
+        float boundsTop = handBounds.max.y;
+        float fadeZoneTop = boundsTop + _fadeOutZoneHeight;
+        
+        // Se o mouse está DENTRO do bounds, fator = 1
+        if (mouseWorldPos.y >= handBounds.min.y && mouseWorldPos.y <= boundsTop)
+        {
+            return 1f;
+        }
+        
+        // Se o mouse está NA ZONA DE FADE (acima do bounds, dentro da zona de transição)
+        if (mouseWorldPos.y > boundsTop && mouseWorldPos.y < fadeZoneTop)
+        {
+            // Interpola de 1 (no topo do bounds) para 0 (no topo da zona de fade)
+            float distanceIntoFadeZone = mouseWorldPos.y - boundsTop;
+            float fadeProgress = distanceIntoFadeZone / _fadeOutZoneHeight;
+            return 1f - Mathf.Clamp01(fadeProgress);
+        }
+        
+        // Fora de tudo
+        return 0f;
     }
     
     /// <summary>
@@ -132,7 +187,8 @@ public class HandHoverController : MonoBehaviour
         float halfWidth = _cardDetectionSize.x * 0.5f;
         float halfHeight = _cardDetectionSize.y * 0.5f;
         
-        // Inicializa com a primeira carta
+        // Inicializa com a primeira carta (null-check defensivo)
+        if (cards[0] == null) return false;
         Vector2 firstPos = (Vector2)cards[0].BaseLayoutTarget.Position + _detectionCenterOffset;
         float minX = firstPos.x - halfWidth;
         float maxX = firstPos.x + halfWidth;
@@ -142,6 +198,8 @@ public class HandHoverController : MonoBehaviour
         // Expande para incluir todas as outras cartas
         for (int i = 1; i < cards.Count; i++)
         {
+            if (cards[i] == null) continue; // Pula cartas sendo destruídas
+            
             Vector2 cardPos = (Vector2)cards[i].BaseLayoutTarget.Position + _detectionCenterOffset;
             
             float cardMinX = cardPos.x - halfWidth;
@@ -187,8 +245,9 @@ public class HandHoverController : MonoBehaviour
             ? _visualConfig.HandElevationSequenceDelay 
             : 0.05f;
         
-        // Obtém o padrão atual do ciclo e avança para o próximo
+        // Obtém o padrão atual do ciclo (avança ANTES de iniciar, evita modificação durante coroutine)
         var pattern = (SequencePatternGenerator.SweepPattern)(_currentPatternIndex % 4);
+        int patternToUse = _currentPatternIndex;
         if (isRaising) _currentPatternIndex++; // Só avança quando está SUBINDO
         
         // Gera a ordem de acordo com o padrão
@@ -205,7 +264,9 @@ public class HandHoverController : MonoBehaviour
         {
             if (index >= 0 && index < cards.Count)
             {
-                cards[index].SetHandElevation(isRaising);
+                // Unificado: usar SetElevationFactor em vez de SetHandElevation
+                // Isso evita conflito de estado entre sequência e fade gradual
+                cards[index].SetElevationFactor(isRaising ? 1f : 0f);
             }
             
             if (delay > 0)
@@ -263,6 +324,15 @@ public class HandHoverController : MonoBehaviour
             // Verde se hovering, Cyan se não
             Gizmos.color = _isHandHovered ? Color.green : Color.cyan;
             Gizmos.DrawWireCube(handBounds.center, handBounds.size);
+            
+            // Desenha a zona de FADE em amarelo (acima dos bounds)
+            if (_fadeOutZoneHeight > 0)
+            {
+                Gizmos.color = new Color(1f, 1f, 0f, 0.5f); // Amarelo semi-transparente
+                Vector3 fadeCenter = handBounds.center + Vector3.up * (handBounds.size.y * 0.5f + _fadeOutZoneHeight * 0.5f);
+                Vector3 fadeSize = new Vector3(handBounds.size.x, _fadeOutZoneHeight, 0.1f);
+                Gizmos.DrawWireCube(fadeCenter, fadeSize);
+            }
         }
     }
 }
