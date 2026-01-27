@@ -232,35 +232,42 @@ public class HandHoverController : MonoBehaviour
         float halfWidth = _cardDetectionSize.x * 0.5f;
         float halfHeight = _cardDetectionSize.y * 0.5f;
         
-        // Inicializa com a primeira carta (null-check defensivo)
-        if (cards[0] == null) return false;
-        Vector2 firstPos = (Vector2)cards[0].BaseLayoutTarget.Position + _detectionCenterOffset;
-        float minX = firstPos.x - halfWidth;
-        float maxX = firstPos.x + halfWidth;
-        float minY = firstPos.y - halfHeight;
-        float maxY = firstPos.y + halfHeight;
-        
-        // Expande para incluir todas as outras cartas
-        for (int i = 1; i < cards.Count; i++)
+        bool foundFirstValid = false;
+        float minX = 0f, maxX = 0f, minY = 0f, maxY = 0f;
+
+        foreach (var card in cards)
         {
-            if (cards[i] == null) continue; // Pula cartas sendo destruídas
-            
-            Vector2 cardPos = (Vector2)cards[i].BaseLayoutTarget.Position + _detectionCenterOffset;
-            
-            float cardMinX = cardPos.x - halfWidth;
-            float cardMaxX = cardPos.x + halfWidth;
-            float cardMinY = cardPos.y - halfHeight;
-            float cardMaxY = cardPos.y + halfHeight;
-            
-            if (cardMinX < minX) minX = cardMinX;
-            if (cardMaxX > maxX) maxX = cardMaxX;
-            if (cardMinY < minY) minY = cardMinY;
-            if (cardMaxY > maxY) maxY = cardMaxY;
+            if (card == null) continue;
+
+            Vector2 cardPos = (Vector2)card.BaseLayoutTarget.Position + _detectionCenterOffset;
+            float cMinX = cardPos.x - halfWidth;
+            float cMaxX = cardPos.x + halfWidth;
+            float cMinY = cardPos.y - halfHeight;
+            float cMaxY = cardPos.y + halfHeight;
+
+            if (!foundFirstValid)
+            {
+                minX = cMinX;
+                maxX = cMaxX;
+                minY = cMinY;
+                maxY = cMaxY;
+                foundFirstValid = true;
+            }
+            else
+            {
+                if (cMinX < minX) minX = cMinX;
+                if (cMaxX > maxX) maxX = cMaxX;
+                if (cMinY < minY) minY = cMinY;
+                if (cMaxY > maxY) maxY = cMaxY;
+            }
         }
+
+        if (!foundFirstValid) return false;
         
         // Cria e cacheia o bounds (com padding)
         Vector3 center = new Vector3((minX + maxX) * 0.5f, (minY + maxY) * 0.5f, 0f);
         Vector3 size = new Vector3((maxX - minX) + _boundsPadding.x * 2f, (maxY - minY) + _boundsPadding.y * 2f, 0.1f);
+        
         _cachedBounds = new Bounds(center, size);
         _isBoundsDirty = false;
         
