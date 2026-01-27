@@ -84,7 +84,11 @@ public class RunData
 
     // FACTORY METHOD (A Regra de Negócio mora aqui)
     // É aqui que definimos como uma Run começa de verdade.
-
+    public void MarkDailyHandDrawn()
+{
+    LastDrawnDay = CurrentDay;
+    LastDrawnWeek = CurrentWeek;
+}
     public bool IsHealthFull()
     {
         return CurrentLives >= MaxLives;
