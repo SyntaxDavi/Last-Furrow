@@ -142,6 +142,21 @@ namespace LastFurrow.EventInspector
         }
 
         /// <summary>
+        /// Log a connection between two scripts for the Architecture Graph.
+        /// </summary>
+        /// <param name="from">Origin script/module name</param>
+        /// <param name="to">Target script/module name</param>
+        public void LogConnection(string from, string to)
+        {
+            var payload = new Dictionary<string, object>
+            {
+                { "from", from },
+                { "to", to }
+            };
+            LogCustom("script_connection", payload, "architecture_tracker");
+        }
+
+        /// <summary>
         /// Log state initialization.
         /// </summary>
         public void LogStateInitialized(string description, Dictionary<string, object> initialValues, string source = "system")
