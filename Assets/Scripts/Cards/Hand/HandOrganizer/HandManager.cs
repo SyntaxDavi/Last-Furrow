@@ -22,6 +22,9 @@ public class HandManager : MonoBehaviour
     [Header("Hover Controller")]
     [SerializeField] private HandHoverController _hoverController;
 
+    // Eventos
+    public event System.Action OnHandLayoutChanged;
+
     // Runtime State
     private List<CardView> _activeCards = new List<CardView>();
     private RunData _runData;
@@ -83,6 +86,7 @@ public class HandManager : MonoBehaviour
         {
             RecalculateLayoutTargets();
             _isLayoutDirty = false;
+            OnHandLayoutChanged?.Invoke();
         }
     }
 
@@ -241,6 +245,7 @@ public class HandManager : MonoBehaviour
         _isLayoutDirty = false;
         _pendingCards.Clear();
         _isSpawning = false;
+        OnHandLayoutChanged?.Invoke();
     }
 
     private void OnCardDragStart(CardView card)
@@ -312,5 +317,6 @@ public class HandManager : MonoBehaviour
 
         _activeCards.Clear();
         _activeCards.AddRange(newOrder);
+        OnHandLayoutChanged?.Invoke();
     }
 }

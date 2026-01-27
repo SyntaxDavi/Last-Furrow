@@ -19,6 +19,9 @@ public class HandHoverController : MonoBehaviour
     [Tooltip("Tamanho da área de detecção ao redor de cada carta (Largura, Altura).")]
     [SerializeField] private Vector2 _cardDetectionSize = new Vector2(3.0f, 4.0f);
     
+    [Tooltip("Padding extra aplicado ao bounding box da mão para detecção de hover.")]
+    [SerializeField] private Vector2 _boundsPadding = new Vector2(0.5f, 0.5f);
+    
     [Tooltip("Deslocamento do centro da área de detecção em relação ao pivô da carta.")]
     [SerializeField] private Vector2 _detectionCenterOffset = new Vector2(0f, 0.5f);
     
@@ -56,24 +59,22 @@ public class HandHoverController : MonoBehaviour
         _handManager = handManager;
         _inputManager = AppCore.Instance?.InputManager;
         
-        // Invalida cache quando a mão muda
-        if (AppCore.Instance != null && AppCore.Instance.Events != null)
+        // Invalida cache quando o layout da mão muda fisicamente
+        if (_handManager != null)
         {
-            AppCore.Instance.Events.Player.OnCardAdded += InvalidateBoundsCache;
-            AppCore.Instance.Events.Player.OnCardRemoved += InvalidateBoundsCache;
+            _handManager.OnHandLayoutChanged += InvalidateBoundsCache;
         }
     }
     
     private void OnDestroy()
     {
-        if (AppCore.Instance != null && AppCore.Instance.Events != null)
+        if (_handManager != null)
         {
-            AppCore.Instance.Events.Player.OnCardAdded -= InvalidateBoundsCache;
-            AppCore.Instance.Events.Player.OnCardRemoved -= InvalidateBoundsCache;
+            _handManager.OnHandLayoutChanged -= InvalidateBoundsCache;
         }
     }
     
-    private void InvalidateBoundsCache(CardInstance _) => _isBoundsDirty = true;
+    private void InvalidateBoundsCache() => _isBoundsDirty = true;
     
     private void Start()
     {
@@ -257,9 +258,9 @@ public class HandHoverController : MonoBehaviour
             if (cardMaxY > maxY) maxY = cardMaxY;
         }
         
-        // Cria e cacheia o bounds
+        // Cria e cacheia o bounds (com padding)
         Vector3 center = new Vector3((minX + maxX) * 0.5f, (minY + maxY) * 0.5f, 0f);
-        Vector3 size = new Vector3(maxX - minX, maxY - minY, 0.1f);
+        Vector3 size = new Vector3((maxX - minX) + _boundsPadding.x * 2f, (maxY - minY) + _boundsPadding.y * 2f, 0.1f);
         _cachedBounds = new Bounds(center, size);
         _isBoundsDirty = false;
         
@@ -368,6 +369,19 @@ public class HandHoverController : MonoBehaviour
         // Tenta calcular os bounds dinâmicos (mesmo método usado na detecção)
         if (TryCalculateHandBounds(out Bounds handBounds))
         {
+            // Gizmo das cartas individuais (Wire)
+            var cards = _handManager?.GetActiveCardsReadOnly();
+            if (cards != null)
+            {
+                Gizmos.color = new Color(0, 1, 1, 0.2f);
+                foreach(var card in cards)
+                {
+                    if (card == null) continue;
+                    Vector3 cardPos = (Vector3)card.BaseLayoutTarget.Position + (Vector3)_detectionCenterOffset;
+                    Gizmos.DrawWireCube(cardPos, (Vector3)_cardDetectionSize);
+                }
+            }
+
             // Verde se hovering, Cyan se não
             Gizmos.color = _isHandHovered ? Color.green : Color.cyan;
             Gizmos.DrawWireCube(handBounds.center, handBounds.size);
@@ -375,7 +389,7 @@ public class HandHoverController : MonoBehaviour
             // Desenha a zona de FADE em amarelo (acima dos bounds)
             if (_fadeOutZoneHeight > 0)
             {
-                Gizmos.color = new Color(1f, 1f, 0f, 0.5f); // Amarelo semi-transparente
+                Gizmos.color = new Color(1f, 1f, 0f, 0.3f); // Amarelo semi-transparente
                 Vector3 fadeCenter = handBounds.center + Vector3.up * (handBounds.size.y * 0.5f + _fadeOutZoneHeight * 0.5f);
                 Vector3 fadeSize = new Vector3(handBounds.size.x, _fadeOutZoneHeight, 0.1f);
                 Gizmos.DrawWireCube(fadeCenter, fadeSize);
