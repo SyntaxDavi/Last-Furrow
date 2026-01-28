@@ -17,7 +17,7 @@ using UnityEngine;
 public class DailyVisualBootstrapper : MonoBehaviour
 {
     [Header("Visual Controllers (Arraste da Scene)")]
-    [SerializeField] private AnalyzingPhaseController _analyzer;
+    [SerializeField] private AnalyzingPhaseOrchestrator _analyzer;
     [SerializeField] private GridSlotScanner _scanner;
     [SerializeField] private PatternUIManager _uiManager;
     
@@ -57,7 +57,7 @@ public class DailyVisualBootstrapper : MonoBehaviour
         
         if (_analyzer == null)
         {
-            Debug.LogError("[DailyVisualBootstrapper] AnalyzingPhaseController não atribuído no Inspector!", this);
+            Debug.LogError("[DailyVisualBootstrapper] AnalyzingPhaseOrchestrator não atribuído no Inspector!", this);
             isValid = false;
         }
         
@@ -84,7 +84,7 @@ public class DailyVisualBootstrapper : MonoBehaviour
     /// <summary>
     /// Getter público para acesso individual (se necessário).
     /// </summary>
-    public AnalyzingPhaseController Analyzer => _analyzer;
+    public AnalyzingPhaseOrchestrator Analyzer => _analyzer;
     public GridSlotScanner Scanner => _scanner;
     public PatternUIManager UIManager => _uiManager;
 }

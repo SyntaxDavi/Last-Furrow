@@ -15,9 +15,10 @@ GameObject:
   - component: {fileID: 5558657295551827975}
   - component: {fileID: 7047140990777372177}
   - component: {fileID: 2458983469160152068}
-  - component: {fileID: 7645439710493714262}
   - component: {fileID: 403808487855815489}
   - component: {fileID: 6733796699465726355}
+  - component: {fileID: 840176625115160497}
+  - component: {fileID: 4138196171516746549}
   m_Layer: 0
   m_Name: AppCore
   m_TagString: Untagged
@@ -135,30 +136,6 @@ MonoBehaviour:
   _musicSource: {fileID: 0}
   _sfxSource: {fileID: 0}
   MasterVolume: 1
---- !u!114 &7645439710493714262
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5398887748843182172}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 13e8c56876c9f604eb9e54c67af54eae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _toggleKey: 282
-  _uiX: 20
-  _uiY: 100
-  _uiWidth: 280
-  _uiHeight: 600
-  _quickSpawnCardIDs:
-  - card_corn
-  - card_carrot
-  - card_expansion
-  - card_harvest
-  - card_shovel
-  - card_water
 --- !u!114 &403808487855815489
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -183,3 +160,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3695063e408700245bcbc59da386b271, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &840176625115160497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5398887748843182172}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ea5ec2d7632d4e488b59ac7fddfbdb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CheatManager
+  _visualTreeAsset: {fileID: 9197481963319205126, guid: f799ed99850945c47aeda81b316d4797, type: 3}
+  _panelSettings: {fileID: 11400000, guid: 78379d9f616d08a48afd57551226c897, type: 2}
+  _toggleKey: 282
+--- !u!114 &4138196171516746549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5398887748843182172}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7503b0cdbda954145a5dc156400f6815, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.Domain.Patterns.Visual.Handlers.PassiveScoreVisualHandler
+  _config: {fileID: 11400000, guid: 09dc2df871bee3f4dac51ec7ad347b21, type: 2}

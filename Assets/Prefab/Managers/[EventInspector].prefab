@@ -40,16 +40,16 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8290802016599453868}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 09e8f5f0b6cbf004b9a4ff08ef767854, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.EventInspector.EventLogger
-  IsEnabled: 1
+  IsEnabled: 0
   MaxEvents: 10000
-  ExportOnQuit: 1
+  ExportOnQuit: 0
   ExportDirectory: EventLogs
-  TimestampFilename: 1
+  TimestampFilename: 0
 --- !u!114 &5555280494526949533
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -57,9 +57,8 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8290802016599453868}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a75c5f22c11cd214d8f7f47de83420d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.EventInspector.GameEventAdapter
-  EventSources: []
