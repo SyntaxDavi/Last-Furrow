@@ -19,10 +19,10 @@ MonoBehaviour:
   analyzingSlotDelay: 0.01
   levitationHeight: 0.222
   levitationDuration: 0.121
-  highlightDuration: 0.1
-  highlightPulseSpeed: 1.95
-  highlightFadeOutDuration: 0.195
-  popupAnimationDuration: 1
+  highlightDuration: 1.17
+  highlightPulseSpeed: 3.99
+  highlightFadeOutDuration: 0.359
+  popupAnimationDuration: 1.53
   popupStartScale: 0.225
   popupEndScale: 1.093
   breathingAmount: 0.0122

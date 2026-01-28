@@ -23,11 +23,11 @@ MonoBehaviour:
   witheredOverlay: {r: 1, g: 1, b: 0.7, a: 0.3}
   validHover: {r: 0.34109113, g: 0.990566, b: 0.4968389, a: 0.19607843}
   patternElevationOffset: 0.5
-  elevationSpeed: 20
+  elevationSpeed: 30
   errorFlash: {r: 0.8867924, g: 0.1966002, b: 0.20945916, a: 0.6745098}
-  analyzingPulse: {r: 1, g: 0.42745098, b: 1, a: 0.7647059}
-  flashDuration: 0.448
-  pulseDuration: 0.467
+  analyzingPulse: {r: 1, g: 0.69093144, b: 0.21226418, a: 0.7647059}
+  flashDuration: 0.626
+  pulseDuration: 0.373
   stateOverlayOffset: 6
   gameStateOverlayOffset: 7
   hoverHighlightOffset: 5

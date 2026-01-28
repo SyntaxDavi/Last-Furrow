@@ -14,7 +14,9 @@ public class PatternHighlightController : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private GridManager _gridManager;
-
+    
+    // Rastreia efeitos ativos por slot para evitar conflito (Jitter Fix)
+    private Dictionary<int, CancellationTokenSource> _activeEffects = new Dictionary<int, CancellationTokenSource>();
     private Dictionary<int, GridSlotView> _slotCache = new Dictionary<int, GridSlotView>();
 
     private void Awake()
@@ -37,7 +39,17 @@ public class PatternHighlightController : MonoBehaviour
     private void OnDestroy()
     {
         UnsubscribeFromEvents();
-        // UniTask cuida do cancelamento automaticamente via GetCancellationTokenOnDestroy
+        CancelAllEffects();
+    }
+    
+    private void CancelAllEffects()
+    {
+        foreach (var cts in _activeEffects.Values)
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
+        _activeEffects.Clear();
     }
 
     private void CacheSlots()
@@ -87,18 +99,32 @@ public class PatternHighlightController : MonoBehaviour
         {
             if (_slotCache.TryGetValue(slotIndex, out GridSlotView slot))
             {
-                // Inicia a animação sem esperar (Fire-and-Forget)
-                HighlightSlotAsync(slot, finalColor).Forget();
+                // 1. Cancela efeito anterior no mesmo slot (Jitter Fix)
+                if (_activeEffects.TryGetValue(slotIndex, out var existingCts))
+                {
+                    existingCts.Cancel();
+                    existingCts.Dispose();
+                    _activeEffects.Remove(slotIndex);
+                }
+
+                // 2. Cria novo token controlado por nós
+                var cts = new CancellationTokenSource();
+                _activeEffects[slotIndex] = cts;
+
+                // 3. Linka com destruição do objeto para segurança
+                var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                    cts.Token, this.GetCancellationTokenOnDestroy());
+
+                // 4. Inicia animação
+                HighlightSlotAsync(slot, finalColor, slotIndex, linkedCts.Token).Forget();
             }
         }
     }
 
-    private async UniTaskVoid HighlightSlotAsync(GridSlotView slot, Color color)
+    private async UniTaskVoid HighlightSlotAsync(GridSlotView slot, Color color, int slotIndex, CancellationToken token)
     {
-        // Pega o token de cancelamento deste MonoBehaviour.
-        // Se este objeto for destruído, a task cancela automaticamente.
-        var token = this.GetCancellationTokenOnDestroy();
-
+        // Nota: O token já é linkado com destroy.
+        
         if (slot == null) return;
 
         float elapsed = 0f;
@@ -144,10 +170,18 @@ public class PatternHighlightController : MonoBehaviour
         }
 
         // Limpeza final
-        if (slot != null)
+        // Limpeza final (SÓ se não foi cancelado por outro efeito chegando)
+        // Se o token foi cancelado, significa que outro efeito assumiu, então NÃO resetamos o slot.
+        if (!token.IsCancellationRequested && slot != null)
         {
             slot.ClearPatternHighlight();
             slot.SetElevationFactor(0f);
+            
+             // Remove do dicionário se terminamos naturalmente
+            if (_activeEffects.ContainsKey(slotIndex) && _activeEffects[slotIndex].Token == token)
+            {
+                _activeEffects.Remove(slotIndex);
+            }
         }
     }
 

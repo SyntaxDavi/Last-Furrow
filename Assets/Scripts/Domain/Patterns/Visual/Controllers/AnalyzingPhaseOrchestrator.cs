@@ -39,7 +39,7 @@ public class AnalyzingPhaseOrchestrator : MonoBehaviour
         {
             new NightCyclePhase(),
             new PassiveScoresPhase(_gridConfig),
-            new PatternAnalysisPhase(_uiManager)
+            new PatternAnalysisPhase(_uiManager, _patternConfig)
         };
     }
 

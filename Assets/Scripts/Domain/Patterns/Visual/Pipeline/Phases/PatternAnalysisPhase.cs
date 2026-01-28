@@ -12,10 +12,12 @@ namespace LastFurrow.Domain.Patterns.Visual.Pipeline.Phases
     public class PatternAnalysisPhase : IAnalysisPhase
     {
         private readonly PatternUIManager _uiManager;
+        private readonly PatternVisualConfig _config;
 
-        public PatternAnalysisPhase(PatternUIManager uiManager)
+        public PatternAnalysisPhase(PatternUIManager uiManager, PatternVisualConfig config)
         {
             _uiManager = uiManager;
+            _config = config;
         }
 
         public string Name => "Pattern Analysis";
@@ -55,11 +57,26 @@ namespace LastFurrow.Domain.Patterns.Visual.Pipeline.Phases
                 // 3. Dispara Highlights nos slots
                 context.Events.Pattern.TriggerPatternSlotCompleted(match);
 
-                // 4. Mostra Popup (Awaiting se necessário)
+                // 4. Mostra Popup (Fire-and-Forget para permitir empilhamento)
                 if (_uiManager != null)
                 {
-                    await _uiManager.ShowPatternPopupRoutine(match).AttachExternalCancellation(ct);
+                    _uiManager.ShowPatternPopupDirect(match);
                 }
+                
+                // --- Lógica de Aceleração Dinâmica (Decolagem 🛫 - Tuned) ---
+                // Começa mais lento (0.6s) para dar tempo de leitura, acelera quadraticamente.
+                float configDelay = _config != null ? _config.analyzingSlotDelay : 0.6f;
+                float startDelay = Mathf.Max(configDelay, 0.6f); // Force slow start
+                float minDelay = 0.15f; // Hard limit de 150ms (Humanamente legível mas rápido)
+
+                float t = (float)i / total;
+                // Curva Quadrática: t^2
+                // Mantém o delay alto por mais tempo e cai subitamente no final.
+                float curve = t * t; 
+                
+                float currentDelay = Mathf.Lerp(startDelay, minDelay, curve);
+
+                await UniTask.Delay(TimeSpan.FromSeconds(currentDelay), cancellationToken: ct);
 
                 // 5. Efeitos de Decay/Recreation (Apenas visual/log via eventos)
                 if (match.DaysActive > 1)

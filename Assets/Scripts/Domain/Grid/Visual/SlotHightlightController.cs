@@ -236,8 +236,12 @@ public class SlotHighlightController
     /// </summary>
     public async UniTask PlayWhiteFlash(CancellationToken externalToken)
     {
-        // 1. Tomada de Controle
+        // 1. Guard Clause: Se já está piscando (Erro ou Branco anterior), ignora para evitar strobe.
+        if (_isLockedByTransient) return;
+
+        // 2. Tomada de Controle
         KillTransientTween();
+        _isLockedByTransient = true; // LOCK
         
         // Setup visual imediato: Branco Puro
         _overlay.enabled = true;
