@@ -237,7 +237,19 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1870084474761185705, guid: f0a30a8b4f08ccd49a93a9ba166b39cb, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1870084474761185705, guid: f0a30a8b4f08ccd49a93a9ba166b39cb, type: 3}
       propertyPath: ExportOnQuit
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1870084474761185705, guid: f0a30a8b4f08ccd49a93a9ba166b39cb, type: 3}
+      propertyPath: TimestampFilename
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5555280494526949533, guid: f0a30a8b4f08ccd49a93a9ba166b39cb, type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8290802016599453868, guid: f0a30a8b4f08ccd49a93a9ba166b39cb, type: 3}
