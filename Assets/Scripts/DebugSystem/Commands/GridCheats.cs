@@ -149,3 +149,62 @@ public class AutoPlantCheat : ICheatCommand
         return true;
     }
 }
+
+[Cheat("elevate_row", "Grid", "Levanta todos os slots de uma linha (0-4).")]
+public class ElevateRowCheat : ICheatCommand
+{
+    public string Id => "elevate_row";
+    public string Category => "Grid";
+    public string Description => "Levanta todos os slots de uma linha (0-4).";
+    public bool ValidateArgs(string[] args, out string error)
+    {
+        if (args.Length == 0 || !int.TryParse(args[0], out int row) || row < 0 || row > 4)
+        {
+            error = "Uso: elevate_row <0-4>";
+            return false;
+        }
+        error = null;
+        return true;
+    }
+
+    public bool Execute(string[] args, out string feedback)
+    {
+        int targetRow = int.Parse(args[0]);
+        var slots = Object.FindObjectsByType<GridSlotView>(FindObjectsSortMode.None);
+        int count = 0;
+
+        foreach (var slot in slots)
+        {
+            int row = slot.SlotIndex / 5; // Assumindo grid 5x5
+            if (row == targetRow)
+            {
+                slot.SetElevationFactor(1f);
+                count++;
+            }
+            else
+            {
+                slot.SetElevationFactor(0f);
+            }
+        }
+
+        feedback = $"✅ {count} slots levantados na linha {targetRow}.";
+        return true;
+    }
+}
+
+[Cheat("elevate_clear", "Grid", "Reseta a elevação de todos os slots.")]
+public class ElevateClearCheat : ICheatCommand
+{
+    public string Id => "elevate_clear";
+    public string Category => "Grid";
+    public string Description => "Reseta a elevação de todos os slots.";
+    public bool ValidateArgs(string[] args, out string error) { error = null; return true; }
+
+    public bool Execute(string[] args, out string feedback)
+    {
+        var slots = Object.FindObjectsByType<GridSlotView>(FindObjectsSortMode.None);
+        foreach (var slot in slots) slot.SetElevationFactor(0f);
+        feedback = "✅ Elevação resetada.";
+        return true;
+    }
+}

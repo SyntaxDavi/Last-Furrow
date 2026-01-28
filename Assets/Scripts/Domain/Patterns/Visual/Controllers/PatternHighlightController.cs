@@ -1,11 +1,11 @@
-using System.Collections.Generic;
+Ôªøusing System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks; // <--- Importante
 using System.Threading; // Para CancellationToken
 
 /// <summary>
-/// Escuta eventos de padrıes e aplica highlights visuais nos slots.
-/// Vers„o: UniTask (Async/Await)
+/// Escuta eventos de padr√µes e aplica highlights visuais nos slots.
+/// Vers√£o: UniTask (Async/Await)
 /// </summary>
 public class PatternHighlightController : MonoBehaviour
 {
@@ -25,8 +25,11 @@ public class PatternHighlightController : MonoBehaviour
         }
     }
 
-    private void Start()
+    private async UniTaskVoid Start()
     {
+        // Garante que o AppCore e os eventos de Pattern estejam prontos (Onda 6 - Seguran√ßa)
+        await UniTask.WaitUntil(() => AppCore.Instance?.Events?.Pattern != null);
+
         CacheSlots();
         SubscribeToEvents();
     }
@@ -73,6 +76,9 @@ public class PatternHighlightController : MonoBehaviour
     {
         if (match == null || _config == null || match.SlotIndices == null) return;
 
+        // Fallback: Se o cache estiver vazio (ex: grid gerado ap√≥s o Start), tenta preencher agora
+        if (_slotCache.Count == 0) CacheSlots();
+
         int tier = CalculateTier(match.BaseScore);
         Color tierColor = _config.GetTierColor(tier);
         Color finalColor = _config.ApplyDecayToColor(tierColor, match.DaysActive);
@@ -81,8 +87,7 @@ public class PatternHighlightController : MonoBehaviour
         {
             if (_slotCache.TryGetValue(slotIndex, out GridSlotView slot))
             {
-                // Inicia a animaÁ„o sem esperar (Fire-and-Forget)
-                // .Forget() diz ao compilador "Eu sei que n„o estou esperando isso terminar, pode rodar solto"
+                // Inicia a anima√ß√£o sem esperar (Fire-and-Forget)
                 HighlightSlotAsync(slot, finalColor).Forget();
             }
         }
@@ -91,7 +96,7 @@ public class PatternHighlightController : MonoBehaviour
     private async UniTaskVoid HighlightSlotAsync(GridSlotView slot, Color color)
     {
         // Pega o token de cancelamento deste MonoBehaviour.
-        // Se este objeto for destruÌdo, a task cancela automaticamente.
+        // Se este objeto for destru√≠do, a task cancela automaticamente.
         var token = this.GetCancellationTokenOnDestroy();
 
         if (slot == null) return;
@@ -99,10 +104,10 @@ public class PatternHighlightController : MonoBehaviour
         float elapsed = 0f;
         float duration = _config.highlightDuration;
 
-        // FASE 1: Loop de AnimaÁ„o (PingPong)
+        // FASE 1: Loop de Anima√ß√£o (PingPong)
         while (elapsed < duration)
         {
-            // Verifica se o slot ainda existe (seguranÁa extra)
+            // Verifica se o slot ainda existe (seguran√ßa extra)
             if (slot == null) return;
 
             elapsed += Time.deltaTime;
@@ -112,6 +117,7 @@ public class PatternHighlightController : MonoBehaviour
             pulsedColor.a = Mathf.Lerp(0.3f, 0.8f, t);
 
             slot.SetPatternHighlight(pulsedColor, true);
+            slot.SetElevationFactor(1f);
 
             // Espera 1 frame, mas cancela se o objeto morrer
             await UniTask.Yield(PlayerLoopTiming.Update, token);
@@ -127,6 +133,7 @@ public class PatternHighlightController : MonoBehaviour
 
             fadeElapsed += Time.deltaTime;
             float t = fadeElapsed / fadeDuration;
+            slot.SetElevationFactor(1f - t);
 
             Color fadedColor = color;
             fadedColor.a = Mathf.Lerp(0.8f, 0f, t);
@@ -140,6 +147,7 @@ public class PatternHighlightController : MonoBehaviour
         if (slot != null)
         {
             slot.ClearPatternHighlight();
+            slot.SetElevationFactor(0f);
         }
     }
 

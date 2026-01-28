@@ -3,6 +3,7 @@ using TMPro;
 using DG.Tweening;
 using Cysharp.Threading.Tasks;
 using System;
+using LastFurrow.Infrastructure.Visual;
 
 
 [RequireComponent(typeof(SpriteRenderer), typeof(BoxCollider2D))]
@@ -27,6 +28,8 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     private Tween _scoreTween;
 
     private Animator _cursorAnimator;
+    private VisualElevationProcessor _elevationProcessor = new();
+    private Vector3 _originalLocalPos;
 
     public int SlotIndex => _index;
     public int InteractionPriority => 0;
@@ -41,11 +44,28 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         if (_passiveScoreGroup != null) _passiveScoreGroup.alpha = 0f;
     }
 
+    private void Update()
+    {
+        if (_context?.VisualConfig == null) return;
+
+        // Fall-safe: Se a config estiver com 0 (comum após adicionar campos via script), usamos um default
+        float maxOffset = _context.VisualConfig.patternElevationOffset;
+        if (maxOffset <= 0) maxOffset = 0.3f; 
+
+        float speed = _context.VisualConfig.elevationSpeed;
+        if (speed <= 0) speed = 10f;
+
+        _elevationProcessor.Update(maxOffset, speed, Time.deltaTime);
+
+        transform.localPosition = _elevationProcessor.Apply(_originalLocalPos);
+    }
+
     public void Initialize(GridVisualContext context, int index)
     {
         _context = context;
         _index = index;
         _isLocked = false;
+        _originalLocalPos = transform.localPosition;
 
         // 1. Configura Overlay
         // SÓ atribui o sprite da base se o overlay estiver sem sprite (permitindo bordas customizadas no prefab)
@@ -105,6 +125,10 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     {
         // Usa o método PlayScannerPulse que já gerencia o estado analyzing internamente
         _highlightController?.PlayScannerPulse(duration, this.GetCancellationTokenOnDestroy()).Forget();
+    }
+    public void SetElevationFactor(float factor)
+    {
+        _elevationProcessor.SetElevationFactor(factor);
     }
     public void ShowPassiveScore(int points)
     {

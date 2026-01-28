@@ -148,34 +148,19 @@ public class AnalyzingPhaseController : MonoBehaviour
     {
         if (slot == null) return;
 
-        Vector3 originalPos = slot.transform.localPosition;
         float duration = _config.levitationDuration;
-        float height = _config.levitationHeight;
 
-        // Fase de subida
-        float elapsed = 0f;
-        while (elapsed < duration / 2f)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / (duration / 2f);
-            slot.transform.localPosition = originalPos + Vector3.up * (height * t);
+        // Aciona a elevação via processador do Slot (Sistema Unificado)
+        slot.SetElevationFactor(1f);
+        
+        // Espera metade da duração configurada
+        await UniTask.Delay(TimeSpan.FromSeconds(duration / 2f));
 
-            // Espera o pr�ximo frame
-            await UniTask.Yield();
-        }
-
-        // Fase de descida
-        elapsed = 0f;
-        while (elapsed < duration / 2f)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / (duration / 2f);
-            slot.transform.localPosition = Vector3.Lerp(originalPos + Vector3.up * height, originalPos, t);
-
-            await UniTask.Yield();
-        }
-
-        slot.transform.localPosition = originalPos;
+        // Retorna ao estado original
+        slot.SetElevationFactor(0f);
+        
+        // Espera a outra metade para garantir a descida suave antes do próximo slot
+        await UniTask.Delay(TimeSpan.FromSeconds(duration / 2f));
     }
 }
     
