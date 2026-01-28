@@ -1,0 +1,17 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="UnityEngine.UIElements ../../../../UIElementsSchema/UnityEngine.UIElements.xsd" editor-extension-mode="False">
+    <Style src="CheatWindowStyles.uss" />
+    <ui:VisualElement name="cheat-container" class="cheat-window-root">
+        <ui:VisualElement class="header">
+            <ui:Label text="🎮 CHEAT ENGINE" class="title" />
+            <ui:TextField name="search-field" placeholder-text="Search command..." class="search-box" />
+        </ui:VisualElement>
+        
+        <ui:ScrollView name="commands-scroll" class="content">
+            <!-- Categories and Items will be injected here -->
+        </ui:ScrollView>
+        
+        <ui:VisualElement class="footer">
+            <ui:Label name="status-label" text="Ready" class="status-text" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,106 @@
+.cheat-window-root {
+    position: absolute;
+    left: 20px;
+    top: 100px;
+    width: 480px;
+    max-height: 800px;
+    background-color: rgba(30, 30, 30, 0.95);
+    border-width: 1px;
+    border-color: #444;
+    border-radius: 8px;
+    padding: 12px;
+    color: white;
+    font-size: 15px;
+    display: none; /* Hidden by default */
+}
+
+.header {
+    margin-bottom: 10px;
+}
+
+.title {
+    font-size: 20px;
+    -unity-font-style: bold;
+    color: #ffd700;
+    margin-bottom: 8px;
+}
+
+.search-box {
+    margin-top: 5px;
+    border-radius: 4px;
+}
+
+.search-box > .unity-text-field__input {
+    background-color: #2a2a2a;
+    color: white;
+    border-width: 1px;
+    border-color: #555;
+}
+
+.content {
+    flex-grow: 1;
+    margin-bottom: 10px;
+}
+
+.category-foldout {
+    margin-bottom: 10px;
+    border-width: 0 0 1px 0;
+    border-color: rgba(100, 100, 100, 0.3);
+}
+
+.category-foldout > .unity-foldout__toggle {
+    background-color: rgba(50, 50, 50, 1);
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.category-foldout > .unity-foldout__toggle:hover {
+    background-color: #444;
+}
+
+.cheat-row {
+    flex-direction: row;
+    padding: 4px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.cheat-btn {
+    flex-grow: 1;
+    margin-right: 5px;
+    background-color: #3a3a3a;
+    border-width: 1px;
+    border-color: #555;
+    color: white;
+    border-radius: 4px;
+}
+
+.cheat-btn:hover {
+    background-color: #555;
+    border-color: #ffd700;
+}
+
+.args-field {
+    width: 100px;
+}
+
+.args-field > .unity-text-field__input {
+    background-color: #252525;
+    color: white;
+    border-width: 1px;
+    border-color: #444;
+    padding: 2px;
+}
+
+.footer {
+    height: 24px;
+    background-color: #1a1a1a;
+    border-radius: 4px;
+    justify-content: center;
+    padding-left: 8px;
+}
+
+.status-text {
+    font-size: 13px;
+    color: #aaa;
+}

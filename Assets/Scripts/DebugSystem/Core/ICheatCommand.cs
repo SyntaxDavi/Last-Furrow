@@ -1,6 +1,6 @@
 public interface ICheatCommand
 {
-    string ID { get; }
+    string Id { get; }
     string Category { get; }
     string Description { get; }
     bool Execute(string[] args, out string feedback);

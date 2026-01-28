@@ -1,87 +1,139 @@
-// CheatWindow.cs
+using UnityEngine;
+using UnityEngine.UIElements;
+using System.Collections.Generic;
+using System.Linq;
+using System;
+
 public class CheatWindow
 {
     private readonly Dictionary<string, ICheatCommand> _commands;
     private readonly VisualElement _root;
     private readonly TextField _searchField;
-    private readonly ScrollView _categories;
+    private readonly ScrollView _content;
+    private readonly Label _statusLabel;
     
-    public event Action<string> OnCommandExecuted;
-    
-    public CheatWindow(Dictionary<string, ICheatCommand> commands)
+    private bool _isVisible;
+
+    public CheatWindow(Dictionary<string, ICheatCommand> commands, VisualElement root)
     {
         _commands = commands;
-        var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/Cheats/UI/CheatWindow.uxml");
-        _root = visualTree.CloneTree();
         
-        _searchField = _root.Q<TextField>("search");
-        _searchField.RegisterValueChangedCallback(OnSearchChanged);
-        
-        _categories = _root.Q<ScrollView>("categories");
-        BuildCategories();
-    }
-    
-    void BuildCategories()
-    {
-        var grouped = _commands.Values.GroupBy(c => c.Category);
-        
-        foreach (var group in grouped)
+        if (root == null)
         {
-            var categoryFoldout = new Foldout { text = group.Key, value = true };
-            categoryFoldout.AddToClassList("category-foldout");
-            
+            Debug.LogError("[CheatWindow] Root VisualElement é nulo! O UIDocument pode estar sem PanelSettings.");
+            return;
+        }
+
+        _root = root.Q<VisualElement>("cheat-container");
+        if (_root == null)
+        {
+            Debug.LogWarning("[CheatWindow] Container 'cheat-container' não encontrado no UIDocument.");
+            return;
+        }
+
+        _searchField = _root.Q<TextField>("search-field");
+        _content = _root.Q<ScrollView>("commands-scroll");
+        _statusLabel = _root.Q<Label>("status-label");
+
+        _searchField.RegisterValueChangedCallback(evt => FilterCommands(evt.newValue));
+        
+        BuildCommandList();
+        SetVisibility(false);
+    }
+
+    public void Toggle()
+    {
+        _isVisible = !_isVisible;
+        SetVisibility(_isVisible);
+        if (_isVisible) _searchField.Focus();
+    }
+
+    private void SetVisibility(bool visible)
+    {
+        if (_root == null) return;
+        _root.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+    }
+
+    private void BuildCommandList()
+    {
+        if (_content == null) return;
+        _content.Clear();
+
+        var groups = _commands.Values.GroupBy(c => c.Category).OrderBy(g => g.Key);
+
+        foreach (var group in groups)
+        {
+            var foldout = new Foldout { text = group.Key, value = true };
+            foldout.AddToClassList("category-foldout");
+
             foreach (var command in group)
             {
-                var row = CreateCheatRow(command);
-                categoryFoldout.Add(row);
+                foldout.Add(CreateCommandRow(command));
             }
-            
-            _categories.Add(categoryFoldout);
+
+            _content.Add(foldout);
         }
     }
-    
-    VisualElement CreateCheatRow(ICheatCommand cmd)
+
+    private VisualElement CreateCommandRow(ICheatCommand command)
     {
         var row = new VisualElement();
         row.AddToClassList("cheat-row");
-        
-        // Botão principal
-        var btn = new Button(() => ExecuteCommand(cmd)) { text = cmd.Id };
+        row.name = $"row-{command.Id}";
+
+        var btn = new Button(() => ExecuteCommand(command, row)) { text = command.Id };
         btn.AddToClassList("cheat-btn");
-        
-        // Tooltip na hover
-        btn.tooltip = cmd.Description;
-        
-        // Campo de args (se necessário)
-        var argsField = new TextField { name = "args" };
+        btn.tooltip = command.Description;
+
+        var argsField = new TextField { name = "args-input" };
         argsField.AddToClassList("args-field");
-        
+        // argsField.placeholderText = "args..."; // Not supported in this Unity version
+
         row.Add(btn);
         row.Add(argsField);
         return row;
     }
-    
-    void ExecuteCommand(ICheatCommand cmd)
+
+    private void ExecuteCommand(ICheatCommand command, VisualElement row)
     {
-        // Busca argumentos do campo associado
-        var row = /* encontrar row */;
-        var argsInput = row.Q<TextField>("args").value;
-        var args = argsInput.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        
-        if (!cmd.ValidateArgs(args, out string error))
+        var argsInput = row.Q<TextField>("args-input").value ?? "";
+        var args = argsInput.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+        if (CheatManager.Instance.ExecuteCommand(command.Id, args, out string feedback))
         {
-            ShowFeedback($"{error}", Color.red);
-            return;
+            ShowStatus(feedback, Color.green);
+        }
+        else
+        {
+            ShowStatus(feedback, Color.red);
+        }
+    }
+
+    private void ShowStatus(string message, Color color)
+    {
+        if (_statusLabel == null) return;
+        _statusLabel.text = message;
+        _statusLabel.style.color = color;
+    }
+
+    private void FilterCommands(string term)
+    {
+        term = term.ToLower();
+        var rows = _root.Query<VisualElement>(className: "cheat-row").ToList();
+        
+        foreach (var row in rows)
+        {
+            bool match = row.name.Contains(term);
+            row.style.display = match ? DisplayStyle.Flex : DisplayStyle.None;
         }
         
-        bool success = cmd.Execute(args, out string feedback);
-        ShowFeedback(feedback, success ? Color.green : Color.red);
-        OnCommandExecuted?.Invoke(cmd.Id);
-    }
-    
-    void OnSearchChanged(ChangeEvent<string> evt)
-    {
-        var term = evt.newValue.ToLower();
-        // Filtra visibilidade das categorias/chers baseado no termo
+        // Ocultar foldouts vazios
+        var foldouts = _root.Query<Foldout>().ToList();
+        foreach (var foldout in foldouts)
+        {
+            bool hasVisibleChildren = foldout.Query<VisualElement>(className: "cheat-row")
+                .Where(r => r.style.display == DisplayStyle.Flex).ToList().Any();
+            foldout.style.display = hasVisibleChildren ? DisplayStyle.Flex : DisplayStyle.None;
+        }
     }
 }
