@@ -1,17 +1,17 @@
-/// <summary>
-/// Context Pattern: Agrupa todas as dependências VISUAIS do pipeline diário.
+ï»¿/// <summary>
+/// Context Pattern: Agrupa todas as dependÃªncias VISUAIS do pipeline diÃ¡rio.
 /// Resolve problema de FindFirstObjectByType (service locator visual).
-/// Injetado via Inspector no DailyResolutionSystem.
+/// Injetado via Inspector no DailyResolutionSystem.   
 /// </summary>
 public class DailyVisualContext
 {
-    // Visual Controllers (MonoBehaviours da cena)
-    public AnalyzingPhaseController Analyzer { get; }
+    // Visual Controllers (MonoBehaviours da cena)     
+    public AnalyzingPhaseOrchestrator Analyzer { get; }  
     public GridSlotScanner Scanner { get; }
     public PatternUIManager UIManager { get; }
-    
+
     public DailyVisualContext(
-        AnalyzingPhaseController analyzer,
+        AnalyzingPhaseOrchestrator analyzer,
         GridSlotScanner scanner,
         PatternUIManager uiManager)
     {
@@ -19,9 +19,9 @@ public class DailyVisualContext
         Scanner = scanner;
         UIManager = uiManager;
     }
-    
+
     /// <summary>
-    /// Valida se todas as dependências visuais foram injetadas.
+    /// Valida se todas as dependÃªncias visuais foram injetadas.
     /// </summary>
     public bool IsValid()
     {

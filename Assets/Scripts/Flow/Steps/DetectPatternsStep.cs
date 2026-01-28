@@ -14,7 +14,7 @@ public class DetectPatternsStep : IFlowStep
     private readonly PatternScoreCalculator _calculator;
     private readonly RunData _runData;
     private readonly GameEvents _events;
-    private readonly AnalyzingPhaseController _visualController;
+    private readonly AnalyzingPhaseOrchestrator _visualController;
     private readonly DayAnalysisResult _analysisResult;
 
     public DetectPatternsStep(
@@ -26,7 +26,7 @@ public class DetectPatternsStep : IFlowStep
         GameEvents events,
         GridSlotScanner slotScanner, // Mantido na assinatura para não quebrar o builder ainda
         DayAnalysisResult analysisResult = null,
-        AnalyzingPhaseController visualController = null) 
+        AnalyzingPhaseOrchestrator visualController = null) 
     {
         _gridService = gridService;
         _detector = detector;

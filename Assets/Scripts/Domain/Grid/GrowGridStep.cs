@@ -17,7 +17,7 @@ public class GrowGridStep : IFlowStep
         GameEvents events,
         InputManager inputManager,
         RunData runData,
-        AnalyzingPhaseController visualController, // Mantido na assinatura para não quebrar o builder ainda
+        AnalyzingPhaseOrchestrator visualController, // Mantido na assinatura para não quebrar o builder ainda
         DayAnalysisResult analysisResult = null)
     {
         _gridService = gridService;
