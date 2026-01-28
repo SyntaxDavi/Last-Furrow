@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using DG.Tweening;
 
 public class WeeklyGoalHUDView : UIView
 {
@@ -12,11 +13,23 @@ public class WeeklyGoalHUDView : UIView
     [SerializeField] private string _format = "Meta: {0} / {1}";
     
     [Header("Animation Settings")]
-    [Tooltip("DuraÁ„o da animaÁ„o de contagem (segundos)")]
-    [SerializeField] private float _countDuration = 0.5f;
+    [Tooltip("Dura√ß√£o da anima√ß√£o de contagem (segundos)")]
+    [SerializeField] private float _countDuration = 1f;
     
-    [Tooltip("Ativa animaÁ„o de contador incremental")]
+    [Tooltip("Ativa anima√ß√£o de contador incremental")]
     [SerializeField] private bool _animateCount = true;
+
+    [Tooltip("Suaviza√ß√£o da contagem. Linear fica mais 'mec√¢nico'.")]
+    [SerializeField] private Ease _countEase = Ease.Linear; 
+    
+    [Header("Juice Settings")]
+    [Tooltip("Escala do 'soco'. X > 1 estica, Y > 1 estica. Use valores altos para impacto.")]
+    [SerializeField] private Vector3 _punchStrength = new Vector3(1.5f, 1.5f, 1f); // 50% maior
+    [Tooltip("Dura√ß√£o do impacto")]
+    [SerializeField] private float _punchDuration = 0.25f;
+    [Tooltip("Vibrato: quanto maior, mais balan√ßa. Elastico: 0 a 1.")]
+    [SerializeField] private int _punchVibrato = 10;
+    [SerializeField] private float _punchElasticity = 1f;
     
     // Estado interno
     private int _currentDisplayScore = 0;
@@ -24,34 +37,41 @@ public class WeeklyGoalHUDView : UIView
     private int _goalTarget = 0;
     private CancellationTokenSource _animationCts;
 
+    // Tween references
+    private Tween _scoreTween;
+    private Tween _scaleTween;
+
     private void OnEnable()
     {
         if (AppCore.Instance != null)
         {
-            // 1. Escuta mudanÁas nos pontos (final do dia)
+            // 1. Escuta mudan√ßas nos pontos (final do dia)
             AppCore.Instance.Events.Progression.OnScoreUpdated += UpdateDisplay;
 
-            // 2. Escuta pontos incrementais de padrıes (tempo real)
+            // 2. Escuta pontos incrementais de padr√µes (tempo real)
             AppCore.Instance.Events.Pattern.OnScoreIncremented += OnScoreIncremented;
             
             // 3. Escuta pontos passivos de crops (tempo real)
             AppCore.Instance.Events.Grid.OnCropPassiveScore += OnCropPassiveScore;
 
-            // 4. Escuta mudanÁas de modo (Esconder em cutscenes, mostrar em jogo)
+            // 4. Escuta mudan√ßas de modo (Esconder em cutscenes, mostrar em jogo)
             AppCore.Instance.Events.UI.OnHUDModeChanged += HandleHUDMode;
 
-            // 5. AtualizaÁ„o Inicial (Crucial para n„o comeÁar vazio)
+            // 5. Atualiza√ß√£o Inicial (Crucial para n√£o come√ßar vazio)
             RefreshImmediate();
         }
     }
 
     private void OnDisable()
     {
-        // Cancela animaÁ„o se estiver rodando
+        // Cancela anima√ß√£o se estiver rodando
         _animationCts?.Cancel();
         _animationCts?.Dispose();
         _animationCts = null;
         
+        _scoreTween?.Kill();
+        _scaleTween?.Kill();
+
         if (AppCore.Instance != null)
         {
             AppCore.Instance.Events.Progression.OnScoreUpdated -= UpdateDisplay;
@@ -74,85 +94,93 @@ public class WeeklyGoalHUDView : UIView
     }
     
     /// <summary>
-    /// Callback de pontos incrementais de padrıes (tempo real).
-    /// Anima contador enquanto padrıes s„o detectados.
+    /// Callback de pontos incrementais de padr√µes (tempo real).
+    /// Anima contador enquanto padr√µes s√£o detectados.
     /// </summary>
     private void OnScoreIncremented(int pointsAdded, int newTotal, int goal)
     {
-        _targetScore = newTotal;
-        _goalTarget = goal;
-        
-        if (_animateCount)
-        {
-            AnimateScoreCount().Forget();
-        }
-        else
-        {
-            // AtualizaÁ„o imediata (sem animaÁ„o)
-            _currentDisplayScore = newTotal;
-            UpdateDisplayImmediate(newTotal, goal);
-        }
+        UpdateDisplay(newTotal, goal);
     }
     
     /// <summary>
     /// ONDA 6.5: Callback de pontos passivos de crops (tempo real).
-    /// Usa mesma animaÁ„o que padrıes.
+    /// Usa mesma anima√ß√£o que padr√µes.
     /// </summary>
     private void OnCropPassiveScore(int slotIndex, int cropPoints, int newTotal, int goal)
     {
-        // Delega para mesmo mÈtodo de animaÁ„o
         OnScoreIncremented(cropPoints, newTotal, goal);
     }
     
-    /// <summary>
-    /// Anima contador de pontos suavemente (counter effect).
-    /// </summary>
-    private async UniTaskVoid AnimateScoreCount()
+    private void UpdateDisplay(int currentScore, int targetScore)
     {
-        // Cancela animaÁ„o anterior se estiver rodando
-        _animationCts?.Cancel();
-        _animationCts?.Dispose();
-        _animationCts = new CancellationTokenSource();
-        
-        int startScore = _currentDisplayScore;
-        int endScore = _targetScore;
-        float elapsed = 0f;
-        
-        try
+        // Atualiza√ß√£o final (Move o target, o tween persegue)
+        _targetScore = currentScore; // O valor final real
+        _goalTarget = targetScore;
+
+        if (_animateCount && gameObject.activeInHierarchy)
         {
-            while (elapsed < _countDuration)
+            // Mata tween anterior de valor para iniciar um novo do ponto atual
+            _scoreTween?.Kill();
+
+            // Rola do valor visual atual at√© o novo target
+            _scoreTween = DOTween.To(
+                () => _currentDisplayScore, 
+                x => {
+                    _currentDisplayScore = x;
+                    UpdateDisplayImmediate(_currentDisplayScore, _goalTarget);
+                }, 
+                _targetScore, 
+                _countDuration
+            )
+            .SetEase(_countEase)
+            .SetLink(gameObject)
+            .OnComplete(() => {
+                _currentDisplayScore = _targetScore;
+                UpdateDisplayImmediate(_currentDisplayScore, _goalTarget);
+            });
+
+            // Punch Effect SUPER (Juice Update)
+            if (_goalText != null)
             {
-                elapsed += Time.deltaTime;
-                float t = elapsed / _countDuration;
+                // Completa o anterior para garantir que o novo soma/sobrescreve do tamanho normal
+                _scaleTween?.Complete();
                 
-                // InterpolaÁ„o linear (pode usar Ease para efeito melhor)
-                int displayScore = (int)Mathf.Lerp(startScore, endScore, t);
-                _currentDisplayScore = displayScore;
+                // NOTA: DOPunchScale usa o valor 'punch' como o ADICIONAL.
+                // Se Strength for (1.5, 1.5, 1), queremos adicionar (0.5, 0.5, 0).
+                Vector3 punchVector = _punchStrength - Vector3.one;
                 
-                UpdateDisplayImmediate(displayScore, _goalTarget);
+                _scaleTween = _goalText.transform.DOPunchScale(punchVector, _punchDuration, _punchVibrato, _punchElasticity)
+                    .SetLink(_goalText.gameObject);
                 
-                await UniTask.Yield(_animationCts.Token);
+                // Mant√©m o Flash Dourado
+               _goalText.DOColor(new Color(1f, 0.8f, 0.2f), 0.1f).SetLoops(2, LoopType.Yoyo);
             }
-            
-            // Garante valor final exato
-            _currentDisplayScore = endScore;
-            UpdateDisplayImmediate(endScore, _goalTarget);
         }
-        catch (System.OperationCanceledException)
+        else
         {
-            // AnimaÁ„o cancelada (objeto desativado)
+            // Atualiza√ß√£o imediata se anima√ß√£o n√£o estiver ativa
+            _currentDisplayScore = currentScore;
+            UpdateDisplayImmediate(currentScore, targetScore);
+        }
+    }
+    
+    // Context Menu para testar no Editor
+    [ContextMenu("Test Punch")]
+    public void TestPunch()
+    {
+        if (_goalText != null)
+        {
+            _scaleTween?.Complete();
+            _goalText.transform.localScale = Vector3.one; // Reset base
+            
+            Vector3 punchVector = _punchStrength - Vector3.one;
+            _scaleTween = _goalText.transform.DOPunchScale(punchVector, _punchDuration, _punchVibrato, _punchElasticity)
+                .SetLink(_goalText.gameObject);
+                
+             _goalText.DOColor(new Color(1f, 0.8f, 0.2f), 0.1f).SetLoops(2, LoopType.Yoyo);
         }
     }
 
-    private void UpdateDisplay(int currentScore, int targetScore)
-    {
-        // AtualizaÁ„o final (fim do dia)
-        _currentDisplayScore = currentScore;
-        _targetScore = currentScore;
-        _goalTarget = targetScore;
-        UpdateDisplayImmediate(currentScore, targetScore);
-    }
-    
     private void UpdateDisplayImmediate(int currentScore, int targetScore)
     {
         if (_goalText != null)
@@ -169,7 +197,7 @@ public class WeeklyGoalHUDView : UIView
 
     private void HandleHUDMode(HUDMode mode)
     {
-        // Regra visual: Mostra na ProduÁ„o e na Loja. Esconde em Cutscenes/Menus.
+        // Regra visual: Mostra na Produ√ß√£o e na Loja. Esconde em Cutscenes/Menus.
         bool shouldShow = (mode == HUDMode.Production || mode == HUDMode.Shopping);
 
         if (shouldShow) Show();

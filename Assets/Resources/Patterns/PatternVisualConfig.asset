@@ -17,11 +17,11 @@ MonoBehaviour:
   tier3Color: {r: 1, g: 0.27164674, b: 0, a: 1}
   tier4Color: {r: 0.15633601, g: 0, b: 0.754717, a: 1}
   analyzingSlotDelay: 0.01
-  levitationHeight: 0.222
-  levitationDuration: 0.121
-  highlightDuration: 1.17
-  highlightPulseSpeed: 3.99
-  highlightFadeOutDuration: 0.359
+  levitationHeight: 0.186
+  levitationDuration: 0.092
+  highlightDuration: 0.54
+  highlightPulseSpeed: 2.6
+  highlightFadeOutDuration: 0.156
   popupAnimationDuration: 1.53
   popupStartScale: 0.225
   popupEndScale: 1.093

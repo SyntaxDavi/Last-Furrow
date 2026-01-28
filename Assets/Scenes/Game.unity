@@ -5467,14 +5467,17 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 9142570109580481003, guid: 2de54dac0c3d6ba438c9ee852f20ac3a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1512505982}
   m_SourcePrefab: {fileID: 100100000, guid: 2de54dac0c3d6ba438c9ee852f20ac3a, type: 3}
 --- !u!114 &1512505979 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: -7142436989694611846, guid: 2de54dac0c3d6ba438c9ee852f20ac3a, type: 3}
   m_PrefabInstance: {fileID: 1512505978}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1512505981}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 887ff6215696f1a419ea19ba2219cf28, type: 3}
@@ -5485,6 +5488,25 @@ Camera:
   m_CorrespondingSourceObject: {fileID: 4417873784406869959, guid: 2de54dac0c3d6ba438c9ee852f20ac3a, type: 3}
   m_PrefabInstance: {fileID: 1512505978}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1512505981 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9142570109580481003, guid: 2de54dac0c3d6ba438c9ee852f20ac3a, type: 3}
+  m_PrefabInstance: {fileID: 1512505978}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1512505982
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1512505981}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59d197a69aabeb94f874e85cfde65959, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraShakeController
+  _shakeStrengthMultiplier: 0.3
+  _baseDuration: 0.3
 --- !u!1 &1528058628
 GameObject:
   m_ObjectHideFlags: 0
@@ -6093,8 +6115,13 @@ MonoBehaviour:
   _fadeDuration: 0.3
   _goalText: {fileID: 1745695846}
   _format: '{0} / {1}'
-  _countDuration: 0.5
+  _countDuration: 0.35
   _animateCount: 1
+  _countEase: 1
+  _punchStrength: {x: 1.5, y: 1.5, z: 1}
+  _punchDuration: 0.25
+  _punchVibrato: 10
+  _punchElasticity: 1
 --- !u!225 &1745695849
 CanvasGroup:
   m_ObjectHideFlags: 0
