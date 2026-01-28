@@ -1,0 +1,18 @@
+<!-- CheatWindow.uxml -->
+<ui:UXML>
+    <ui:VisualElement class="cheat-window" picking-mode="Ignore">
+        <ui:VisualElement class="header">
+            <ui:Label text="Cheat Engine" class="title"/>
+            <ui:TextField name="search" placeholder="Buscar cheat..." class="search-box"/>
+        </ui:VisualElement>
+        
+        <ui:ScrollView name="categories" class="categories">
+            <!-- Categorias serão injetadas via código -->
+        </ui:ScrollView>
+        
+        <ui:VisualElement class="footer">
+            <ui:Label name="status" text="Pronto" class="status"/>
+            <ui:Button name="favorites" text="Favoritos"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
