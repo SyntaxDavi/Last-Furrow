@@ -18,18 +18,16 @@ MonoBehaviour:
   drySoilSprite: {fileID: -4021013096228626078, guid: 4005c1be4b0af39409dbe10e25723e0e, type: 3}
   wetSoilSprite: {fileID: -8421498797493290970, guid: f11243876febb5c45a4904a740d3cf74, type: 3}
   lockedSoilSprite: {fileID: -1259536347818134243, guid: abbbe807427a02445b7988434c51cd2f, type: 3}
-  selectionBorderSprite: {fileID: -5673284917767430652, guid: 46b45d8c5c0f9dc4bbb902aa159f11c7, type: 3}
+  plantedOverlay: {r: 0.5, g: 1, b: 0.5, a: 0.15}
   matureOverlay: {r: 0.3314347, g: 0.5283019, b: 0.3314347, a: 0.6862745}
   witheredOverlay: {r: 1, g: 1, b: 0.7, a: 0.3}
-  plantedOverlay: {r: 0.5, g: 1, b: 0.5, a: 0.15}
-  disabledOverlay: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
   validHover: {r: 0.34109113, g: 0.990566, b: 0.4968389, a: 0.19607843}
-  invalidHover: {r: 1, g: 0.2688679, b: 0.27058825, a: 0.29411766}
-  unlockableHover: {r: 0, g: 1, b: 0, a: 0.3}
+  patternElevationOffset: 0.5
+  elevationSpeed: 20
   errorFlash: {r: 0.8867924, g: 0.1966002, b: 0.20945916, a: 0.6745098}
   analyzingPulse: {r: 1, g: 0.42745098, b: 1, a: 0.7647059}
-  flashDuration: 0.81
-  pulseDuration: 1.05
+  flashDuration: 0.448
+  pulseDuration: 0.467
   stateOverlayOffset: 6
   gameStateOverlayOffset: 7
   hoverHighlightOffset: 5

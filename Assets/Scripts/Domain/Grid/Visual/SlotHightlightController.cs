@@ -6,14 +6,14 @@ using UnityEngine;
 
 /// <summary>
 /// Controlador DEDICADO ao highlight.
-/// Evolução: Separação clara entre FX Transitórios (Error) e Estados Contínuos (Analyzing, Hover, Pattern).
+/// EvoluÃ§Ã£o: SeparaÃ§Ã£o clara entre FX TransitÃ³rios (Error) e Estados ContÃ­nuos (Analyzing, Hover, Pattern).
 /// </summary>
 [System.Serializable]
 public class SlotHighlightController
 {
     private readonly SpriteRenderer _overlay;
     private readonly SpriteRenderer _cursorRenderer;
-    private readonly Animator _cursorAnimator; 
+    private readonly Animator _cursorAnimator;
     private readonly GridVisualConfig _config;
 
     private bool _isLockedByTransient;
@@ -28,7 +28,7 @@ public class SlotHighlightController
     {
         _overlay = overlay;
         _cursorRenderer = cursorRenderer;
-        _cursorAnimator = cursorAnimator; 
+        _cursorAnimator = cursorAnimator;
         _config = config;
 
         _overlay.enabled = false;
@@ -39,7 +39,7 @@ public class SlotHighlightController
     }
 
     // =================================================================================
-    // CANAL 1: FX TRANSITÓRIOS (Crítico / Bloqueante)
+    // CANAL 1: FX TRANSITÃ“RIOS (CrÃ­tico / Bloqueante)
     // =================================================================================
 
     /// <summary>
@@ -48,7 +48,7 @@ public class SlotHighlightController
     public async UniTask PlayErrorFlash(CancellationToken externalToken)
     {
         // 1. Tomada de Controle
-        KillTransientTween(); // Mata apenas FX anteriores, não o estado base
+        KillTransientTween(); // Mata apenas FX anteriores, nÃ£o o estado base
         _isLockedByTransient = true;
 
         // Setup visual imediato
@@ -57,8 +57,8 @@ public class SlotHighlightController
         SetOverlayAlpha(0f);
         _cursorRenderer.enabled = false;
 
-        // 2. Link de Cancelamento (Robustez Sênior)
-        // Cria um token que cancela se o objeto for destruído OU se quem chamou cancelar
+        // 2. Link de Cancelamento (Robustez SÃªnior)
+        // Cria um token que cancela se o objeto for destruÃ­do OU se quem chamou cancelar
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             externalToken, _overlay.GetCancellationTokenOnDestroy());
 
@@ -80,7 +80,7 @@ public class SlotHighlightController
     }
 
     // =================================================================================
-    // CANAL 2: ESTADO ANALYZING (Contínuo, Alta Prioridade)
+    // CANAL 2: ESTADO ANALYZING (ContÃ­nuo, Alta Prioridade)
     // =================================================================================
 
     public async UniTaskVoid PlayScannerPulse(float duration, CancellationToken token)
@@ -94,10 +94,10 @@ public class SlotHighlightController
 
         // 1. Configura Overlay (AMARELO)
         _overlay.enabled = true;
-        _overlay.color = _config.analyzingPulse; // <--- Certifique-se que essa cor é AMARELA no Inspector!
+        _overlay.color = _config.analyzingPulse; // <--- Certifique-se que essa cor Ã© AMARELA no Inspector!
         SetOverlayAlpha(0f);
 
-        // 2. Configura Cursor (Opcional: quer setas durante o analyze? Vou deixar false por padrão)
+        // 2. Configura Cursor (Opcional: quer setas durante o analyze? Vou deixar false por padrÃ£o)
         _cursorRenderer.enabled = false;
 
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
@@ -122,7 +122,7 @@ public class SlotHighlightController
     }
 
     // =================================================================================
-    // CANAL 3 & 4: INTERAÇÃO E INFO (Baixa Prioridade)
+    // CANAL 3 & 4: INTERAÃ‡ÃƒO E INFO (Baixa Prioridade)
     // =================================================================================
 
     public void SetHover(bool state)
@@ -139,11 +139,11 @@ public class SlotHighlightController
     }
 
     // =================================================================================
-    // NÚCLEO DE RESOLUÇÃO (PRIORIDADE)
+    // NÃšCLEO DE RESOLUÃ‡ÃƒO (PRIORIDADE)
     // =================================================================================
 
     /// <summary>
-    /// A Única Fonte da Verdade™ para a cor final.
+    /// A Ãšnica Fonte da Verdadeâ„¢ para a cor final.
     /// Chamado sempre que qualquer estado muda.
     /// </summary>
     private void RefreshVisuals()
@@ -154,12 +154,12 @@ public class SlotHighlightController
         if (_isAnalyzing)
         {
             _overlay.enabled = true;
-            // Mantém cor atual do tween ou reseta
+            // MantÃ©m cor atual do tween ou reseta
             Color c = _config.analyzingPulse;
             c.a = _overlay.color.a;
             _overlay.color = c;
 
-            ToggleCursor(false); 
+            ToggleCursor(false);
             return;
         }
 
@@ -205,12 +205,12 @@ public class SlotHighlightController
 
             if (enable)
             {
-                // APLICA O AJUSTE DE POSIÇÃO (OFFSET) AQUI
-                // Como _cursorRenderer é filho do slot, usamos localPosition
+                // APLICA O AJUSTE DE POSIÃ‡ÃƒO (OFFSET) AQUI
+                // Como _cursorRenderer Ã© filho do slot, usamos localPosition
                 _cursorRenderer.transform.localPosition = _config.cursorLocalOffset;
                 _cursorRenderer.transform.localScale = _config.cursorLocalScale;
 
-                // Se a animação tiver travado num frame estranho, isso reseta para o começo
+                // Se a animaÃ§Ã£o tiver travado num frame estranho, isso reseta para o comeÃ§o
                 _cursorAnimator.Rebind();
                 _cursorAnimator.Update(0f);
             }
@@ -229,5 +229,39 @@ public class SlotHighlightController
 
     private void KillTransientTween() { if (_transientTween != null && _transientTween.IsActive()) _transientTween.Kill(); _transientTween = null; }
     private void KillStateTween() { if (_stateTween != null && _stateTween.IsActive()) _stateTween.Kill(); _stateTween = null; }
-    private void SetOverlayAlpha(float alpha) { Color c = _overlay.color; c.a = alpha; _overlay.color = c; } 
+    private void SetOverlayAlpha(float alpha) { Color c = _overlay.color; c.a = alpha; _overlay.color = c; }
+
+    /// <summary>
+    /// Toca um flash branco rÃ¡pido. Usado durante a anÃ¡lise do grid para dar "impacto".
+    /// </summary>
+    public async UniTask PlayWhiteFlash(CancellationToken externalToken)
+    {
+        // 1. Tomada de Controle
+        KillTransientTween();
+        
+        // Setup visual imediato: Branco Puro
+        _overlay.enabled = true;
+        _overlay.color = Color.white;
+        SetOverlayAlpha(0f);
+
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+            externalToken, _overlay.GetCancellationTokenOnDestroy());
+
+        try
+        {
+            // Flash muito rÃ¡pido e intenso (0.8 alpha -> 0)
+            _transientTween = _overlay.DOFade(0.8f, 0.05f).SetLink(_overlay.gameObject);
+            await _transientTween.ToUniTask(cancellationToken: linkedCts.Token);
+            
+            _transientTween = _overlay.DOFade(0f, 0.15f).SetLink(_overlay.gameObject);
+            await _transientTween.ToUniTask(cancellationToken: linkedCts.Token);
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            _isLockedByTransient = false;
+            _transientTween = null;
+            RefreshVisuals();
+        }
+    }
 }

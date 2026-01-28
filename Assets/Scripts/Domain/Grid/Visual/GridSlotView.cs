@@ -126,6 +126,10 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         // Usa o método PlayScannerPulse que já gerencia o estado analyzing internamente
         _highlightController?.PlayScannerPulse(duration, this.GetCancellationTokenOnDestroy()).Forget();
     }
+    public void TriggerWhiteFlash()
+    {
+        _highlightController?.PlayWhiteFlash(this.GetCancellationTokenOnDestroy()).Forget();
+    }
     public void SetElevationFactor(float factor)
     {
         _elevationProcessor.SetElevationFactor(factor);
@@ -133,6 +137,12 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     public void ShowPassiveScore(int points)
     {
         if (_passiveScoreText == null || _passiveScoreGroup == null) return;
+
+        // Trigger Levitation
+        SetElevationFactor(1f);
+        
+        // Trigger White Flash FX
+        TriggerWhiteFlash();
 
         _scoreTween?.Kill();
 

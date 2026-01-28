@@ -17,18 +17,18 @@ MonoBehaviour:
   tier3Color: {r: 1, g: 0.27164674, b: 0, a: 1}
   tier4Color: {r: 0.15633601, g: 0, b: 0.754717, a: 1}
   analyzingSlotDelay: 0.01
-  levitationHeight: 0.184
-  levitationDuration: 0.246
+  levitationHeight: 0.222
+  levitationDuration: 0.121
   highlightDuration: 0.1
   highlightPulseSpeed: 1.95
   highlightFadeOutDuration: 0.195
   popupAnimationDuration: 1
   popupStartScale: 0.225
   popupEndScale: 1.093
-  breathingAmount: 0.01
-  breathingSpeed: 0.619
-  patternReactionStrength: 0.0647
-  reactionDuration: 0.273
+  breathingAmount: 0.0122
+  breathingSpeed: 0.501
+  patternReactionStrength: 0.0724
+  reactionDuration: 0.269
   criticalDecayDaysThreshold: 3
   decayWarningColor: {r: 1, g: 0.3, b: 0.3, a: 1}
   debugMode: 1

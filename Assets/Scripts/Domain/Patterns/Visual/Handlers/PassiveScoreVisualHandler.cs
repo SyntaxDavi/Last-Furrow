@@ -54,6 +54,9 @@ namespace LastFurrow.Domain.Patterns.Visual.Handlers
             // Trigger Levitation
             slot.SetElevationFactor(1f);
             
+            // Trigger White Flash FX
+            slot.TriggerWhiteFlash();
+
             // Show Local Popup
             slot.ShowPassiveScore(points);
 
