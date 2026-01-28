@@ -1,7 +1,7 @@
 using System; 
 using System.Collections.Generic;
 using UnityEngine;
-using Cysharp.Threading.Tasks; 
+using Cysharp.Threading.Tasks;
 
 /// <summary>
 /// Orquestra a fase de an�lise usando Strategy Pattern para detec��o de padr�es.
@@ -39,153 +39,109 @@ public class AnalyzingPhaseController : MonoBehaviour
         _processedSlots = new HashSet<int>();
     }
 
-    public async UniTask AnalyzeAndGrowGrid(IGridService gridService, GameEvents events, RunData runData)
+    public async UniTask AnalyzeAndGrowGrid(
+        IGridService gridService,
+        GameEvents events,
+        RunData runData,
+        DayAnalysisResult preCalculatedResult = null)
     {
         if (_gridManager == null || _config == null)
         {
             Debug.LogError("[AnalyzingPhase] Missing references!");
-            return; // Substitui yield break
+            return;
         }
 
-        _config.DebugLog("Starting grid analysis with pattern detection");
+        _config.DebugLog("Starting grid analysis with synchronized results");
 
         var allSlots = _gridManager.GetComponentsInChildren<GridSlotView>();
-        int[] allSlotIndices = new int[allSlots.Length];
 
+        // 1. Process Night Cycle (Garante estado visual correto)
         for (int i = 0; i < allSlots.Length; i++)
         {
-            allSlotIndices[i] = allSlots[i].SlotIndex;
-        }
-
-        // ? CORRE��O CR�TICA: Processar TODOS os slots desbloqueados PRIMEIRO
-        // Isso garante que �gua seja removida de TODOS os slots, n�o apenas dos que est�o em padr�es
-        for (int i = 0; i < allSlotIndices.Length; i++)
-        {
-            int slotIndex = allSlotIndices[i];
+            int slotIndex = allSlots[i].SlotIndex;
             if (gridService.IsSlotUnlocked(slotIndex))
             {
-                // Processa ciclo noturno (remove �gua, cresce plantas, etc.)
                 gridService.ProcessNightCycleForSlot(slotIndex);
             }
         }
 
         _processedSlots.Clear();
-        var foundPatterns = new List<PatternMatch>();
-        int totalPoints = 0;
+        int runningTotalScore = runData.CurrentWeeklyScore;
 
-        // Analisar cada slot para padr�es e pontos passivos
-        for (int i = 0; i < allSlots.Length; i++)
+        // 2. Process Passive Scores (Crops)
+        if (preCalculatedResult != null)
         {
-            var slot = allSlots[i];
-            if (slot == null) continue;
-
-            int slotIndex = slot.SlotIndex;
-
-            // Pular se j� processado em padr�o anterior
-            if (_processedSlots.Contains(slotIndex)) continue;
-
-            if (!gridService.IsSlotUnlocked(slotIndex)) continue;
-
-            events.Grid.TriggerAnalyzeSlot(slotIndex);
-
-            // ONDA 6.5: Verificar se slot tem crop e dar pontos passivos PRIMEIRO
-            await ProcessCropPassiveScore(slotIndex, gridService, runData, events, slot);
-
-            // AGUARDAR levita��o terminar (pipeline sincronizado)
-            await LevitateSlot(slot);
-
-            // Tentar detectar padr�es neste slot (ordem de prioridade)
-            PatternMatch foundPattern = null;
-
-            foreach (var detector in _detectors)
+            foreach (var passive in preCalculatedResult.PassiveScores)
             {
-                if (detector.CanDetectAt(gridService, slotIndex))
-                {
-                    foundPattern = detector.DetectAt(gridService, slotIndex, allSlotIndices);
+                var slotView = GetSlotViewByIndex(allSlots, passive.SlotIndex);
+                if (slotView == null) continue;
 
-                    if (foundPattern != null)
-                    {
-                        _config.DebugLog($"Pattern found: {foundPattern.DisplayName} at slot {slotIndex}");
+                // Levitação + Popup local
+                await LevitateSlot(slotView);
+                slotView.ShowPassiveScore(passive.Points);
 
-                        // Marcar slots deste padr�o como processados
-                        foreach (int processedSlot in foundPattern.SlotIndices)
-                        {
-                            _processedSlots.Add(processedSlot);
-                        }
+                // Atualização do HUD (Running Total)
+                runningTotalScore += passive.Points;
+                events.Grid.TriggerCropPassiveScore(
+                    passive.SlotIndex,
+                    passive.Points,
+                    runningTotalScore,
+                    runData.WeeklyGoalTarget
+                );
 
-                        // Adicionar � lista
-                        foundPatterns.Add(foundPattern);
-                        totalPoints += foundPattern.BaseScore;
-                        
-                        // UI atualiza contador ENQUANTO popup aparece
-                        int newTotalScore = runData.CurrentWeeklyScore + totalPoints;
-                        events.Pattern.TriggerScoreIncremented(
-                            foundPattern.BaseScore,  // Pontos deste padr�o
-                            newTotalScore,           // Novo total (previs�o)
-                            runData.WeeklyGoalTarget // Meta
-                        );
-
-                        // Disparar evento para highlights/popup
-                        events.Pattern.TriggerPatternSlotCompleted(foundPattern);
-
-                        // AGUARDAR popup terminar (pipeline sincronizado)
-                        if (_uiManager != null)
-                        {
-                            Debug.Log($"[AnalyzingPhaseController] ?? Showing popup via UIManager: {foundPattern.DisplayName}");
-
-                            // Como atualizamos o PatternUIManager para UniTask, basta awaitar direto
-                            await _uiManager.ShowPatternPopupRoutine(foundPattern);
-                        }
-                        else
-                        {
-                            Debug.LogWarning("[AnalyzingPhaseController] ?? UIManager is null!");
-                        }
-
-                        // Disparar eventos de decay/recreation
-                        if (foundPattern.DaysActive > 1)
-                        {
-                            float decayMultiplier = Mathf.Pow(0.9f, foundPattern.DaysActive - 1);
-                            events.Pattern.TriggerPatternDecayApplied(
-                                foundPattern,
-                                foundPattern.DaysActive,
-                                decayMultiplier
-                            );
-
-                            _config.DebugLog($"[Decay] Pattern {foundPattern.DisplayName} has {foundPattern.DaysActive} days active, multiplier: {decayMultiplier:F2}");
-                        }
-
-                        if (foundPattern.HasRecreationBonus)
-                        {
-                            events.Pattern.TriggerPatternRecreated(foundPattern);
-                            _config.DebugLog($"[Recreation] Pattern {foundPattern.DisplayName} recreated with +10% bonus!");
-                        }
-
-                        // Apenas 1 padr�o por slot (maior prioridade)
-                        break;
-                    }
-                }
-            }
-
-            // Delay configur�vel entre slots
-            if (_config.analyzingSlotDelay > 0f)
-            {
-                await UniTask.Delay(TimeSpan.FromSeconds(_config.analyzingSlotDelay));
-            }
-            else
-            {
-                // Sempre bom ceder o controle por 1 frame se n�o houver delay, para evitar travamento
-                await UniTask.Yield();
+                if (_config.analyzingSlotDelay > 0f)
+                    await UniTask.Delay(TimeSpan.FromSeconds(_config.analyzingSlotDelay));
             }
         }
 
-        // Disparar evento geral para breathing
-        if (foundPatterns.Count > 0)
+        // 3. Process Patterns
+        if (preCalculatedResult != null)
         {
-            events.Pattern.TriggerPatternsDetected(foundPatterns, totalPoints);
-            _config.DebugLog($"Breathing event dispatched: {foundPatterns.Count} patterns, {totalPoints} points");
+            foreach (var pattern in preCalculatedResult.PatternMatches)
+            {
+                // UI atualiza contador ENQUANTO popup aparece
+                runningTotalScore += pattern.BaseScore;
+                events.Pattern.TriggerScoreIncremented(
+                    pattern.BaseScore,
+                    runningTotalScore,
+                    runData.WeeklyGoalTarget
+                );
+
+                // Disparar evento para highlights/popup
+                events.Pattern.TriggerPatternSlotCompleted(pattern);
+
+                if (_uiManager != null)
+                {
+                    await _uiManager.ShowPatternPopupRoutine(pattern);
+                }
+
+                // Decay/Recreation (Visual Only)
+                HandleVisualEffects(pattern, events);
+            }
         }
 
         _config.DebugLog("Grid analysis complete");
+    }
+
+    private GridSlotView GetSlotViewByIndex(GridSlotView[] views, int index)
+    {
+        for (int i = 0; i < views.Length; i++)
+            if (views[i].SlotIndex == index) return views[i];
+        return null;
+    }
+
+    private void HandleVisualEffects(PatternMatch foundPattern, GameEvents events)
+    {
+        if (foundPattern.DaysActive > 1)
+        {
+            float decayMultiplier = Mathf.Pow(0.9f, foundPattern.DaysActive - 1);
+            events.Pattern.TriggerPatternDecayApplied(foundPattern, foundPattern.DaysActive, decayMultiplier);
+        }
+
+        if (foundPattern.HasRecreationBonus)
+        {
+            events.Pattern.TriggerPatternRecreated(foundPattern);
+        }
     }
 
     private async UniTask LevitateSlot(GridSlotView slot)
@@ -221,54 +177,9 @@ public class AnalyzingPhaseController : MonoBehaviour
 
         slot.transform.localPosition = originalPos;
     }
+}
     
     /// <summary>
     /// ONDA 6.5: Processa pontos passivos de crop individual.
     /// Mostra popup pequeno "+X" em cima do slot e dispara evento.
     /// </summary>
-    private UniTask ProcessCropPassiveScore(
-        int slotIndex, 
-        IGridService gridService, 
-        RunData runData, 
-        GameEvents events,
-        GridSlotView slotView)
-    {
-        // Pegar estado do slot
-        if (slotIndex < 0 || slotIndex >= runData.GridSlots.Length) return UniTask.CompletedTask;
-        
-        var slotState = runData.GridSlots[slotIndex];
-        
-        // Verificar se tem crop plantado (CropState usa CropID diretamente)
-        if (!slotState.CropID.IsValid || slotState.CropID == CropID.Empty) return UniTask.CompletedTask;
-        
-        // Pegar dados do crop via GameLibrary
-        if (!AppCore.Instance.GameLibrary.TryGetCrop(slotState.CropID, out CropData cropData)) return UniTask.CompletedTask;
-        if (cropData == null) return UniTask.CompletedTask;
-        
-        // Calcular pontos passivos (BasePassiveScore)
-        int passivePoints = cropData.BasePassiveScore;
-        
-        // Aplicar multiplicador se maduro
-        if (slotState.CurrentGrowth >= cropData.DaysToMature && !slotState.IsWithered)
-        {
-            passivePoints = Mathf.RoundToInt(passivePoints * cropData.MatureScoreMultiplier);
-        }
-        
-        if (passivePoints <= 0) return UniTask.CompletedTask; // Sem pontos
-        
-        // Calcular novo total (previso)
-        int newTotal = runData.CurrentWeeklyScore + passivePoints;
-        
-        // Disparar evento para HUD atualizar
-        events.Grid.TriggerCropPassiveScore(slotIndex, passivePoints, newTotal, runData.WeeklyGoalTarget);
-        
-        // ONDA 6.5: Mostrar pontos no prprio slot (TextMeshPro local)
-        if (slotView != null)
-        {
-            slotView.ShowPassiveScore(passivePoints);
-        }
-        
-        Debug.Log($"[AnalyzingPhase] Crop em slot {slotIndex} deu +{passivePoints} pontos");
-        return UniTask.CompletedTask;
-    }
-}

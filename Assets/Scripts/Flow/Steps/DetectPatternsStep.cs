@@ -1,174 +1,82 @@
-using Cysharp.Threading.Tasks;
-using System.Collections;
+Ôªøusing System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
-/// IFlowStep que detecta padrıes no grid usando DUAL-SCAN architecture.
-/// 
-/// POSI«√O NO PIPELINE:
-/// 1. GrowGridStep (plantas crescem/murcham)
-/// 2. DetectPatternsStep ? AQUI (avalia grid final)
-/// 3. CalculateScoreStep (aplica meta + patterns)
-/// 4. AdvanceTimeStep
-/// 5. DailyDrawStep
-/// 
-/// RESPONSABILIDADES (DUAL-SCAN):
-/// - [FASE 1] VerificaÁ„o Inteira (GridFullVerification)
-///   - Detecta todos os padrıes de uma vez
-///   - Calcula pontos e atualiza tracking
-///   - Armazena no PatternDetectionCache
-/// 
-/// - [FASE 2] VerificaÁ„o Incremental (GridSlotScanner)
-///   - Itera slots desbloqueados sequencialmente
-///   - Dispara OnPatternSlotCompleted para cada padr„o
-///   - UI escuta e anima (highlights, pop-ups)
-/// 
-/// ARQUITETURA (SOLID):
-/// - LÛgica separada de visual
-/// - Cache cleanup para evitar vazamento entre dias
-/// - Scanner incrementa È OPCIONAL (pode desabilitar)
+/// Step que detecta padr√µes no grid e orquestra a contagem de pontos cont√≠nua.
+/// SRP: Detecta padr√µes (L√≥gica) e chama o Controller Visual para anima√ß√£o.
 /// </summary>
 public class DetectPatternsStep : IFlowStep
 {
     private readonly IGridService _gridService;
     private readonly PatternDetector _detector;
     private readonly PatternScoreCalculator _calculator;
-    private readonly PatternTrackingService _trackingService; 
     private readonly RunData _runData;
     private readonly GameEvents _events;
-    private readonly GridSlotScanner _slotScanner;
-    
-    // Tracking separado para UI/Debug
-    private int _lastPatternScore;
-    private int _lastPatternCount;
-    
-    public int LastPatternScore => _lastPatternScore;
-    public int LastPatternCount => _lastPatternCount;
+    private readonly AnalyzingPhaseController _visualController;
+    private readonly DayAnalysisResult _analysisResult;
 
     public DetectPatternsStep(
         IGridService gridService,
         PatternDetector detector,
         PatternScoreCalculator calculator,
-        PatternTrackingService trackingService, 
+        PatternTrackingService trackingService, // Mantido para compatibilidade se necess√°rio
         RunData runData,
         GameEvents events,
-        GridSlotScanner slotScanner) 
+        GridSlotScanner slotScanner, // Mantido na assinatura para n√£o quebrar o builder ainda
+        DayAnalysisResult analysisResult = null,
+        AnalyzingPhaseController visualController = null) 
     {
         _gridService = gridService;
         _detector = detector;
         _calculator = calculator;
-        _trackingService = trackingService;
         _runData = runData;
         _events = events;
-        _slotScanner = slotScanner;
+        _analysisResult = analysisResult;
+        _visualController = visualController;
     }
-    /// <summary>
-    /// Executa scan incremental (slot-por-slot) para animaÁıes.
-    /// Cacheia referÍncia ao GridSlotScanner para performance.
-    /// </summary>
+
     public async UniTask Execute(FlowControl control)
     {
-        Debug.Log("[DetectPatternsStep] ===== FASE 1: VERIFICA«√O INTEIRA =====");
+        Debug.Log("[DetectPatternsStep] Iniciando fase de an√°lise...");
 
-        // 1. LÛgica Pura (Calcula tudo)
-        var fullVerification = new GridFullVerification(_gridService, _detector, _trackingService);
-        List<PatternMatch> matches = fullVerification.Scan();
+        // 1. Detec√ß√£o de Padr√µes (L√≥gica)
+        var matches = _detector.DetectAll(_gridService);
+        int patternPoints = 0;
 
-        // 2. PontuaÁ„o e Eventos de Dados
-        int points = 0;
         if (matches.Count > 0)
         {
             var scoreResults = _calculator.CalculateTotalWithMetadata(matches, _gridService);
-            points = scoreResults.TotalScore;
+            patternPoints = scoreResults.TotalScore;
 
-            // Disparar eventos de lÛgica (Decay, etc)
-            foreach (var result in scoreResults.IndividualResults)
+            if (_analysisResult != null)
             {
-                if (result.HasDecay) _events.Pattern.TriggerPatternDecayApplied(result.Match, result.DaysActive, result.DecayMultiplier);
-                if (result.HasRecreationBonus) _events.Pattern.TriggerPatternRecreated(result.Match);
+                _analysisResult.SetPatterns(matches, patternPoints);
             }
-
-            LogPatternSummary(matches, points, scoreResults);
         }
 
-        // Atualizar Recordes e Meta
-        _lastPatternScore = points;
-        if (points > _runData.HighestDailyPatternScore) _runData.HighestDailyPatternScore = points;
-        if (points > 0) _runData.CurrentWeeklyScore += points;
-
-        // Dispara evento principal
-        _events.Pattern.TriggerPatternsDetected(matches, points);
-
-        Debug.Log("[DetectPatternsStep] ===== FASE 2: SCAN INCREMENTAL (VISUAL) =====");
-
-        // 3. Visual (Chama o mÈtodo auxiliar AQUI)
-        if (matches.Count > 0)
+        // 2. Fase Visual (Contagem cont√≠nua: Passivos + Padr√µes)
+        if (_visualController != null && _analysisResult != null)
         {
-            // Await espera a animaÁ„o terminar
-            await PlayIncrementalScan();
+            Debug.Log("[DetectPatternsStep] Orquestrando anima√ß√£o cont√≠nua...");
+            await _visualController.AnalyzeAndGrowGrid(_gridService, _events, _runData, _analysisResult);
         }
 
-        // Delay final e Limpeza
-        await UniTask.Delay(200);
+        // 3. Atualiza√ß√£o de Dados (Data Integrity)
+        // Somamos apenas no final para que o HUD reflita o progresso durante as anima√ß√µes
+        if (_analysisResult != null)
+        {
+            int totalPoints = _analysisResult.TotalDayPoints;
+            if (totalPoints > 0)
+            {
+                _runData.CurrentWeeklyScore += totalPoints;
+                Debug.Log($"[DetectPatternsStep] Score final atualizado: +{totalPoints} pontos.");
+            }
+        }
+
+        // Limpeza de cache se houver
         PatternDetectionCache.Instance?.Clear();
-    }
-
-    // MÈtodo auxiliar limpo: sÛ executa se tiver scanner
-    private async UniTask PlayIncrementalScan()
-    {
-        if (_slotScanner != null)
-        {
-            // ONDA 6.4: Passa RunData e Events para disparar pontos incrementais
-            await _slotScanner.ScanSequentially(_runData, _events);
-        }
-        else
-        {
-            Debug.LogWarning("Scanner null");
-        }
-    }
-
-
-    private void LogPatternSummary(List<PatternMatch> matches, int totalPoints, PatternScoreTotalResult scoreResults)
-    {
-        if (matches.Count == 0)
-        {
-            Debug.Log("[DetectPatternsStep] Nenhum padr„o encontrado neste turno");
-            return;
-        }
-        
-        Debug.Log("[DetectPatternsStep] --- RESUMO DE PADR’ES ---");
-        
-        var grouped = new Dictionary<string, int>();
-        var decayInfo = new Dictionary<string, int>();
-        
-        foreach (var match in matches)
-        {
-            if (!grouped.ContainsKey(match.DisplayName))
-            {
-                grouped[match.DisplayName] = 0;
-                decayInfo[match.DisplayName] = 0;
-            }
-            
-            grouped[match.DisplayName]++;
-            
-            if (match.DaysActive > decayInfo[match.DisplayName])
-            {
-                decayInfo[match.DisplayName] = match.DaysActive;
-            }
-        }
-        
-        foreach (var kvp in grouped)
-        {
-            string decayText = decayInfo[kvp.Key] > 1 ? $" (Decay: Dia {decayInfo[kvp.Key]})" : "";
-            Debug.Log($"[DetectPatternsStep]   ï {kvp.Value}x {kvp.Key}{decayText}");
-        }
-        
-        if (scoreResults != null && matches.Count > 1)
-        {
-            Debug.Log($"[DetectPatternsStep]   ? Sinergia: {scoreResults.ScoreBeforeSynergy} ? {totalPoints} ({scoreResults.SynergyMultiplier:F2}x)");
-        }
-        
-        Debug.Log($"[DetectPatternsStep] TOTAL: {totalPoints} pontos");
+        await UniTask.Delay(100);
     }
 }

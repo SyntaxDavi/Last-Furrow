@@ -1,54 +1,52 @@
-using Cysharp.Threading.Tasks;
+ï»¿using Cysharp.Threading.Tasks;
 using UnityEngine;
 
+/// <summary>
+/// Step que processa o crescimento do grid (Ciclo Noturno).
+/// Agora Ã© puramente lÃ³gico (Headless) para permitir que a contagem seja contÃ­nua no DetectPatternsStep.
+/// </summary>
 public class GrowGridStep : IFlowStep
 {
     private readonly IGridService _gridService;
     private readonly GameEvents _events;
-    private readonly InputManager _input;
     private readonly RunData _runData;
-
-    // Dependência Visual Injetada (pode ser null)
-    private readonly AnalyzingPhaseController _visualController;
+    private readonly DayAnalysisResult _analysisResult;
 
     public GrowGridStep(
         IGridService gridService,
         GameEvents events,
-        InputManager input,
+        InputManager inputManager,
         RunData runData,
-        AnalyzingPhaseController visualController)
+        AnalyzingPhaseController visualController, // Mantido na assinatura para nÃ£o quebrar o builder ainda
+        DayAnalysisResult analysisResult = null)
     {
         _gridService = gridService;
         _events = events;
-        _input = input;
         _runData = runData;
-        _visualController = visualController;
+        _analysisResult = analysisResult;
     }
 
     public async UniTask Execute(FlowControl control)
     {
-        // Lógica simplificada: Verifica se a dependência existe
-        if (_visualController != null)
-        {
-            Debug.Log("[GrowGridStep] Usando AnalyzingPhaseController para animação.");
+        Debug.Log("[GrowGridStep] Processando ciclo noturno (Headless)");
 
-            // Aguarda a análise visual. 
-            // NOTA: O método AnalyzeAndGrowGrid no controller também deve ser convertido para 'async UniTask'
-            await _visualController.AnalyzeAndGrowGrid(_gridService, _events, _runData);
-        }
-        else
+        // 1. Processa LÃ³gica de Crescimento
+        for (int i = 0; i < _runData.GridSlots.Length; i++)
         {
-            // FALLBACK: Crescer sem visual (Modo Headless ou Segurança)
-            Debug.LogWarning("[GrowGridStep] AnalyzingPhaseController não injetado! Executando lógica sem animação.");
-
-            for (int i = 0; i < _runData.GridSlots.Length; i++)
+            if (!_gridService.IsSlotUnlocked(i)) continue;
+            _gridService.ProcessNightCycleForSlot(i);
+            
+            // 2. PrÃ©-calcula pontos passivos para a fase visual posterior
+            if (_analysisResult != null)
             {
-                if (!_gridService.IsSlotUnlocked(i)) continue;
-                _gridService.ProcessNightCycleForSlot(i);
+                int points = ScoringCalculator.CalculatePassiveScore(_runData.GridSlots[i], AppCore.Instance.GameLibrary);
+                if (points > 0)
+                {
+                    _analysisResult.AddPassiveScore(i, points);
+                }
             }
         }
 
-        // Delay de 500ms (0.5s)
-        await UniTask.Delay(500);
+        await UniTask.Yield();
     }
 }

@@ -34,22 +34,23 @@ public class DailyPipelineBuilder : IDailyFlowBuilder
         
         if (visualContext == null || !visualContext.IsValid())
         {
-            Debug.LogWarning("[DailyPipelineBuilder] VisualContext inv�lido! Pipeline headless.");
+            Debug.LogWarning("[DailyPipelineBuilder] VisualContext invlido! Pipeline headless.");
         }
 
-        // CONSTRU��O DO PIPELINE (Single Source of Truth)
+        // CONSTRUO DO PIPELINE (Single Source of Truth)
         var pipeline = new List<IFlowStep>();
         
-        // STEP 1: Crescimento do Grid + Anima��o Visual
+        // STEP 1: Crescimento do Grid + Animao Visual
         pipeline.Add(new GrowGridStep(
             context.GridService,
             context.Events,
             context.InputManager,
             runData,
-            visualContext?.Analyzer  // Null-safe: funciona sem visual
+            visualContext?.Analyzer,  // Null-safe: funciona sem visual
+            context.AnalysisResult 
         ));
         
-        // STEP 2: Detec��o de Padr�es + Anima��es
+        // STEP 2: Deteco de Padres + Animaes
         pipeline.Add(new DetectPatternsStep(
             context.GridService,
             context.PatternDetector,
@@ -57,10 +58,12 @@ public class DailyPipelineBuilder : IDailyFlowBuilder
             context.PatternTracking,
             runData,
             context.Events,
-            visualContext?.Scanner  // Null-safe: funciona sem visual
+            visualContext?.Scanner,  // Null-safe: funciona sem visual
+            context.AnalysisResult,
+            visualContext?.Analyzer // ⭐ INJETADO
         ));
         
-        // STEP 3: C�lculo de Score + Meta Semanal
+        // STEP 3: Clculo de Score + Meta Semanal
         pipeline.Add(new CalculateScoreStep(
             context.GoalSystem,
             context.RunManager,

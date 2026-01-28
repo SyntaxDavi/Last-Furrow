@@ -1,4 +1,4 @@
-using Cysharp.Threading.Tasks; 
+ï»¿using Cysharp.Threading.Tasks; 
 using System; 
 using System.Collections.Generic;
 using System.Threading; 
@@ -7,7 +7,7 @@ using UnityEngine;
 public class GridSlotScanner : MonoBehaviour
 {
     [Header("Configuration")]
-    [Tooltip("Pausa entre verificação de slots (segundos)")]
+    [Tooltip("Pausa entre verificaï¿½ï¿½o de slots (segundos)")]
     [Range(0f, 0.5f)]
     [SerializeField] private float _slotScanDelay = 0.001f;
 
@@ -28,24 +28,24 @@ public class GridSlotScanner : MonoBehaviour
     {
         Debug.Log("[GridSlotScanner] ========== INICIANDO SCAN INCREMENTAL ==========");
 
-        // 1. Configurar Cancelamento (Segurança)
-        // Se já houver um scan rodando, cancela ele antes de começar o novo
+        // 1. Configurar Cancelamento (Seguranï¿½a)
+        // Se jï¿½ houver um scan rodando, cancela ele antes de comeï¿½ar o novo
         if (_cts != null) { _cts.Cancel(); _cts.Dispose(); }
         _cts = new CancellationTokenSource();
-        // O token é o que passamos para os "awaits" saberem que devem parar se mandarmos
+        // O token ï¿½ o que passamos para os "awaits" saberem que devem parar se mandarmos
         var token = _cts.Token;
 
-        // --- VALIDAÇÕES (yield break vira return) ---
+        // --- VALIDAï¿½ï¿½ES (yield break vira return) ---
         if (_gridManager == null)
         {
-            Debug.LogError("[GridSlotScanner] GridManager não atribuído!");
+            Debug.LogError("[GridSlotScanner] GridManager nï¿½o atribuï¿½do!");
             return;
         }
 
         // ONDA 6.1: Remover FindFirstObjectByType - Apenas validar
         if (_uiManager == null)
         {
-            Debug.LogError("[GridSlotScanner] PatternUIManager não atribuído no Inspector!");
+            Debug.LogError("[GridSlotScanner] PatternUIManager nï¿½o atribuï¿½do no Inspector!");
             return;
         }
 
@@ -97,7 +97,7 @@ public class GridSlotScanner : MonoBehaviour
                         runData.WeeklyGoalTarget
                     );
                     
-                    // Disparar evento de padrão completo (para highlights)
+                    // Disparar evento de padrï¿½o completo (para highlights)
                     AppCore.Instance?.Events.Pattern.TriggerPatternSlotCompleted(pattern);
 
                     if (_uiManager != null)
@@ -118,7 +118,7 @@ public class GridSlotScanner : MonoBehaviour
             }
         }
 
-        Debug.Log($"[GridSlotScanner] Scan concluído: {patternsTriggered} padrões.");
+        Debug.Log($"[GridSlotScanner] Scan concluï¿½do: {patternsTriggered} padrï¿½es.");
         _patternsAlreadyTriggered.Clear();
 
         // Limpa o token ao final com sucesso
@@ -126,7 +126,7 @@ public class GridSlotScanner : MonoBehaviour
         _cts = null;
     }
 
-    // ... GetUnlockedSlots (Mantém igual pois não tem corrotina) ...
+    // ... GetUnlockedSlots (Mantï¿½m igual pois nï¿½o tem corrotina) ...
     private List<GridSlotView> GetUnlockedSlots()
     {
         var unlockedSlots = new List<GridSlotView>();
@@ -174,7 +174,7 @@ public class GridSlotScanner : MonoBehaviour
 
     private void OnDestroy()
     {
-        // Segurança: Garante que se o objeto for destruído, a task para
+        // Seguranï¿½a: Garante que se o objeto for destruï¿½do, a task para
         StopScan();
     }
 }

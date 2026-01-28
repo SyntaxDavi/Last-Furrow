@@ -1,5 +1,7 @@
-// DailyResolutionContext.cs
-// Um pacote com tudo que o Pipeline precisa para rodar a LÓGICA
+ï»¿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
 public class DailyResolutionContext
 {
     public RunManager RunManager { get; }
@@ -12,6 +14,9 @@ public class DailyResolutionContext
     public PatternDetector PatternDetector { get; }
     public PatternTrackingService PatternTracking { get; }
     public PatternScoreCalculator PatternCalculator { get; }
+    
+    //Compartilhado entre steps para sincronizar visual/dados
+    public DayAnalysisResult AnalysisResult { get; } = new DayAnalysisResult();
 
     public DailyResolutionContext(
         RunManager runManager, SaveManager saveManager, InputManager inputManager,
