@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿    using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -24,6 +24,9 @@ public class HandManager : MonoBehaviour
 
     // Eventos
     public event System.Action OnHandLayoutChanged;
+    public event System.Action<int> OnCardVisuallySpawned; // int = indice na sequencia de spawn (0, 1, 2...)
+    public event System.Action OnCardVisuallySelected;
+    public event System.Action OnCardVisuallyHovered;
 
     // Runtime State
     private List<CardView> _activeCards = new List<CardView>();
@@ -108,11 +111,15 @@ public class HandManager : MonoBehaviour
     private System.Collections.IEnumerator ProcessCardQueue()
     {
         _isSpawning = true;
+        int sequenceIndex = 0; // Para efeitos visuais/sonoros em sequencia
 
         while (_pendingCards.Count > 0)
         {
             var instance = _pendingCards.Dequeue();
             CreateCardView(instance);
+
+            OnCardVisuallySpawned?.Invoke(sequenceIndex);
+            sequenceIndex++;
 
             // O "Fan Out" visual e criado por este delay.
             // A carta nasce no Deck e corre para a mao suavemente.
@@ -142,6 +149,7 @@ public class HandManager : MonoBehaviour
         newCard.OnDragStartEvent += OnCardDragStart;
         newCard.OnDragEndEvent += OnCardDragEnd;
         newCard.OnClickEvent += HandleCardClicked;
+        newCard.OnHoverEnterEvent += HandleCardHovered;
 
         _activeCards.Add(newCard);
         int newIndex = _activeCards.Count - 1;
@@ -181,8 +189,11 @@ public class HandManager : MonoBehaviour
             clickedCard.Select();
             foreach (var card in _activeCards) if (card != clickedCard) card.Deselect();
             AppCore.Instance.Events.Player.TriggerCardClicked(clickedCard);
+            OnCardVisuallySelected?.Invoke();
         }
     }
+    
+    private void HandleCardHovered() => OnCardVisuallyHovered?.Invoke();
 
     private void HandleGlobalClick()
     {
@@ -225,6 +236,7 @@ public class HandManager : MonoBehaviour
         if (_activeCards.Contains(card))
         {
             card.OnClickEvent -= HandleCardClicked;
+            card.OnHoverEnterEvent -= HandleCardHovered;
             card.OnDragStartEvent -= OnCardDragStart;
             card.OnDragEndEvent -= OnCardDragEnd;
 

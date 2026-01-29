@@ -43,4 +43,9 @@ public class CardVisualConfig : ScriptableObject
     
     [Tooltip("Delay entre cada carta na sequencia (segundos).")]
     public float HandElevationSequenceDelay = 0.05f;
+
+    [Header("9. Audio")]
+    public AudioClip CardDrawSound;
+    public AudioClip CardSelectSound;
+    public AudioClip CardHoverSound;
 }

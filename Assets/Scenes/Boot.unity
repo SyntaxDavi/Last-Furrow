@@ -241,6 +241,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2458983469160152068, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
+      propertyPath: SFXGroup
+      value: 
+      objectReference: {fileID: 24300002, guid: 9b8b8d5a65a9cf5489957024364345b7, type: 2}
+    - target: {fileID: 2458983469160152068, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
+      propertyPath: MusicGroup
+      value: 
+      objectReference: {fileID: 24300002, guid: 8d057592cccc566429ab0216e0309809, type: 2}
     - target: {fileID: 4628717499939712119, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

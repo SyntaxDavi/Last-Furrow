@@ -2071,7 +2071,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2e173d332b14cb4687ab84e2affd858, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameplayMusicController
-  _gameplayMusic: {fileID: 8300000, guid: 6e72b2f0b3088944ca306673d792f714, type: 3}
+  _gameplayMusic: {fileID: 8300000, guid: 037a4ddf7d809d24bb17c267bda7c064, type: 3}
   _debugLogs: 0
 --- !u!4 &620514188
 Transform:
@@ -4893,6 +4893,7 @@ GameObject:
   - component: {fileID: 1345890251}
   - component: {fileID: 1345890252}
   - component: {fileID: 1345890253}
+  - component: {fileID: 1345890255}
   - component: {fileID: 1345890254}
   m_Layer: 0
   m_Name: HandSystem
@@ -5013,6 +5014,23 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 15, y: 4}
   m_EdgeRadius: 0
+--- !u!114 &1345890255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1345890249}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3eb6879d97199c45aca2c0bf17251b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HandAudioController
+  _config: {fileID: 11400000, guid: e3cf8478dfad57044b0a6fdd75881fe4, type: 2}
+  _outputGroup: {fileID: 24300002, guid: 9b8b8d5a65a9cf5489957024364345b7, type: 2}
+  _basePitch: 1
+  _pitchStep: 0.15
+  _maxPitch: 1.5
 --- !u!1 &1362975647
 GameObject:
   m_ObjectHideFlags: 0

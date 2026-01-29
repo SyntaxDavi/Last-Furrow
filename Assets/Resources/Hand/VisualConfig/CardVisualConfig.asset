@@ -21,14 +21,17 @@ MonoBehaviour:
   IdleFloatSpeed: 1.1
   IdleFloatAmount: 0.1
   IdleRotationAmount: 0.7
-  PeekScale: 1
-  PeekYOffset: 0.2
+  PeekScale: 1.1
+  PeekYOffset: 0.3
   TiltAngleMax: 20
   TiltInfluenceRadius: 1.5
   TiltRotationSpeed: 20
   DragTiltAmount: 18
-  ClickSquashAmount: 0.2
-  ClickRecoverySpeed: 15
+  ClickSquashAmount: 0.4
+  ClickRecoverySpeed: 12
   HandElevationOffset: 2.3
   HandElevationSpeed: 3.3
   HandElevationSequenceDelay: 0.03
+  CardDrawSound: {fileID: 8300000, guid: a09bbc36f93f0d847b16979158709983, type: 3}
+  CardSelectSound: {fileID: 8300000, guid: 75361a6cb84575f48885aa6fda04dd4e, type: 3}
+  CardHoverSound: {fileID: 8300000, guid: 75361a6cb84575f48885aa6fda04dd4e, type: 3}

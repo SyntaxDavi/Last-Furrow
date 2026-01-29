@@ -11,6 +11,10 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioSource _musicSource;
     [SerializeField] private AudioSource _sfxSource;
 
+    [Header("Mixing")]
+    public UnityEngine.Audio.AudioMixerGroup MusicGroup;
+    public UnityEngine.Audio.AudioMixerGroup SFXGroup;
+
     [Header("Settings")]
     [Range(0f, 1f)] public float MasterVolume = 1f;
     [SerializeField] private float _defaultFadeDuration = 1.0f;
@@ -22,6 +26,10 @@ public class AudioManager : MonoBehaviour
     {
         if (_musicSource == null) _musicSource = gameObject.AddComponent<AudioSource>();
         if (_sfxSource == null) _sfxSource = gameObject.AddComponent<AudioSource>();
+
+        // Routing
+        if (MusicGroup != null) _musicSource.outputAudioMixerGroup = MusicGroup;
+        if (SFXGroup != null) _sfxSource.outputAudioMixerGroup = SFXGroup;
 
         _musicSource.loop = true;
 

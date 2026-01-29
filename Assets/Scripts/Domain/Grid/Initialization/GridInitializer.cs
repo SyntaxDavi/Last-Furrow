@@ -132,11 +132,11 @@ public static class GridInitializer
         int targetSize = config.TotalSlots;
 
         // Redimensiona Slots de Cultivo
-        runData.GridSlots = ResizeArray(runData.GridSlots, targetSize, _ => new CropState(default(CardID)));
-        
+        runData.GridSlots = ResizeArray(runData.GridSlots, targetSize, _ => new CropState(default(CropID)));
+            
         // Redimensiona Estados de Slots
         runData.SlotStates = ResizeArray(runData.SlotStates, targetSize, _ => new GridSlotState { IsUnlocked = false });
-    }
+    }   
 
     private static T[] ResizeArray<T>(T[] original, int targetSize, Func<int, T> factory)
     {

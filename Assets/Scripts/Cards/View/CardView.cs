@@ -58,6 +58,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     public event Action<CardView> OnDragStartEvent;
     public event Action<CardView> OnDragEndEvent;
     public event Action<CardView> OnClickEvent;
+    public event Action OnHoverEnterEvent;
 
     // ==============================================================================================
     // CICLO DE VIDA & INICIALIZAÇÃO
@@ -304,6 +305,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         {
             IsHovered = true;
             _lastHoverChangeTime = Time.time;
+            OnHoverEnterEvent?.Invoke();
         }
     }
 
