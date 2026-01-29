@@ -1,22 +1,22 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// View responsável por mostrar feedback visual quando padrões são detectados.
+/// View responsï¿½vel por mostrar feedback visual quando padrï¿½es sï¿½o detectados.
 /// 
 /// FUNCIONALIDADES:
-/// - Toast notification com total de pontos de padrões
-/// - Fade in/out automático
+/// - Toast notification com total de pontos de padrï¿½es
+/// - Fade in/out automï¿½tico
 /// - Cor diferente baseada na quantidade de pontos
 /// - ONDA 4: Indicadores de decay e recreation bonus
 /// 
 /// EVENTOS ESCUTADOS:
 /// - PatternEvents.OnPatternsDetected
 /// 
-/// POSIÇÃO: Deve ser colocado em um Canvas, preferencialmente no centro-topo da tela.
+/// POSIï¿½ï¿½O: Deve ser colocado em um Canvas, preferencialmente no centro-topo da tela.
 /// </summary>
 public class PatternFeedbackView : MonoBehaviour
 {
@@ -27,7 +27,7 @@ public class PatternFeedbackView : MonoBehaviour
     [Header("UI References - Decay Info (Opcional)")]
     [SerializeField] private TextMeshProUGUI _decayInfoText;
     
-    [Header("Configuração")]
+    [Header("Configuraï¿½ï¿½o")]
     [SerializeField] private float _displayDuration = 2.5f;
     [SerializeField] private float _fadeInDuration = 0.3f;
     [SerializeField] private float _fadeOutDuration = 0.5f;
@@ -44,14 +44,14 @@ public class PatternFeedbackView : MonoBehaviour
     
     private Coroutine _displayCoroutine;
     
-    // Tracking de decay para exibição
+    // Tracking de decay para exibiï¿½ï¿½o
     private int _patternsWithDecay = 0;
     private int _patternsRecreated = 0;
     private float _averageDecayMultiplier = 1f;
     
     private void Awake()
     {
-        // Garantir que começa invisível e DESATIVADO
+        // Garantir que comeï¿½a invisï¿½vel e DESATIVADO
         if (_canvasGroup != null)
         {
             _canvasGroup.alpha = 0f;
@@ -67,7 +67,7 @@ public class PatternFeedbackView : MonoBehaviour
             _decayInfoText.text = "";
         }
         
-        // Desativar o GameObject no início
+        // Desativar o GameObject no inï¿½cio
         gameObject.SetActive(false);
     }
     
@@ -89,19 +89,20 @@ public class PatternFeedbackView : MonoBehaviour
     
     private void OnPatternsDetected(List<PatternMatch> matches, int totalPoints)
     {
-        // Não mostrar se não houver padrões
+        
+        
+        // No mostrar se no houver padres
         if (matches == null || matches.Count == 0 || totalPoints <= 0)
+        {
+            
             return;
+        }
         
         // ONDA 4: Analisar decay e recreation
         AnalyzeDecayStatus(matches);
         
         ShowFeedback(matches.Count, totalPoints);
     }
-    
-    /// <summary>
-    /// ONDA 4: Analisa status de decay dos padrões para exibição.
-    /// </summary>
     private void AnalyzeDecayStatus(List<PatternMatch> matches)
     {
         _patternsWithDecay = 0;
@@ -130,20 +131,20 @@ public class PatternFeedbackView : MonoBehaviour
     }
     
     /// <summary>
-    /// Mostra o feedback de padrões detectados.
+    /// Mostra o feedback de padrï¿½es detectados.
     /// </summary>
     public void ShowFeedback(int patternCount, int totalPoints)
     {
         if (_feedbackText == null || _canvasGroup == null)
         {
-            Debug.LogWarning("[PatternFeedbackView] UI References não configuradas!");
+            Debug.LogWarning("[PatternFeedbackView] UI References nï¿½o configuradas!");
             return;
         }
         
         // Ativar o GameObject antes de mostrar
         gameObject.SetActive(true);
         
-        // Parar animação anterior se existir
+        // Parar animaï¿½ï¿½o anterior se existir
         if (_displayCoroutine != null)
         {
             StopCoroutine(_displayCoroutine);
@@ -151,7 +152,7 @@ public class PatternFeedbackView : MonoBehaviour
         
         // Configurar texto principal
         string plural = patternCount > 1 ? "s" : "";
-        _feedbackText.text = $"? {patternCount} Padrão{plural} = +{totalPoints} pts!";
+        _feedbackText.text = $"? {patternCount} Padrï¿½o{plural} = +{totalPoints} pts!";
         
         // Configurar cor baseada nos pontos
         _feedbackText.color = GetColorForScore(totalPoints);
@@ -159,12 +160,12 @@ public class PatternFeedbackView : MonoBehaviour
         // ONDA 4: Configurar texto de decay info
         UpdateDecayInfoText();
         
-        // Iniciar animação
+        // Iniciar animaï¿½ï¿½o
         _displayCoroutine = StartCoroutine(DisplayRoutine());
     }
     
     /// <summary>
-    /// ONDA 4: Atualiza texto secundário com informações de decay.
+    /// ONDA 4: Atualiza texto secundï¿½rio com informaï¿½ï¿½es de decay.
     /// </summary>
     private void UpdateDecayInfoText()
     {
@@ -172,23 +173,23 @@ public class PatternFeedbackView : MonoBehaviour
         
         var infoParts = new List<string>();
         
-        // Mostrar padrões com decay
+        // Mostrar padrï¿½es com decay
         if (_patternsWithDecay > 0)
         {
             int decayPercent = Mathf.RoundToInt((1f - _averageDecayMultiplier) * 100);
             string decayText = _patternsWithDecay == 1 
-                ? $"? 1 padrão com decay (-{decayPercent}%)"
-                : $"? {_patternsWithDecay} padrões com decay (média -{decayPercent}%)";
+                ? $"? 1 padrï¿½o com decay (-{decayPercent}%)"
+                : $"? {_patternsWithDecay} padrï¿½es com decay (mï¿½dia -{decayPercent}%)";
             infoParts.Add(decayText);
             _decayInfoText.color = _decayWarningColor;
         }
         
-        // Mostrar padrões recriados
+        // Mostrar padrï¿½es recriados
         if (_patternsRecreated > 0)
         {
             string recreatedText = _patternsRecreated == 1
-                ? "?? 1 padrão recriado (+10%!)"
-                : $"?? {_patternsRecreated} padrões recriados (+10%!)";
+                ? "?? 1 padrï¿½o recriado (+10%!)"
+                : $"?? {_patternsRecreated} padrï¿½es recriados (+10%!)";
             infoParts.Add(recreatedText);
             
             // Se tem recreation, priorizar cor verde
@@ -197,8 +198,14 @@ public class PatternFeedbackView : MonoBehaviour
                 _decayInfoText.color = _recreationBonusColor;
             }
         }
+
+        if (_decayInfoText != null && infoParts.Count > 0)
+        {
+            _decayInfoText.text = string.Join("\n", infoParts);
+        }
+
         
-        _decayInfoText.text = string.Join(" | ", infoParts);
+        
     }
     
     private Color GetColorForScore(int points)
@@ -221,7 +228,7 @@ public class PatternFeedbackView : MonoBehaviour
         }
         _canvasGroup.alpha = 1f;
         
-        // Aguardar duração
+        // Aguardar duraï¿½ï¿½o
         yield return new WaitForSeconds(_displayDuration);
         
         // Fade Out
@@ -240,7 +247,7 @@ public class PatternFeedbackView : MonoBehaviour
             _decayInfoText.text = "";
         }
         
-        // Desativar GameObject após animação
+        // Desativar GameObject apï¿½s animaï¿½ï¿½o
         gameObject.SetActive(false);
         
         _displayCoroutine = null;
