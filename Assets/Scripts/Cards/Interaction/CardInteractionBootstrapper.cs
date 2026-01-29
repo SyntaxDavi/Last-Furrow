@@ -30,6 +30,23 @@ public static class CardInteractionBootstrapper
     private static GameEvents _gameEvents;
 
     /// <summary>
+    /// Garante que campos estáticos sejam limpos no Domain Reload (sem reload de domínio na Unity).
+    /// </summary>
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void Init()
+    {
+        _initialized = false;
+        _identityContext = default;
+        _runtimeContext = null;
+        _runManager = null;
+        _saveManager = null;
+        _economyService = null;
+        _library = null;
+        _playerEvents = null;
+        _gameEvents = null;
+    }
+
+    /// <summary>
     /// Contexto de IDENTIDADE da Run atual.
     /// Contém o RandomProvider determinístico.
     /// </summary>
@@ -39,24 +56,29 @@ public static class CardInteractionBootstrapper
         {
             if (!_initialized)
             {
-               Debug.LogWarning("[CardInteractionBootstrapper] Acesso prematuro ao IdentityContext! A run ainda não foi configurada?");
-               return default; 
+                throw new InvalidOperationException($"[{nameof(CardInteractionBootstrapper)}] Acesso prematuro ao IdentityContext! A run ainda não foi configurada.");
             }
             return _identityContext;
         }
     }
 
+    /// <summary>
+    /// Contexto de RUNTIME da Run atual (Grid, etc).
+    /// </summary>
     public static RunRuntimeContext RuntimeContext
     {
         get
         {
-            if (!_initialized) return null;
+            if (!_initialized)
+            {
+                throw new InvalidOperationException($"[{nameof(CardInteractionBootstrapper)}] Acesso prematuro ao RuntimeContext!");
+            }
             return _runtimeContext;
         }
     }
 
     /// <summary>
-    /// Setup Inicial: Apenas armazena as dependências do sistema.
+    /// Setup Inicial: Armazena as dependências persistentes do sistema.
     /// </summary>
     public static void Initialize(
         IRunManager runManager,
@@ -67,43 +89,39 @@ public static class CardInteractionBootstrapper
         GameEvents gameEvents,
         IGridService initialGridService)
     {
-        // Se já estava inicializado, limpamos para garantir estado limpo
         if (_initialized)
         {
-            Cleanup(); 
+            Debug.Log($"[{nameof(CardInteractionBootstrapper)}] Re-inicializando dependências...");
         }
 
-        _runManager = runManager;
-        _saveManager = saveManager;
-        _economyService = economyService;
-        _library = library;
-        _playerEvents = playerEvents;
-        _gameEvents = gameEvents;
+        _runManager = runManager ?? throw new ArgumentNullException(nameof(runManager));
+        _saveManager = saveManager ?? throw new ArgumentNullException(nameof(saveManager));
+        _economyService = economyService ?? throw new ArgumentNullException(nameof(economyService));
+        _library = library ?? throw new ArgumentNullException(nameof(library));
+        _playerEvents = playerEvents ?? throw new ArgumentNullException(nameof(playerEvents));
+        _gameEvents = gameEvents ?? throw new ArgumentNullException(nameof(gameEvents));
         
-        Debug.Log("[CardInteractionBootstrapper] Dependências registradas. Aguardando ConfigureForRun().");
+        Debug.Log($"[{nameof(CardInteractionBootstrapper)}] Dependências registradas com sucesso.");
     }
 
     /// <summary>
     /// Configura os contextos para uma Run específica usando sua Seed.
-    /// Deve ser chamado sempre que uma Run começa ou é carregada.
     /// </summary>
     public static void ConfigureForRun(RunData runData)
     {
         if (runData == null)
         {
-            Debug.LogError("[CardInteractionBootstrapper] RunData null! Não é possível configurar contextos.");
-            return;
+            throw new ArgumentNullException(nameof(runData), $"[{nameof(CardInteractionBootstrapper)}] RunData não pode ser null.");
         }
 
         if (_runManager == null)
         {
-            Debug.LogError("[CardInteractionBootstrapper] Dependências não inicializadas! Chame Initialize() primeiro.");
-            return;
+            throw new InvalidOperationException($"[{nameof(CardInteractionBootstrapper)}] Dependências não inicializadas! Chame Initialize() primeiro.");
         }
 
         try
         {
-            Debug.Log($"[CardInteractionBootstrapper] Configurando para Run. MasterSeed: {runData.MasterSeed}");
+            Debug.Log($"[{nameof(CardInteractionBootstrapper)}] Configurando contextos para Run (Seed: {runData.MasterSeed})");
 
             // 1. Cria Random Provider Determinístico
             var randomProvider = new SeededRandomProvider(runData.MasterSeed);
@@ -114,126 +132,70 @@ public static class CardInteractionBootstrapper
                 _saveManager,
                 _economyService,
                 _library,
-                randomProvider, // <--- INJEÇÃO DO RANDOM
+                randomProvider,
                 _playerEvents,
                 _gameEvents
             );
 
-            // 3. Cria Contexto de Runtime
-            // Inicialmente null, pois o GridService geralmente é carregado após a cena
+            // 3. Cria Contexto de Runtime (Grid será injetado depois via SetGridService)
             _runtimeContext = new RunRuntimeContext(null);
 
-            // 4. Inicializa Factory com os novos contextos
+            // 4. Inicializa Factory
             InteractionFactory.Initialize(_identityContext, _runtimeContext);
 
             _initialized = true;
-            Debug.Log("[CardInteractionBootstrapper] ✓ Run Configurada com Sucesso.");
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[CardInteractionBootstrapper] Erro ao configurar run: {ex}");
+            Debug.LogError($"[{nameof(CardInteractionBootstrapper)}] Falha crítica na configuração da run: {ex.Message}");
+            _initialized = false;
             throw;
         }
     }
 
     /// <summary>
-    /// Atualiza GridService quando cena carrega (sem re-inicializar tudo).
-    /// Chamado por AppCore.RegisterGridService().
-    /// 
-    /// 🛡️ EARLY FAIL: Valida explicitamente que tudo está pronto.
-    /// Se algo estiver errado, FALHA IMEDIATAMENTE com erro claro.
+    /// Injeta o GridService no contexto de runtime.
     /// </summary>
     public static void SetGridService(IGridService gridService)
     {
-        // 1. Validação de Estado
         if (!_initialized)
         {
-            throw new InvalidOperationException(
-                "[CardInteractionBootstrapper] ERRO CRÍTICO: Contextos não inicializados!\n" +
-                "Certifique-se de chamar Initialize() antes de SetGridService().\n" +
-                "Ordem correta: AppCore.Initialize() -> Bootstrapper.Initialize() -> Scene Load -> SetGridService()"
-            );
+            throw new InvalidOperationException($"[{nameof(CardInteractionBootstrapper)}] Tentativa de SetGridService sem inicialização prévia.");
         }
 
-        // 2. Validação de Parâmetro
         if (gridService == null)
         {
-            throw new ArgumentNullException(
-                nameof(gridService),
-                "[CardInteractionBootstrapper] ERRO CRÍTICO: GridService não pode ser null!\n" +
-                "O sistema de interações depende do GridService para validar cartas no grid."
-            );
+            throw new ArgumentNullException(nameof(gridService), $"[{nameof(CardInteractionBootstrapper)}] GridService null injetado.");
         }
 
-        // 3. Atualiza Runtime Context
         _runtimeContext.SetGridService(gridService);
 
-        // 4. ✅ VALIDAÇÃO EXPLÍCITA: Testa se as estratégias conseguem ser criadas
-        try
-        {
-            ValidateStrategiesReady();
-            Debug.Log("[CardInteractionBootstrapper] ✅ GridService injetado e estratégias validadas com sucesso!");
-        }
-        catch (Exception ex)
-        {
-            // Se a validação falhar, LIMPA tudo para evitar estado corrompido
-            _runtimeContext.Cleanup();
-            throw new InvalidOperationException(
-                $"[CardInteractionBootstrapper] FALHA na validação de estratégias após injetar GridService:\n{ex.Message}",
-                ex
-            );
-        }
+        // Validação imediata para garantir que o sistema está funcional
+        ValidateStrategiesReady();
+        
+        Debug.Log($"[{nameof(CardInteractionBootstrapper)}] GridService injetado e validado.");
     }
 
-    /// <summary>
-    /// Valida que todas as estratégias críticas podem ser resolvidas.
-    /// 
-    /// 🛡️ EARLY FAIL: Se alguma estratégia não puder ser criada,
-    /// é melhor falhar AQUI (bootstrap) do que durante gameplay.
-    /// </summary>
     private static void ValidateStrategiesReady()
     {
         if (!InteractionFactory.IsInitialized)
         {
-            throw new InvalidOperationException(
-                "[CardInteractionBootstrapper] InteractionFactory não está inicializado!"
-            );
+            throw new InvalidOperationException($"[{nameof(CardInteractionBootstrapper)}] InteractionFactory não inicializou corretamente.");
         }
 
-        // Testa estratégias críticas
-        var testCases = new[]
-        {
-            CardType.Plant,
-            CardType.Modify,
-            CardType.Harvest,
-            CardType.Expansion
-        };
+        // Tipos críticos que DEVEM ter estratégias válidas
+        var criticalTypes = new[] { CardType.Plant, CardType.Modify, CardType.Harvest, CardType.Expansion };
 
-        foreach (var cardType in testCases)
+        foreach (var type in criticalTypes)
         {
-            var strategy = InteractionFactory.GetStrategy(cardType);
-            
-            if (strategy == null)
+            var strategy = InteractionFactory.GetStrategy(type);
+            if (strategy == null || strategy is NullInteractionStrategy)
             {
-                throw new InvalidOperationException(
-                    $"[CardInteractionBootstrapper] Estratégia para {cardType} retornou NULL!"
-                );
-            }
-
-            // Se retornou NullInteractionStrategy, algo está errado
-            if (strategy is NullInteractionStrategy)
-            {
-                throw new InvalidOperationException(
-                    $"[CardInteractionBootstrapper] Estratégia para {cardType} não foi registrada no Factory!\n" +
-                    $"Verifique se InteractionFactory.Initialize() está criando todas as estratégias necessárias."
-                );
+                throw new InvalidOperationException($"[{nameof(CardInteractionBootstrapper)}] Estratégia crítica ausente ou inválida para: {type}");
             }
         }
     }
 
-    /// <summary>
-    /// Cleanup. Chamado quando a run termina.
-    /// </summary>
     public static void Cleanup()
     {
         _runtimeContext?.Cleanup();
@@ -241,10 +203,8 @@ public static class CardInteractionBootstrapper
         _runtimeContext = null;
         _initialized = false;
         
-        // Não limpamos as dependências (_runManager, etc) pois elas persistem entre runs na mesma sessão
-        
         InteractionFactory.Cleanup();
-        Debug.Log("[CardInteractionBootstrapper] Limpeza concluída.");
+        Debug.Log($"[{nameof(CardInteractionBootstrapper)}] Cleanup concluído.");
     }
 
     public static bool IsInitialized => _initialized;

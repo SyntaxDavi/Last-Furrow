@@ -8,29 +8,66 @@ using UnityEngine;
 public static class GridInitializer
 {
     /// <summary>
-    /// Inicializa o grid para um novo RunData.
+    /// Versão do algoritmo de posicionamento. 
+    /// Incrementar este valor força a regeneração do padrão de desbloqueio em saves existentes.
+    /// </summary>
+    public const int ALGORITHM_VERSION = 1;
+
+    /// <summary>
+    /// Ponto de entrada para novas runs. Garante que o grid comece em um estado íntegro e válido.
     /// </summary>
     public static void InitializeNewRun(RunData runData, GridConfiguration config, PatternWeightConfig patternConfig = null)
     {
-        if (runData == null || config == null) return;
+        if (runData == null) throw new ArgumentNullException(nameof(runData));
+        if (config == null) throw new ArgumentNullException(nameof(config));
 
-        int totalSlots = config.Columns * config.Rows;
+        Debug.Log($"[{nameof(GridInitializer)}] Inicializando novo grid {config.Columns}x{config.Rows}.");
 
-        // 1. Garante que as listas internas existem
-        EnsureGridSlots(runData, totalSlots);
-        EnsureSlotStates(runData, totalSlots);
+        // Garante que os arrays de dados correspondam à configuração atual
+        SyncGridDimensions(runData, config);
 
-        // 2. Determina quantos slots devem ser desbloqueados
-        int slotCount = GetInitialSlotCount(config);
-
-        // 3. Seleciona e Aplica Padrão
-        InitializeUnlockPattern(runData, config, slotCount, patternConfig);
+        // Inicializa o padrão de desbloqueio determinístico
+        int initialSlotCount = GetInitialSlotCount(config);
+        InitializeUnlockPattern(runData, config, initialSlotCount, patternConfig);
         
-        Debug.Log($"[GridInitializer] Grid inicializado: {totalSlots} slots, {slotCount} desbloqueados.");
+        runData.IsGridInitialized = true;
     }
 
     /// <summary>
-    /// Regenera o padrões de desbloqueio (usado para compatibilidade ou debug).
+    /// API de "Auto-Cura" (Self-Healing). 
+    /// Deve ser chamada durante o Load para garantir que o save é compatível com a configuração atual do projeto.
+    /// </summary>
+    public static void EnsureGridIntegrity(RunData runData, GridConfiguration config)
+    {
+        if (runData == null || config == null) return;
+
+        bool needsRepair = false;
+
+        // 1. Validação de Dimensões (Arrays de Runtime)
+        if (runData.GridSlots.Length != config.TotalSlots || runData.SlotStates.Length != config.TotalSlots)
+        {
+            Debug.LogWarning($"[{nameof(GridInitializer)}] Inconsistência de dimensões detectada (Save: {runData.GridSlots.Length} vs Config: {config.TotalSlots}). Corrigindo...");
+            SyncGridDimensions(runData, config);
+            needsRepair = true;
+        }
+
+        // 2. Validação de Contrato de Desbloqueio (Versão e Grid)
+        if (runData.UnlockState == null || !runData.UnlockState.IsCompatibleWith(config.Columns, config.Rows, ALGORITHM_VERSION))
+        {
+            Debug.LogWarning($"[{nameof(GridInitializer)}] UnlockState ausente ou incompatível. Regenerando a partir do Seed...");
+            ReapplyUnlockPattern(runData, config);
+            needsRepair = true;
+        }
+
+        if (needsRepair)
+        {
+            Debug.Log($"[{nameof(GridInitializer)}] ✅ Integridade do grid restaurada com sucesso.");
+        }
+    }
+
+    /// <summary>
+    /// Regenera o padrões de desbloqueio preservando o Seed original da Run.
+    /// Útil para migrações de algoritmo ou ajustes de design.
     /// </summary>
     public static void ReapplyUnlockPattern(RunData runData, GridConfiguration config)
     {
@@ -38,43 +75,41 @@ public static class GridInitializer
 
         if (runData.UnlockPatternSeed == 0)
         {
-            Debug.LogError("[GridInitializer] Seed é 0! Não é possível regenerar deterministicamente. Criando novo seed.");
-            runData.UnlockPatternSeed = GenerateSeed();
+            Debug.LogWarning($"[{nameof(GridInitializer)}] UnlockPatternSeed era zero. Gerando novo seed determinístico.");
+            runData.UnlockPatternSeed = GenerateSecureSeed();
         }
 
-        int slotCount = runData.UnlockState?.TargetSlotCount ?? 5;
+        int targetSlotCount = runData.UnlockState?.TargetSlotCount ?? GetInitialSlotCount(config);
 
-        // USA O NOVO PROVIDER E SIGNATURA
         var random = new SeededRandomProvider(runData.UnlockPatternSeed);
-        var pattern = UnlockPatternGenerator.Generate(
+        var patternCoords = UnlockPatternGenerator.Generate(
             random,
             config.Columns,
             config.Rows,
-            slotCount,
+            targetSlotCount,
             null
         );
 
+        // Atualiza o cache de contrato
         runData.UnlockState = GridUnlockState.Create(
             config.Columns,
             config.Rows,
-            slotCount,
-            pattern
+            targetSlotCount,
+            patternCoords
         );
 
-        ApplyPattern(runData, config, pattern);
+        ApplyPatternToStates(runData, config, patternCoords);
     }
 
     private static void InitializeUnlockPattern(RunData runData, GridConfiguration config, int slotCount, PatternWeightConfig patternConfig)
     {
-        // 1. Gera seed se ainda não existe (Normalmente gerado no RunData.CreateNewRun)
         if (runData.UnlockPatternSeed == 0)
         {
-            runData.UnlockPatternSeed = GenerateSeed();
+            runData.UnlockPatternSeed = GenerateSecureSeed();
         }
 
-        // 2. Gera padrão usando seed e o NOVO PROVIDER
         var random = new SeededRandomProvider(runData.UnlockPatternSeed);
-        var pattern = UnlockPatternGenerator.Generate(
+        var patternCoords = UnlockPatternGenerator.Generate(
             random,
             config.Columns,
             config.Rows,
@@ -82,78 +117,57 @@ public static class GridInitializer
             patternConfig
         );
 
-        // 3. Salva estado para validação futura
         runData.UnlockState = GridUnlockState.Create(
             config.Columns,
             config.Rows,
             slotCount,
-            pattern
+            patternCoords
         );
 
-        ApplyPattern(runData, config, pattern);
+        ApplyPatternToStates(runData, config, patternCoords);
     }
 
-    private static int GetInitialSlotCount(GridConfiguration config)
+    private static void SyncGridDimensions(RunData runData, GridConfiguration config)
     {
-        // Exemplo: 20% do grid ou valor fixo
-        return 5; 
+        int targetSize = config.TotalSlots;
+
+        // Redimensiona Slots de Cultivo
+        runData.GridSlots = ResizeArray(runData.GridSlots, targetSize, _ => new CropState(default(CardID)));
+        
+        // Redimensiona Estados de Slots
+        runData.SlotStates = ResizeArray(runData.SlotStates, targetSize, _ => new GridSlotState { IsUnlocked = false });
     }
 
-    private static void EnsureGridSlots(RunData runData, int targetSize)
+    private static T[] ResizeArray<T>(T[] original, int targetSize, Func<int, T> factory)
     {
-        if (runData.GridSlots == null || runData.GridSlots.Length != targetSize)
+        var newArray = new T[targetSize];
+        int sourceLength = original?.Length ?? 0;
+
+        for (int i = 0; i < targetSize; i++)
         {
-            var oldSlots = runData.GridSlots ?? new CropState[0];
-            runData.GridSlots = new CropState[targetSize];
-
-            for (int i = 0; i < runData.GridSlots.Length; i++)
-            {
-                if (i < oldSlots.Length)
-                    runData.GridSlots[i] = oldSlots[i];
-                else
-                    runData.GridSlots[i] = new CropState(default(CropID));
-            }
+            if (i < sourceLength)
+                newArray[i] = original[i];
+            else
+                newArray[i] = factory(i);
         }
+        return newArray;
     }
 
-    private static void EnsureSlotStates(RunData runData, int targetSize)
+    private static void ApplyPatternToStates(RunData runData, GridConfiguration config, List<Vector2Int> pattern)
     {
-        if (runData.SlotStates == null || runData.SlotStates.Length != targetSize)
-        {
-            var oldStates = runData.SlotStates ?? new GridSlotState[0];
-            runData.SlotStates = new GridSlotState[targetSize];
-
-            for (int i = 0; i < runData.SlotStates.Length; i++)
-            {
-                if (i < oldStates.Length)
-                    runData.SlotStates[i] = oldStates[i];
-                else
-                    runData.SlotStates[i] = new GridSlotState { IsUnlocked = false };
-            }
-        }
-    }
-
-    private static void ApplyPattern(RunData runData, GridConfiguration config, List<Vector2Int> pattern)
-    {
-        // Reset primeiro? Depende da regra. Aqui estamos inicializando.
+        // Nota: Não resetamos o array inteiro aqui para permitir que desbloqueios manuais (Cheat/Gameplay) 
+        // persistam se o padrão for apenas um subconjunto.
         foreach (var coord in pattern)
         {
-            int c = coord.x;
-            int r = coord.y;
-
-            if (c >= 0 && c < config.Columns && r >= 0 && r < config.Rows)
+            int index = coord.y * config.Columns + coord.x;
+            if (index >= 0 && index < runData.SlotStates.Length)
             {
-                int index = r * config.Columns + c;
-                if (index >= 0 && index < runData.SlotStates.Length)
-                {
-                    runData.SlotStates[index].IsUnlocked = true;
-                }
+                runData.SlotStates[index].IsUnlocked = true;
             }
         }
     }
 
-    private static int GenerateSeed()
-    {
-        return UnityEngine.Random.Range(int.MinValue, int.MaxValue);
-    }
+    private static int GetInitialSlotCount(GridConfiguration config) => 5;
+
+    private static int GenerateSecureSeed() => UnityEngine.Random.Range(int.MinValue, int.MaxValue);
 }
