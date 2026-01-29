@@ -5,17 +5,16 @@ using UnityEngine;
 public class ShopService
 {
     private readonly IEconomyService _economy;
-    private readonly ISaveManager _saveManager; 
+    private readonly ISaveManager _saveManager;
     private readonly IGameLibrary _library;
     private readonly GameEvents _gameEvents;
 
     public ShopSession CurrentSession { get; private set; }
 
-    // Helpers de acesso r·pido para manter compatibilidade com a UI atual
-    // A UI pode ler ShopService.CurrentStock e internamente lemos da Sess„o
+    // Helpers de acesso r√°pido para manter compatibilidade com a UI atual
     public List<IPurchasable> CurrentStock => CurrentSession?.Stock;
     public string CurrentShopTitle => CurrentSession?.Title;
-
+           
     // Eventos
     public event Action OnStockRefreshed;
     public event Action<IPurchasable> OnItemPurchased;
@@ -33,13 +32,25 @@ public class ShopService
     {
         var run = _saveManager.Data.CurrentRun;
 
-        // Cria uma nova sess„o limpa
+        // --- DETERMINISMO ---
+        // Recupera o random provider da Run atual via Bootstrapper
+        IRandomProvider random = CardInteractionBootstrapper.IdentityContext.Random;
+        
+        if (random == null)
+        {
+            Debug.LogWarning("[ShopService] Contexto de Random n√£o encontrado! Usando Seed tempor√°ria de emerg√™ncia.");
+            // Fallback: Seed baseada no tempo (n√£o-determin√≠stico globalmente, mas evita crash)
+            random = new SeededRandomProvider(Environment.TickCount);
+        }
+           
+        // Cria uma nova sess√£o limpa
         string title = strategy.ShopTitle;
-        List<IPurchasable> stock = strategy.GenerateInventory(run, _library);
+        // Agora passamos o random para a estrat√©gia
+        List<IPurchasable> stock = strategy.GenerateInventory(run, _library, random);
 
         CurrentSession = new ShopSession(title, stock);
 
-        Debug.Log($"[ShopService] Sess„o iniciada: {title} ({stock.Count} itens)");
+        Debug.Log($"[ShopService] Sess√£o iniciada: {title} ({stock.Count} itens)");
         OnStockRefreshed?.Invoke();
     }
 
@@ -47,15 +58,15 @@ public class ShopService
     {
         if (CurrentSession == null)
         {
-            Debug.LogError("[ShopService] Tentativa de compra sem sess„o ativa.");
+            Debug.LogError("[ShopService] Tentativa de compra sem sess√£o ativa.");
             return;
         }
 
-        // 1. PreparaÁ„o
+        // 1. Prepara√ß√£o
         var run = _saveManager.Data.CurrentRun;
         var context = new PurchaseContext(run, _gameEvents);
 
-        // 2. ValidaÁ„o (MÈtodo separado)
+        // 2. Valida√ß√£o
         var failReason = ValidatePurchase(item, context);
         if (failReason != PurchaseFailReason.None)
         {
@@ -64,22 +75,20 @@ public class ShopService
             return;
         }
 
-        // 3. ExecuÁ„o (TransaÁ„o Financeira e LÛgica)
+        // 3. Execu√ß√£o (Transa√ß√£o Financeira e L√≥gica)
         ProcessTransaction(item, context);
     }
 
     private PurchaseFailReason ValidatePurchase(IPurchasable item, PurchaseContext context)
     {
-        // A) Regras do Item (Estado do jogo, M„o cheia, Vida cheia)
+        // A) Regras do Item (Estado do jogo, M√£o cheia, Vida cheia)
         var itemCheck = item.CanPurchase(context);
         if (itemCheck != PurchaseFailReason.None)
         {
             return itemCheck;
         }
 
-        // B) Regras EconÙmicas (Dinheiro)
-        // Nota: Verificamos se PODE gastar, mas n„o gastamos ainda.
-        // O EconomyService idealmente teria um "CanSpend", mas usaremos a lÛgica inversa aqui
+        // B) Regras Econ√¥micas (Dinheiro)
         if (_economy.CurrentMoney < item.Price)
         {
             return PurchaseFailReason.InsufficientFunds;
@@ -87,9 +96,32 @@ public class ShopService
 
         return PurchaseFailReason.None;
     }
+
+    private void ProcessTransaction(IPurchasable item, PurchaseContext context)
+    {
+        // A) Debitar Dinheiro
+        if (!_economy.TrySpend(item.Price, TransactionType.ShopPurchase))
+        {
+            OnPurchaseFailed?.Invoke(PurchaseFailReason.InsufficientFunds);
+            return;
+        }
+
+        // B) Entregar Produto
+        item.OnPurchased(context);
+
+        // C) Atualizar Estoque da Sess√£o
+        CurrentSession.TryRemoveItem(item);
+
+        // D) Persist√™ncia e Notifica√ß√£o
+        _saveManager.SaveGame();
+
+        OnItemPurchased?.Invoke(item);
+        OnStockRefreshed?.Invoke();
+    }
     public void SellCard(CardInstance cardInstance)
     {
         var run = _saveManager.Data.CurrentRun;
+        if (run == null) return;
 
         if (_library.TryGetCard(cardInstance.TemplateID, out CardData data))
         {
@@ -98,8 +130,8 @@ public class ShopService
 
             _economy.Earn(sellPrice, TransactionType.CardSale);
 
-            // LÛgica de RemoÁ„o Segura
-            // Procura a inst‚ncia exata pelo ID ⁄nico (GUID)
+            // L√≥gica de Remo√ß√£o Segura
+            // Procura a inst√¢ncia exata pelo ID √∫nico (GUID)
             var instanceToRemove = run.Hand.Find(x => x.UniqueID == cardInstance.UniqueID);
 
             if (!string.IsNullOrEmpty(instanceToRemove.UniqueID))
@@ -111,28 +143,5 @@ public class ShopService
             _saveManager.SaveGame();
             Debug.Log($"[Shop] Vendeu {data.Name} (ID: {cardInstance.UniqueID.Substring(0, 4)}...)");
         }
-    }
-
-    private void ProcessTransaction(IPurchasable item, PurchaseContext context)
-    {
-        // A) Debitar Dinheiro
-        // Como j· validamos, o TrySpend deve passar (a menos que haja race condition, raro aqui)
-        if (!_economy.TrySpend(item.Price, TransactionType.ShopPurchase))
-        {
-            OnPurchaseFailed?.Invoke(PurchaseFailReason.InsufficientFunds);
-            return;
-        }
-
-        // B) Entregar Produto
-        item.OnPurchased(context);
-
-        // C) Atualizar Estoque da Sess„o
-        CurrentSession.TryRemoveItem(item);
-
-        // D) PersistÍncia e NotificaÁ„o
-        _saveManager.SaveGame();
-
-        OnItemPurchased?.Invoke(item);
-        OnStockRefreshed?.Invoke();
     }
 }

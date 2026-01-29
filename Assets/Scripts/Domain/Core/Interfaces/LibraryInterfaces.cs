@@ -7,7 +7,7 @@ public interface IGameLibrary
 {
     bool TryGetCrop(CropID id, out CropData data);
     bool TryGetCard(CardID id, out CardData data);
-    List<CardData> GetRandomCards(int count);
+    List<CardData> GetRandomCards(int count, IRandomProvider random = null);
     IEnumerable<CropData> GetAllCrops();
     IEnumerable<CardData> GetAllCards();
 }

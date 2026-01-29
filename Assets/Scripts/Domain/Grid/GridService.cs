@@ -39,7 +39,7 @@ public class GridService : IGridService
         }
 
         // ⭐ NOVA ARQUITETURA: Delega inicialização para GridInitializer
-        GridInitializer.Initialize(_runData, _config, 5, _patternConfig);
+        GridInitializer.InitializeNewRun(_runData, _config, _patternConfig);
     }
 
 

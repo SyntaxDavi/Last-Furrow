@@ -1,15 +1,16 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-[CreateAssetMenu(menuName = "Shop/Sources/Guaranteed List")]
+[CreateAssetMenu(menuName = "Shop/Sources/Guaranteed List")]        
 public class GuaranteedSourceSO : ShopInventorySourceSO
 {
-    [Header("Configuração")]
+    [Header("ConfiguraÃ§Ã£o")]
     [SerializeField] private List<ShopItemFactorySO> _itemsToCreate;
 
     public override List<IPurchasable> GenerateItems(
-    RunData run,
-    IGameLibrary library)
+        RunData run,
+        IGameLibrary library,
+        IRandomProvider random)
     {
         var results = new List<IPurchasable>();
 

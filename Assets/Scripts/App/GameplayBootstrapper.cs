@@ -32,6 +32,10 @@ public class GameplayBootstrapper : MonoBehaviour
         var library = AppCore.Instance.GameLibrary;
         _playerInteraction.Initialize(AppCore.Instance.InputManager);
 
+        // --- ALEATORIEDADE DETERMINÍSTICA ---
+        // Configura o contexto da run (e o Random provider)
+        CardInteractionBootstrapper.ConfigureForRun(runData);
+
         // --- CRIAÇÃO CENTRALIZADA ---
         // 1. Cria a instância
         _gridService = new GridService(

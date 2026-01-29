@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-//Se não for “orquestrar fontes”, não entra aqui.
+// Se nÃ£o for "orquestrar fontes", nÃ£o entra aqui.
 public class ConfigurableShopStrategy : IShopStrategy
 {
     private readonly ShopProfileSO _profile;
@@ -12,7 +12,7 @@ public class ConfigurableShopStrategy : IShopStrategy
 
     public string ShopTitle => _profile.ShopTitle;
 
-    public List<IPurchasable> GenerateInventory(RunData run, IGameLibrary library)
+    public List<IPurchasable> GenerateInventory(RunData run, IGameLibrary library, IRandomProvider random)
     {
         var fullStock = new List<IPurchasable>();
 
@@ -23,8 +23,8 @@ public class ConfigurableShopStrategy : IShopStrategy
         {
             if (source != null)
             {
-                // Delega a geração para a fonte especializada, passando o contexto
-                var items = source.GenerateItems(run, library);
+                // Delega a geraÃ§Ã£o para a fonte especializada, passando o contexto e o RANDOM
+                var items = source.GenerateItems(run, library, random);
                 fullStock.AddRange(items);
             }
         }

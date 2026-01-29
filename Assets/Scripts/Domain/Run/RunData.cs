@@ -10,6 +10,9 @@ public class RunData
     public int GridConfigVersion;
 
     [Header("Grid Unlock State")]
+    [Tooltip("AUTORIDADE: Seed principal da run. Usado para gerar o IRandomProvider determinístico.")]
+    public int MasterSeed;
+
     [Tooltip("AUTORIDADE: Seed usado para gerar padrão inicial de desbloqueamento.")]
     public int UnlockPatternSeed;
 
@@ -120,6 +123,15 @@ public class RunData
         {
             // 🔢 VERSIONAMENTO: Armazena hash da config
             GridConfigVersion = config.GetVersionHash(),
+
+            // 🎲 DETERMINISMO: Gera seeds baseados no tempo/random do sistema ou usa override do GameSettings
+            MasterSeed = GameSettings.MASTER_SEED_OVERRIDE != 0 
+                ? GameSettings.MASTER_SEED_OVERRIDE 
+                : UnityEngine.Random.Range(int.MinValue, int.MaxValue),
+
+            UnlockPatternSeed = GameSettings.UNLOCK_PATTERN_SEED_OVERRIDE != 0 
+                ? GameSettings.UNLOCK_PATTERN_SEED_OVERRIDE 
+                : UnityEngine.Random.Range(int.MinValue, int.MaxValue),
 
             CurrentWeek = 1,
             CurrentDay = 1,

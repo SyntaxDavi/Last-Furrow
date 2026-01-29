@@ -1,30 +1,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Padrão de canto compacto (quadrado 2×2 ou 3×3 em um dos cantos).
-/// 
-/// Exemplo 5 slots (canto superior esquerdo):
-///     X X X . .
-///     X X . . .
-///     . . . . .
-/// 
-/// Forma área compacta em um dos 4 cantos.
-/// </summary>
 public class CornerPattern : IUnlockPattern
 {
-    public string PatternName => "Corner Block";
+    public string PatternName => "Corner";
 
-    public PatternResult Generate(int gridWidth, int gridHeight, int slotCount, System.Random rng)
+    public PatternResult Generate(int gridWidth, int gridHeight, int slotCount, IRandomProvider rng)
     {
         var result = new List<Vector2Int>();
         
-        // Escolhe canto aleatório
-        int corner = rng.Next(4);
-
-        // Calcula dimensões do bloco (tenta formar quadrado)
+        // Determina tamanho do bloco (ex: se pede 4 slots, faz 2x2 se possÃ­vel)
         int size = Mathf.CeilToInt(Mathf.Sqrt(slotCount));
 
+        // Escolhe um dos 4 cantos
+        int corner = rng.Range(0, 4);
         int startX = 0, startY = 0;
         int dirX = 1, dirY = 1;
 

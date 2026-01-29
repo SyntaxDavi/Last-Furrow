@@ -1,35 +1,22 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Padr„o de linha (horizontal ou vertical) aleatÛria.
-/// 
-/// Exemplo 5 slots horizontal:
-///     . . . . .
-///     X X X X X
-///     . . . . .
-/// 
-/// Exemplo 5 slots vertical:
-///     . X . . .
-///     . X . . .
-///     . X . . .
-///     . X . . .
-///     . X . . .
-/// </summary>
 public class LinePattern : IUnlockPattern
 {
-    public string PatternName => "Line (H/V)";
+    public string PatternName => "Line";
 
-    public PatternResult Generate(int gridWidth, int gridHeight, int slotCount, System.Random rng)
+    public PatternResult Generate(int gridWidth, int gridHeight, int slotCount, IRandomProvider rng)
     {
         var result = new List<Vector2Int>();
-        
-        bool isHorizontal = rng.Next(2) == 0;
+
+        bool isHorizontal = rng.NextBool();
 
         if (isHorizontal)
         {
             // Linha horizontal centralizada
             int row = gridHeight / 2;
+            // Adiciona varia√ß√£o aleat√≥ria na linha? O original era fixo no centro.
+            // Para manter igual:
             int startCol = Mathf.Max(0, (gridWidth - slotCount) / 2);
 
             for (int i = 0; i < slotCount && startCol + i < gridWidth; i++)

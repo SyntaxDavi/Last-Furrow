@@ -36,4 +36,16 @@ public static class GameSettings
         "card_shovel", 
         "card_water" 
     };
+
+    [Header("Debug & Determinismo")]
+    /// <summary>
+    /// Se diferente de 0, força o MasterSeed para toda nova run.
+    /// Útil para testes de consistência.
+    /// </summary>
+    public const int MASTER_SEED_OVERRIDE = 0;
+
+    /// <summary>
+    /// Se diferente de 0, força o UnlockPatternSeed para toda nova run.
+    /// </summary>
+    public const int UNLOCK_PATTERN_SEED_OVERRIDE = 0;
 }

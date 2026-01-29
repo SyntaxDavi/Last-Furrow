@@ -2,44 +2,37 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Padrão orgânico de crescimento adjacente.
-/// 
-/// Começa com 1 slot aleatório e adiciona vizinhos adjacentes
-/// de forma aleatória até atingir slotCount.
-/// 
-/// Exemplo possível:
-///     . . X X .
-///     . X X . .
-///     . X . . .
-/// 
-/// Sempre forma área conectada.
+/// Gera slots agrupados (estilo "mancha" ou orgÃ¢nico).
+/// ComeÃ§a em um ponto aleatÃ³rio e expande para os vizinhos.
 /// </summary>
 public class ClusterPattern : IUnlockPattern
 {
     public string PatternName => "Cluster (Organic)";
 
-    public PatternResult Generate(int gridWidth, int gridHeight, int slotCount, System.Random rng)
+    public PatternResult Generate(int gridWidth, int gridHeight, int slotCount, IRandomProvider rng)
     {
         var result = new List<Vector2Int>();
         var candidates = new List<Vector2Int>();
 
-        // 1. Slot inicial aleatório
-        int startX = rng.Next(gridWidth);
-        int startY = rng.Next(gridHeight);
+        // 1. Slot inicial aleatÃ³rio
+        int startX = rng.Range(0, gridWidth);
+        int startY = rng.Range(0, gridHeight);
         result.Add(new Vector2Int(startX, startY));
 
         // 2. Adiciona vizinhos ao pool de candidatos
         AddNeighborsToCandidates(new Vector2Int(startX, startY), gridWidth, gridHeight, result, candidates);
 
-        // 3. Expande até atingir slotCount
+        // 3. Expande atÃ© atingir slotCount
         while (result.Count < slotCount && candidates.Count > 0)
         {
-            // Escolhe candidato aleatório
-            int index = rng.Next(candidates.Count);
+            // Escolhe candidato aleatÃ³rio
+            int index = rng.Range(0, candidates.Count);
             var chosen = candidates[index];
             candidates.RemoveAt(index);
 
             result.Add(chosen);
+
+            // Adiciona novos vizinhos
             AddNeighborsToCandidates(chosen, gridWidth, gridHeight, result, candidates);
         }
 
@@ -49,7 +42,7 @@ public class ClusterPattern : IUnlockPattern
     private void AddNeighborsToCandidates(Vector2Int slot, int gridWidth, int gridHeight, 
         List<Vector2Int> existing, List<Vector2Int> candidates)
     {
-        // 4 direções cardinais
+        // 4 direÃ§Ãµes cardinais
         Vector2Int[] directions = {
             new Vector2Int(0, 1),  // Cima
             new Vector2Int(0, -1), // Baixo
@@ -65,7 +58,7 @@ public class ClusterPattern : IUnlockPattern
             if (neighbor.x < 0 || neighbor.x >= gridWidth || neighbor.y < 0 || neighbor.y >= gridHeight)
                 continue;
 
-            // Não adiciona se já existe ou já está nos candidatos
+            // NÃ£o adiciona se jÃ¡ existe ou jÃ¡ estÃ¡ nos candidatos
             if (existing.Contains(neighbor) || candidates.Contains(neighbor))
                 continue;
 

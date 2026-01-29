@@ -1,27 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Padrão totalmente disperso (ilhas não conectadas).
-/// 
-/// Exemplo 5 slots:
-///     X . . . X
-///     . . X . .
-///     . X . . .
-///     . . . X .
-/// 
-/// Slots podem estar em qualquer lugar, sem necessariamente formar área conectada.
-/// </summary>
 public class ScatterPattern : IUnlockPattern
 {
-    public string PatternName => "Scatter (Islands)";
+    public string PatternName => "Scatter";
 
-    public PatternResult Generate(int gridWidth, int gridHeight, int slotCount, System.Random rng)
+    public PatternResult Generate(int gridWidth, int gridHeight, int slotCount, IRandomProvider rng)
     {
         var result = new List<Vector2Int>();
         var allSlots = new List<Vector2Int>();
 
-        // Cria lista de todos os slots possíveis
+        // Cria lista de todos os slots possÃ­veis
         for (int y = 0; y < gridHeight; y++)
         {
             for (int x = 0; x < gridWidth; x++)
@@ -30,14 +19,8 @@ public class ScatterPattern : IUnlockPattern
             }
         }
 
-        // Embaralha (Fisher-Yates shuffle)
-        for (int i = allSlots.Count - 1; i > 0; i--)
-        {
-            int j = rng.Next(i + 1);
-            var temp = allSlots[i];
-            allSlots[i] = allSlots[j];
-            allSlots[j] = temp;
-        }
+        // Embaralha usando Provider
+        rng.Shuffle(allSlots);
 
         // Pega os primeiros slotCount slots
         for (int i = 0; i < slotCount && i < allSlots.Count; i++)

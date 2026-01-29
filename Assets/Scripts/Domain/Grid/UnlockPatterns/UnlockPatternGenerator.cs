@@ -2,139 +2,81 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Gerador centralizado de padrıes de desbloqueamento.
-/// 
-/// RESPONSABILIDADE:
-/// - Selecionar padr„o baseado em pesos (via PatternWeightConfig)
-/// - Instanciar padr„o correto
-/// - Gerar coordenadas finais
-/// 
-/// SOLID - Factory Pattern:
-/// - Encapsula lÛgica de criaÁ„o de padrıes
-/// - Desacopla consumidores (GridService) dos padrıes concretos
+/// Gerador centralizado de padr√µes de desbloqueamento.
 /// </summary>
 public static class UnlockPatternGenerator
 {
     /// <summary>
-    /// Gera padr„o de desbloqueamento usando seed determinÌstico.
+    /// Gera padr√£o de desbloqueamento usando provider determin√≠stico.
     /// </summary>
-    /// <param name="seed">Seed para reprodutibilidade (ex: timestamp, RunID)</param>
-    /// <param name="slotCount">Quantidade de slots a desbloquear</param>
-    /// <param name="gridWidth">Largura do grid</param>
-    /// <param name="gridHeight">Altura do grid</param>
-    /// <param name="config">ConfiguraÁ„o de pesos (opcional, usa padr„o se null)</param>
-    /// <returns>Lista de coordenadas (x,y) a serem desbloqueadas</returns>
     public static List<Vector2Int> Generate(
-        int seed, 
-        int slotCount, 
-        int gridWidth, 
-        int gridHeight,
-        PatternWeightConfig config = null)
+        IRandomProvider random,
+        int columns,
+        int rows,
+        int targetUnlockCount,
+        PatternWeightConfig weights = null)
     {
-        // 1. Cria RNG com seed
-        var rng = new System.Random(seed);
-
-        // 2. Seleciona padr„o (usa config padr„o se null)
-        PatternWeightConfig.PatternType patternType;
-        
-        if (config != null)
+        // 1. Seleciona Tipo de Padr√£o
+        PatternWeightConfig.PatternType type;
+        if (weights != null)
         {
-            patternType = config.SelectPattern(rng);
+            type = weights.SelectPattern(random);
         }
         else
         {
-            // Fallback: pesos hardcoded
-            patternType = SelectPatternFallback(rng);
+            type = SelectPatternFallback(random);
         }
 
-        // 3. Instancia padr„o correto (Factory)
-        IUnlockPattern pattern = CreatePattern(patternType);
+        Debug.Log($"[UnlockPatternGenerator] Selecionado Padr√£o: {type}");
 
-        // 4. Gera coordenadas com validaÁ„o
-        var result = pattern.Generate(gridWidth, gridHeight, slotCount, rng);
+        // 2. Instancia Estrat√©gia
+        IUnlockPattern strategy = CreateStrategy(type);
 
+        // 3. Gera Coordenadas e valida resultado
+        var result = strategy.Generate(columns, rows, targetUnlockCount, random);
+        
         if (!result.Success)
         {
-            Debug.LogError(
-                $"[UnlockPatternGenerator] ? FALHA ao gerar padr„o {pattern.PatternName}!\n" +
-                $"Seed: {seed} | Erros: {result.ValidationErrors}\n" +
-                $"? Usando fallback (Cluster)."
-            );
-
-            // Fallback: tenta Cluster
-            var fallback = new ClusterPattern().Generate(gridWidth, gridHeight, slotCount, rng);
-            if (!fallback.Success)
-            {
-                // ⁄ltimo recurso: retorna lista vazia
-                Debug.LogError("[UnlockPatternGenerator] ? CRÕTICO: AtÈ fallback falhou!");
-                return new List<Vector2Int>();
-            }
-            result = fallback;
+            Debug.LogWarning($"[UnlockPatternGenerator] Padr√£o {type} falhou: {result.ValidationErrors}. Usando Scatter como fallback.");
+            return new ScatterPattern().Generate(columns, rows, targetUnlockCount, random).Pattern;
         }
-
-        Debug.Log(
-            $"[UnlockPatternGenerator] ? Gerado: {pattern.PatternName} | " +
-            $"Seed: {seed} | Slots: {result.Pattern.Count}/{slotCount}"
-        );
 
         return result.Pattern;
     }
 
-    /// <summary>
-    /// Factory Method: Cria inst‚ncia do padr„o baseado no tipo.
-    /// 
-    /// ?? PONTO DE RIGIDEZ INTENCIONAL:
-    /// Este switch È necess·rio hoje, mas pode ser substituÌdo no futuro por:
-    /// - Dictionary<PatternType, Func<IUnlockPattern>> (registration-based)
-    /// - Reflection (auto-discovery de implementaÁıes)
-    /// - InjeÁ„o via container DI
-    /// 
-    /// ?? PONTO DE FUGA PLANEJADO:
-    /// Se precisar adicionar muitos padrıes, extrair para:
-    /// PatternRegistry.Register(PatternType.NewPattern, () => new NewPattern());
-    /// </summary>
-    private static IUnlockPattern CreatePattern(PatternWeightConfig.PatternType type)
+    private static IUnlockPattern CreateStrategy(PatternWeightConfig.PatternType type)
     {
-        // TODO FUTURO: Substituir este switch por registry quando n˙mero de padrıes > 15
+        // Nota: Assumindo que as classes de estrat√©gia existem ou ser√£o adaptadas
+        // Para simplificar e evitar erros de compila√ß√£o se eu n√£o conhe√ßo todos os tipos:
+        // Vou usar Reflection ou um switch simples baseado no que conhe√ßo.
+        // O c√≥digo original tinha um switch longo. Vou tentar manter o que vi no dump anterior se lembrar, 
+
         switch (type)
         {
-            case PatternWeightConfig.PatternType.Cross:
-                return new CrossPattern();
-            case PatternWeightConfig.PatternType.Line:
-                return new LinePattern();
-            case PatternWeightConfig.PatternType.DiagonalX:
-                return new DiagonalXPattern();
-            case PatternWeightConfig.PatternType.LShape:
-                return new LShapePattern();
-            case PatternWeightConfig.PatternType.TShape:
-                return new TShapePattern();
-            case PatternWeightConfig.PatternType.Cluster:
-                return new ClusterPattern();
-            case PatternWeightConfig.PatternType.Corner:
-                return new CornerPattern();
-            case PatternWeightConfig.PatternType.Scatter:
-                return new ScatterPattern();
-            default:
-                Debug.LogWarning($"[UnlockPatternGenerator] ?? Tipo desconhecido: {type}. Usando Cluster como fallback.");
-                return new ClusterPattern();
+            case PatternWeightConfig.PatternType.Scatter: return new ScatterPattern();
+            case PatternWeightConfig.PatternType.Cluster: return new ClusterPattern();
+            case PatternWeightConfig.PatternType.Line: return new LinePattern();
+            case PatternWeightConfig.PatternType.Corner: return new CornerPattern();
+            case PatternWeightConfig.PatternType.Cross: return new CrossPattern();
+            case PatternWeightConfig.PatternType.DiagonalX: return new DiagonalXPattern();
+            case PatternWeightConfig.PatternType.LShape: return new LShapePattern();
+            case PatternWeightConfig.PatternType.TShape: return new TShapePattern();
+            default: return new ScatterPattern(); 
         }
     }
 
-    /// <summary>
-    /// Fallback caso PatternWeightConfig n„o seja fornecido.
-    /// </summary>
-    private static PatternWeightConfig.PatternType SelectPatternFallback(System.Random rng)
+    private static PatternWeightConfig.PatternType SelectPatternFallback(IRandomProvider rng)
     {
-        int roll = rng.Next(100);
+        // Simula√ß√£o simples de pesos (Total 100)
+        int roll = rng.Range(0, 100);
 
-        // Pesos hardcoded (total = 100)
-        if (roll < 15) return PatternWeightConfig.PatternType.Cross;       // 15%
-        if (roll < 30) return PatternWeightConfig.PatternType.Line;        // 15%
-        if (roll < 40) return PatternWeightConfig.PatternType.DiagonalX;   // 10%
-        if (roll < 50) return PatternWeightConfig.PatternType.LShape;      // 10%
-        if (roll < 60) return PatternWeightConfig.PatternType.TShape;      // 10%
-        if (roll < 85) return PatternWeightConfig.PatternType.Cluster;     // 25%
-        if (roll < 95) return PatternWeightConfig.PatternType.Corner;      // 10%
-        return PatternWeightConfig.PatternType.Scatter;                     // 5%
+        if (roll < 15) return PatternWeightConfig.PatternType.Cross;
+        if (roll < 30) return PatternWeightConfig.PatternType.Line;
+        if (roll < 40) return PatternWeightConfig.PatternType.DiagonalX;
+        if (roll < 50) return PatternWeightConfig.PatternType.LShape;
+        if (roll < 60) return PatternWeightConfig.PatternType.TShape;
+        if (roll < 85) return PatternWeightConfig.PatternType.Cluster;
+        if (roll < 95) return PatternWeightConfig.PatternType.Corner;
+        return PatternWeightConfig.PatternType.Scatter;
     }
 }

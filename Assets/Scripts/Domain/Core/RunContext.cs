@@ -1,25 +1,28 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 
 /// <summary>
-/// Contexto de IDENTIDADE - Imut·vel durante a run.
+/// Contexto de IDENTIDADE - Imut√°vel durante a run.
 /// 
-/// ContÈm serviÁos que:
+/// Cont√©m servi√ßos que:
 /// - Definem a identidade da run
-/// - N√O mudam durante a run
-/// - N√O dependem de cena
+/// - N√ÉO mudam durante a run
+/// - N√ÉO dependem de cena
 /// 
-/// … IMUT¡VEL: criado uma vez, morre uma vez.
-/// Grid N√O est· aqui - Grid È RunRuntimeContext.
+/// √â IMUT√ÅVEL: criado uma vez, morre uma vez.
+/// Grid N√ÉO est√° aqui - Grid √© RunRuntimeContext.
 /// </summary>
 public readonly struct RunIdentityContext
 {
-    // --- SERVI«OS CORE ---
+    // --- SERVI√áOS CORE ---
     public readonly IRunManager RunManager;
     public readonly ISaveManager SaveManager;
     public readonly IEconomyService Economy;
 
-    // --- SERVI«OS DE DADOS ---
+    // --- SERVI√áOS DE DADOS ---
     public readonly IGameLibrary Library;
+
+    // --- ALEATORIEDADE ---
+    public readonly IRandomProvider Random;
 
     // --- EVENTOS ---
     public readonly PlayerEvents PlayerEvents;
@@ -30,31 +33,35 @@ public readonly struct RunIdentityContext
         ISaveManager saveManager,
         IEconomyService economy,
         IGameLibrary library,
+        IRandomProvider random,
         PlayerEvents playerEvents,
         GameEvents gameEvents)
     {
-        // ValidaÁ„o robusta contra nulls
+        // Valida√ß√£o robusta contra nulls
         if (runManager == null)
-            throw new System.ArgumentNullException(nameof(runManager), "[RunIdentityContext] RunManager n„o pode ser null");
+            throw new System.ArgumentNullException(nameof(runManager), "[RunIdentityContext] RunManager n√£o pode ser null");
         if (saveManager == null)
-            throw new System.ArgumentNullException(nameof(saveManager), "[RunIdentityContext] SaveManager n„o pode ser null");
+            throw new System.ArgumentNullException(nameof(saveManager), "[RunIdentityContext] SaveManager n√£o pode ser null");
         if (economy == null)
-            throw new System.ArgumentNullException(nameof(economy), "[RunIdentityContext] EconomyService n„o pode ser null");
+            throw new System.ArgumentNullException(nameof(economy), "[RunIdentityContext] EconomyService n√£o pode ser null");
         if (library == null)
-            throw new System.ArgumentNullException(nameof(library), "[RunIdentityContext] GameLibrary n„o pode ser null");
+            throw new System.ArgumentNullException(nameof(library), "[RunIdentityContext] GameLibrary n√£o pode ser null");
+        if (random == null)
+            throw new System.ArgumentNullException(nameof(random), "[RunIdentityContext] IRandomProvider n√£o pode ser null.");
         if (playerEvents == null)
-            throw new System.ArgumentNullException(nameof(playerEvents), "[RunIdentityContext] PlayerEvents n„o pode ser null");
+            throw new System.ArgumentNullException(nameof(playerEvents), "[RunIdentityContext] PlayerEvents n√£o pode ser null");
         if (gameEvents == null)
-            throw new System.ArgumentNullException(nameof(gameEvents), "[RunIdentityContext] GameEvents n„o pode ser null");
+            throw new System.ArgumentNullException(nameof(gameEvents), "[RunIdentityContext] GameEvents n√£o pode ser null");
 
         RunManager = runManager;
         SaveManager = saveManager;
         Economy = economy;
         Library = library;
+        Random = random;
         PlayerEvents = playerEvents;
         GameEvents = gameEvents;
 
-        Debug.Log("[RunIdentityContext] Inicializado com sucesso. Todos os serviÁos validados.");
+        Debug.Log("[RunIdentityContext] Inicializado com sucesso. Todos os servi√ßos validados.");
     }
 }
 
