@@ -1,4 +1,4 @@
-using UnityEngine;
+    using UnityEngine;
 
 [CreateAssetMenu(fileName = "New Crop", menuName = "Last Furrow/Crop Data")]
 public class CropData : ScriptableObject
