@@ -11,7 +11,7 @@ public class GameLibraryService : IGameLibrary
     private readonly GameDatabaseSO _database;
     private Dictionary<CropID, CropData> _cropMap;
     private Dictionary<CardID, CardData> _cardMap;
-    private Dictionary<string, TraditionData> _traditionMap;
+    private Dictionary<TraditionID, TraditionData> _traditionMap;
 
     public GameLibraryService(GameDatabaseSO database)
     {
@@ -23,7 +23,7 @@ public class GameLibraryService : IGameLibrary
     {
         _cropMap = new Dictionary<CropID, CropData>();
         _cardMap = new Dictionary<CardID, CardData>();
-        _traditionMap = new Dictionary<string, TraditionData>();
+        _traditionMap = new Dictionary<TraditionID, TraditionData>();
 
         foreach (var item in database.AllCrops)
         {
@@ -39,7 +39,7 @@ public class GameLibraryService : IGameLibrary
         
         foreach (var item in database.AllTraditions)
         {
-            if (item != null && !string.IsNullOrEmpty(item.ID))
+            if (item != null && item.ID.IsValid)
                 _traditionMap.TryAdd(item.ID, item);
         }
     }
@@ -88,7 +88,7 @@ public class GameLibraryService : IGameLibrary
 
     public bool TryGetCrop(CropID id, out CropData data) => _cropMap.TryGetValue(id, out data);
     public bool TryGetCard(CardID id, out CardData data) => _cardMap.TryGetValue(id, out data);
-    public bool TryGetTradition(string id, out TraditionData data) => _traditionMap.TryGetValue(id, out data);
+    public bool TryGetTradition(TraditionID id, out TraditionData data) => _traditionMap.TryGetValue(id, out data);
     
     public IEnumerable<CropData> GetAllCrops() => _cropMap.Values;
     public IEnumerable<CardData> GetAllCards() => _cardMap.Values;

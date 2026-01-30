@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using LastFurrow.Traditions;
 
 /// <summary>
 /// Registro centralizado de todos os serviços globais do jogo.
@@ -23,6 +24,7 @@ public class ServiceRegistry
     // Módulo: Sistemas (MonoBehaviours)
     public IGameStateProvider State { get; private set; }
     public TimeManager Time { get; private set; }
+    public ITraditionService Traditions { get; private set; }
     public InputManager Input { get; private set; }
     
     // Módulo: Gameplay
@@ -68,5 +70,10 @@ public class ServiceRegistry
     public void SetPatternTracking(PatternTrackingService tracking)
     {
         PatternTracking = tracking;
+    }
+
+    public void SetTraditions(ITraditionService traditions)
+    {
+        Traditions = traditions;
     }
 }

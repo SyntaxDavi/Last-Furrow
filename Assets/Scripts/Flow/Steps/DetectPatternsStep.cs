@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using LastFurrow.Traditions;
 
 /// <summary>
 /// Step que detecta padrões no grid e orquestra a contagem de pontos contínua.
@@ -60,17 +62,43 @@ public class DetectPatternsStep : IFlowStep
         {
             // 1. Detecção de Padrões (Lógica)
             var matches = _detector.DetectAll(_gridService);
-            int patternPoints = 0;
+            int totalDayPoints = 0;
+            
+            // --- TRADIÇÕES: Início da Avaliação ---
+            var traditions = AppCore.Instance?.Services?.Traditions;
+            var evaluator = traditions?.Evaluator;
+            evaluator?.StartDayEvaluation(_runData, _gridService, _events);
+
+            // Bônus iniciais (ex: tradições que dão pontos flat no início da fase)
+            totalDayPoints += evaluator?.EvaluatePreScoring() ?? 0;
 
             if (matches.Count > 0)
             {
-                var scoreResults = _calculator.CalculateTotalWithMetadata(matches, _gridService);
-                patternPoints = scoreResults.TotalScore;
-
-                if (_analysisResult != null)
+                foreach (var match in matches)
                 {
-                    _analysisResult.SetPatterns(matches, patternPoints);
+                    // Pontuação técnica do padrão (calculada via Strategy Pattern)
+                    var scoreResult = _calculator.CalculateSingleWithMetadata(match, _gridService);
+                    int basePoints = scoreResult.FinalScore;
+                    
+                    // --- TRADIÇÕES: Bônus por Padrão ---
+                    int traditionBonus = evaluator?.EvaluatePatternDetected(match) ?? 0;
+                    
+                    totalDayPoints += basePoints + traditionBonus;
                 }
+            }
+
+            // --- TRADIÇÕES: Bônus Pós-padrões (ex: bonus por quantidade total) ---
+            totalDayPoints += evaluator?.EvaluatePostPattern() ?? 0;
+            
+            // --- TRADIÇÕES: Multiplicadores Finais (ex: x1.1 no score total) ---
+            // Nota: Se finalMult > 0, tratamos como percentual ou multiplicador dependendo da regra.
+            // Aqui vamos assumir multi bônus simples de soma por enquanto ou mult real.
+            int multiplierBonus = evaluator?.EvaluateFinalMultiplier() ?? 0;
+            totalDayPoints += multiplierBonus;
+
+            if (_analysisResult != null)
+            {
+                _analysisResult.SetPatterns(matches, totalDayPoints);
             }
 
             // 1.5. DATA INTEGRITY: Aplica score ANTES das animações e salva
@@ -84,6 +112,13 @@ public class DetectPatternsStep : IFlowStep
                     Debug.Log($"[DetectPatternsStep] Score salvo preventivamente: +{totalPoints} pontos.");
                 }
             }
+            
+            // --- TRADIÇÕES: Efeitos de Fim do Dia (ex: spawnar crops, ganhar gold extra) ---
+            bool metGoal = _runData.CurrentWeeklyScore >= _runData.WeeklyGoalTarget;
+            evaluator?.EvaluatePostDay(totalDayPoints, metGoal);
+            
+            // --- TRADIÇÕES: Limpeza do Contexto ---
+            evaluator?.EndDayEvaluation();
 
             // 2. Fase Visual (Contagem contínua: Passivos + Padrões)
             // Nota: O score já foi aplicado, então a animação é puramente visual agora

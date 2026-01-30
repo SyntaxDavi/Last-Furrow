@@ -1,184 +1,207 @@
 using System.Collections.Generic;
+using System.Linq;
 using LastFurrow.Traditions;
+using UnityEngine;
 
 /// <summary>
 /// Cheats para testar o sistema de tradições.
 /// </summary>
-public static class TraditionCheats
+
+[Cheat("tradition_add", "Traditions", "Adiciona uma tradição aleatória")]
+public class AddRandomTraditionCheat : ICheatCommand
 {
-    [CheatCommand("tradition.add", "Adiciona uma tradição aleatória")]
-    public static bool AddRandomTradition(CheatContext ctx, out string feedback)
+    public string Id => "tradition_add";
+    public string Category => "Traditions";
+    public string Description => "Adiciona uma tradição aleatória";
+    public bool ValidateArgs(string[] args, out string error) { error = null; return true; }
+
+    public bool Execute(string[] args, out string feedback)
     {
-        var manager = UnityEngine.Object.FindFirstObjectByType<TraditionManager>();
-        if (manager == null)
-        {
-            feedback = "❌ TraditionManager não encontrado na scene";
-            return false;
-        }
+        var ctx = CheatContext.Instance;
+        var library = ctx.Library;
         
-        if (!manager.CanAddTradition)
-        {
-            feedback = $"❌ Máximo de tradições atingido ({manager.MaxTraditions})";
-            return false;
-        }
-        
-        var traditions = ctx.Library.GetRandomTraditions(1);
+        // Por enquanto, acessa diretamente já que o serviço ainda não está no AppCore
+        var traditions = library.GetRandomTraditions(1);
         if (traditions.Count == 0)
         {
             feedback = "❌ Nenhuma tradição disponível no GameDatabase";
             return false;
         }
         
-        if (manager.TryAddTradition(traditions[0]))
+        var run = ctx.RunData;
+        if (run == null)
         {
-            feedback = $"✅ Tradição adicionada: {traditions[0].DisplayName}";
-            return true;
+            feedback = "❌ Nenhuma run ativa";
+            return false;
         }
         
-        feedback = "❌ Falha ao adicionar tradição";
-        return false;
+        if (run.ActiveTraditionIDs.Count >= run.MaxTraditionSlots)
+        {
+            feedback = $"❌ Máximo de tradições atingido ({run.MaxTraditionSlots})";
+            return false;
+        }
+        
+        var tradition = traditions[0];
+        run.ActiveTraditionIDs.Add(tradition.ID);
+        ctx.SaveManager?.SaveGame();
+        
+        feedback = $"✅ Tradição adicionada: {tradition.DisplayName}. Recarregue a scene.";
+        return true;
     }
-    
-    [CheatCommand("tradition.add.id", "Adiciona tradição por ID", "id")]
-    public static bool AddTraditionByID(CheatContext ctx, string id, out string feedback)
+}
+
+[Cheat("tradition_list", "Traditions", "Lista todas as tradições ativas")]
+public class ListTraditionsCheat : ICheatCommand
+{
+    public string Id => "tradition_list";
+    public string Category => "Traditions";
+    public string Description => "Lista todas as tradições ativas";
+    public bool ValidateArgs(string[] args, out string error) { error = null; return true; }
+
+    public bool Execute(string[] args, out string feedback)
     {
-        var manager = UnityEngine.Object.FindFirstObjectByType<TraditionManager>();
-        if (manager == null)
+        var ctx = CheatContext.Instance;
+        var run = ctx.RunData;
+        
+        if (run == null)
         {
-            feedback = "❌ TraditionManager não encontrado na scene";
+            feedback = "❌ Nenhuma run ativa";
             return false;
         }
         
-        if (!ctx.Library.TryGetTradition(id, out var data))
-        {
-            feedback = $"❌ Tradição não encontrada: {id}";
-            return false;
-        }
-        
-        if (manager.TryAddTradition(data))
-        {
-            feedback = $"✅ Tradição adicionada: {data.DisplayName}";
-            return true;
-        }
-        
-        feedback = "❌ Falha ao adicionar tradição (máximo atingido?)";
-        return false;
-    }
-    
-    [CheatCommand("tradition.list", "Lista todas as tradições ativas")]
-    public static bool ListTraditions(CheatContext ctx, out string feedback)
-    {
-        var manager = UnityEngine.Object.FindFirstObjectByType<TraditionManager>();
-        if (manager == null)
-        {
-            feedback = "❌ TraditionManager não encontrado";
-            return false;
-        }
-        
-        var traditions = manager.ActiveTraditions;
-        if (traditions.Count == 0)
+        if (run.ActiveTraditionIDs.Count == 0)
         {
             feedback = "📋 Nenhuma tradição ativa";
             return true;
         }
         
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine($"📋 Tradições Ativas ({traditions.Count}/{manager.MaxTraditions}):");
+        sb.AppendLine($"📋 Tradições Ativas ({run.ActiveTraditionIDs.Count}/{run.MaxTraditionSlots}):");
         
-        for (int i = 0; i < traditions.Count; i++)
+        for (int i = 0; i < run.ActiveTraditionIDs.Count; i++)
         {
-            var t = traditions[i];
-            var name = t.Data?.DisplayName ?? t.TraditionID;
-            sb.AppendLine($"  [{i}] {name}");
+            var id = run.ActiveTraditionIDs[i];
+            var tradId = new TraditionID(id);
+            string name = id;
+            
+            if (ctx.Library.TryGetTradition(tradId, out var data))
+            {
+                name = data.DisplayName;
+            }
+            
+            sb.AppendLine($"  [{i}] {name} (ID: {id})");
         }
         
         feedback = sb.ToString();
         return true;
     }
+}
+
+[Cheat("tradition_remove", "Traditions", "Remove tradição por índice")]
+public class RemoveTraditionCheat : ICheatCommand
+{
+    public string Id => "tradition_remove";
+    public string Category => "Traditions";
+    public string Description => "Remove tradição por índice. Uso: tradition_remove <index>";
     
-    [CheatCommand("tradition.swap", "Troca duas tradições de posição", "indexA", "indexB")]
-    public static bool SwapTraditions(CheatContext ctx, int indexA, int indexB, out string feedback)
+    public bool ValidateArgs(string[] args, out string error)
     {
-        var manager = UnityEngine.Object.FindFirstObjectByType<TraditionManager>();
-        if (manager == null)
+        if (args.Length == 0 || !int.TryParse(args[0], out _))
         {
-            feedback = "❌ TraditionManager não encontrado";
+            error = "Uso: tradition_remove <índice>";
             return false;
         }
-        
-        if (indexA < 0 || indexA >= manager.ActiveCount || indexB < 0 || indexB >= manager.ActiveCount)
-        {
-            feedback = $"❌ Índices inválidos (0-{manager.ActiveCount - 1})";
-            return false;
-        }
-        
-        manager.SwapTraditions(indexA, indexB);
-        feedback = $"✅ Tradições {indexA} e {indexB} trocadas";
+        error = null;
         return true;
     }
-    
-    [CheatCommand("tradition.remove", "Remove tradição por índice", "index")]
-    public static bool RemoveTradition(CheatContext ctx, int index, out string feedback)
+
+    public bool Execute(string[] args, out string feedback)
     {
-        var manager = UnityEngine.Object.FindFirstObjectByType<TraditionManager>();
-        if (manager == null)
+        var run = CheatContext.Instance.RunData;
+        
+        if (run == null)
         {
-            feedback = "❌ TraditionManager não encontrado";
+            feedback = "❌ Nenhuma run ativa";
             return false;
         }
         
-        if (index < 0 || index >= manager.ActiveCount)
+        int index = int.Parse(args[0]);
+        
+        if (index < 0 || index >= run.ActiveTraditionIDs.Count)
         {
-            feedback = $"❌ Índice inválido (0-{manager.ActiveCount - 1})";
+            feedback = $"❌ Índice inválido (0-{run.ActiveTraditionIDs.Count - 1})";
             return false;
         }
         
-        var tradition = manager.ActiveTraditions[index];
-        var name = tradition.Data?.DisplayName ?? tradition.TraditionID;
+        var removedId = run.ActiveTraditionIDs[index];
+        run.ActiveTraditionIDs.RemoveAt(index);
+        CheatContext.Instance.SaveManager?.SaveGame();
         
-        if (manager.TrySellTradition(index, out int sellValue))
-        {
-            feedback = $"✅ Tradição removida: {name} (valor: ${sellValue})";
-            return true;
-        }
-        
-        feedback = "❌ Falha ao remover tradição";
-        return false;
-    }
-    
-    [CheatCommand("tradition.slots", "Aumenta slots de tradições", "amount")]
-    public static bool AddTraditionSlots(CheatContext ctx, int amount, out string feedback)
-    {
-        if (ctx.RunData == null)
-        {
-            feedback = "❌ RunData não disponível";
-            return false;
-        }
-        
-        int oldMax = ctx.RunData.MaxTraditionSlots;
-        ctx.RunData.MaxTraditionSlots += amount;
-        
-        feedback = $"✅ Slots de tradições: {oldMax} → {ctx.RunData.MaxTraditionSlots}";
+        feedback = $"✅ Tradição removida: {removedId}. Recarregue a scene.";
         return true;
     }
+}
+
+[Cheat("tradition_slots", "Traditions", "Define slots de tradições")]
+public class SetTraditionSlotsCheat : ICheatCommand
+{
+    public string Id => "tradition_slots";
+    public string Category => "Traditions";
+    public string Description => "Define slots de tradições. Uso: tradition_slots <amount>";
     
-    [CheatCommand("tradition.available", "Lista tradições disponíveis no database")]
-    public static bool ListAvailableTraditions(CheatContext ctx, out string feedback)
+    public bool ValidateArgs(string[] args, out string error)
     {
-        var allTraditions = ctx.Library.GetAllTraditions();
-        var list = new List<TraditionData>();
-        foreach (var t in allTraditions) list.Add(t);
-        
-        if (list.Count == 0)
+        if (args.Length == 0 || !int.TryParse(args[0], out int amount) || amount < 1)
         {
-            feedback = "📋 Nenhuma tradição no GameDatabase";
+            error = "Uso: tradition_slots <quantidade> (mínimo 1)";
+            return false;
+        }
+        error = null;
+        return true;
+    }
+
+    public bool Execute(string[] args, out string feedback)
+    {
+        var run = CheatContext.Instance.RunData;
+        
+        if (run == null)
+        {
+            feedback = "❌ Nenhuma run ativa";
+            return false;
+        }
+        
+        int oldMax = run.MaxTraditionSlots;
+        int newMax = int.Parse(args[0]);
+        run.MaxTraditionSlots = newMax;
+        CheatContext.Instance.SaveManager?.SaveGame();
+        
+        feedback = $"✅ Slots de tradições: {oldMax} → {newMax}";
+        return true;
+    }
+}
+
+[Cheat("tradition_available", "Traditions", "Lista tradições disponíveis no database")]
+public class ListAvailableTraditionsCheat : ICheatCommand
+{
+    public string Id => "tradition_available";
+    public string Category => "Traditions";
+    public string Description => "Lista tradições disponíveis no database";
+    public bool ValidateArgs(string[] args, out string error) { error = null; return true; }
+
+    public bool Execute(string[] args, out string feedback)
+    {
+        var allTraditions = CheatContext.Instance.Library.GetAllTraditions().ToList();
+        
+        if (allTraditions.Count == 0)
+        {
+            feedback = "📋 Nenhuma tradição no GameDatabase. Rode Auto Populate.";
             return true;
         }
         
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine($"📋 Tradições Disponíveis ({list.Count}):");
+        sb.AppendLine($"📋 Tradições Disponíveis ({allTraditions.Count}):");
         
-        foreach (var t in list)
+        foreach (var t in allTraditions)
         {
             sb.AppendLine($"  • {t.ID}: {t.DisplayName} ({t.Rarity})");
         }

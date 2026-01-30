@@ -68,7 +68,8 @@ public class DailyResolutionBootstrapper : MonoBehaviour
             app.GridService,
             app.PatternDetector,
             app.PatternTracking,
-            app.PatternCalculator
+            app.PatternCalculator,
+            app.Services.Traditions
         );
     }
 }

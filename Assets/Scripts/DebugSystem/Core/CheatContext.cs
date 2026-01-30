@@ -16,4 +16,5 @@ public class CheatContext
     public PatternTrackingService PatternTracking => AppCore.Instance?.PatternTracking;
     public PatternDetector PatternDetector => AppCore.Instance?.PatternDetector;
     public PatternScoreCalculator PatternCalculator => AppCore.Instance?.PatternCalculator;
+    public RunData RunData => SaveManager?.Data?.CurrentRun;
 }

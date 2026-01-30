@@ -34,7 +34,7 @@ namespace LastFurrow.Traditions
             return _testBonus;
         }
         
-        public override int EvaluatePattern(TraditionInstance tradition, TraditionEvaluationContext context, PatternMatchResult pattern)
+        public override int EvaluatePattern(TraditionInstance tradition, TraditionEvaluationContext context, PatternMatch pattern)
         {
             Debug.Log($"[PlaceholderEffect] Pattern evaluated: {pattern?.PatternID ?? "Unknown"}");
             return 0;

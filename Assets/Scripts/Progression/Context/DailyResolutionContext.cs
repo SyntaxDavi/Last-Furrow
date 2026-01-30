@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using LastFurrow.Traditions;
 
 public class DailyResolutionContext
 {
@@ -14,6 +15,7 @@ public class DailyResolutionContext
     public PatternDetector PatternDetector { get; }
     public PatternTrackingService PatternTracking { get; }
     public PatternScoreCalculator PatternCalculator { get; }
+    public ITraditionService TraditionService { get; }
     
     //Compartilhado entre steps para sincronizar visual/dados
     public DayAnalysisResult AnalysisResult { get; } = new DayAnalysisResult();
@@ -22,7 +24,8 @@ public class DailyResolutionContext
         RunManager runManager, SaveManager saveManager, InputManager inputManager,
         GameEvents events, DailyHandSystem handSystem, WeeklyGoalSystem goalSystem,
         IGridService gridService, PatternDetector detector,
-        PatternTrackingService tracking, PatternScoreCalculator calculator)
+        PatternTrackingService tracking, PatternScoreCalculator calculator,
+        ITraditionService traditions)
     {
         RunManager = runManager;
         SaveManager = saveManager;
@@ -34,5 +37,6 @@ public class DailyResolutionContext
         PatternDetector = detector;
         PatternTracking = tracking;
         PatternCalculator = calculator;
+        TraditionService = traditions;
     }
 }

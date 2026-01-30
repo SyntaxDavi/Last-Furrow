@@ -28,3 +28,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 771a282f1fe805247a5015f94eba9af4, type: 2}
   - {fileID: 11400000, guid: 288f107eef83c514cb83649d1dd6edf4, type: 2}
   - {fileID: 11400000, guid: 9e3ba10221e778643ba5f23eca30933c, type: 2}
+  AllTraditions:
+  - {fileID: 11400000, guid: 3f73691704370524a9fa6f03d1c5a89c, type: 2}

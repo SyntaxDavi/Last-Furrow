@@ -24,11 +24,13 @@ namespace LastFurrow.Traditions
         private TraditionData _data;
         private int _slotIndex;
         private Vector3 _targetPosition;
-        private bool _isHovered;
         
         // Animações
         private Tween _moveTween;
         private Tween _glowTween;
+        
+        // Evento de clique (para ViewManager)
+        public event System.Action<TraditionView> OnClicked;
         
         /// <summary>
         /// Instância da tradição que este view representa.
@@ -152,8 +154,6 @@ namespace LastFurrow.Traditions
         {
             if (_layoutConfig == null) return;
             
-            _isHovered = true;
-            
             // Eleva levemente
             Vector3 hoverPos = _targetPosition + Vector3.up * _layoutConfig.hoverElevation;
             _moveTween?.Kill();
@@ -173,8 +173,6 @@ namespace LastFurrow.Traditions
         {
             if (_layoutConfig == null) return;
             
-            _isHovered = false;
-            
             // Retorna à posição normal
             _moveTween?.Kill();
             _moveTween = transform.DOMove(_targetPosition, 0.15f).SetEase(Ease.OutQuad);
@@ -187,6 +185,11 @@ namespace LastFurrow.Traditions
             }
             
             // TODO: Esconder tooltip
+        }
+        
+        private void OnMouseDown()
+        {
+            OnClicked?.Invoke(this);
         }
         
         private void OnDestroy()

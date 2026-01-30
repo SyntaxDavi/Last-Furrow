@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using LastFurrow.Traditions;
 
 [Serializable]
 public class RunData
@@ -64,7 +65,7 @@ public class RunData
     
     [Header("Traditions")]
     [Tooltip("IDs das tradições ativas nesta run. Ordem importa para efeitos.")]
-    public List<string> ActiveTraditionIDs = new List<string>();
+    public List<TraditionID> ActiveTraditionIDs = new List<TraditionID>();
     
     [Tooltip("Máximo de tradições que podem ser equipadas. Pode ser aumentado por upgrades.")]
     public int MaxTraditionSlots = 5;

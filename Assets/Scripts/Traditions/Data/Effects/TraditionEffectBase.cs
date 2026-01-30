@@ -65,7 +65,7 @@ namespace LastFurrow.Traditions
         /// <summary>
         /// Para efeitos OnPatternDetected: chamado para cada padrão encontrado.
         /// </summary>
-        public virtual int EvaluatePattern(TraditionInstance tradition, TraditionEvaluationContext context, PatternMatchResult pattern)
+        public virtual int EvaluatePattern(TraditionInstance tradition, TraditionEvaluationContext context, PatternMatch pattern)
         {
             return 0;
         }

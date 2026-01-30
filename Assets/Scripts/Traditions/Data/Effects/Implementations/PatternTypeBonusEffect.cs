@@ -27,7 +27,7 @@ namespace LastFurrow.Traditions
             return $"Padrões '{_targetPatternID}' dão +{_bonusPoints} pontos extras";
         }
         
-        public override int EvaluatePattern(TraditionInstance tradition, TraditionEvaluationContext context, PatternMatchResult pattern)
+        public override int EvaluatePattern(TraditionInstance tradition, TraditionEvaluationContext context, PatternMatch pattern)
         {
             if (pattern == null) return 0;
             

@@ -8,7 +8,7 @@ public interface IGameLibrary
 {
     bool TryGetCrop(CropID id, out CropData data);
     bool TryGetCard(CardID id, out CardData data);
-    bool TryGetTradition(string id, out TraditionData data);
+    bool TryGetTradition(TraditionID id, out TraditionData data);
     
     List<CardData> GetRandomCards(int count, IRandomProvider random = null);
     List<TraditionData> GetRandomTraditions(int count, IRandomProvider random = null);

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+using LastFurrow.Traditions;
 
 /// <summary>
 /// AppCore Modularizado - Ponto de entrada global do jogo.
@@ -101,6 +102,12 @@ public class AppCore : MonoBehaviour
         // 4. MÃ³dulo Gameplay (Sistemas EspecÃ­ficos)
         var patternModule = new PatternModule(Services, this, _patternLibrary);
         patternModule.Initialize();
+
+        var traditionService = new TraditionService();
+        Services.SetTraditions(traditionService);
+
+        traditionService.Configure(SaveManager.Data.CurrentRun, GameLibrary, Events);
+        traditionService.Initialize();
 
         // 5. InjeÃ§Ãµes de DependÃªncia Complexas (Cross-Module)
         InitializeLegacyCrossInjections();

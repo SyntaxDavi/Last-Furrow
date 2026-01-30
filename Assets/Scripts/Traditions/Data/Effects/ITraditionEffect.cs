@@ -149,4 +149,35 @@ namespace LastFurrow.Traditions
         /// </summary>
         Persistent = 5
     }
+
+    /// <summary>
+    /// Tipos de modificadores persistentes que tradições podem fornecer.
+    /// Usado por sistemas externos para consultar bônus ativos.
+    /// </summary>
+    public enum PersistentModifierType
+    {
+        /// <summary>Modificador de preço na loja (negativo = desconto)</summary>
+        ShopPriceModifier,
+        
+        /// <summary>Modificador de tamanho máximo da mão</summary>
+        MaxHandSize,
+        
+        /// <summary>Modificador de cartas compradas por dia</summary>
+        CardsPerDay,
+        
+        /// <summary>Modificador de dinheiro ganho ao colher</summary>
+        HarvestMoneyBonus,
+        
+        /// <summary>Modificador de vidas máximas</summary>
+        MaxLives
+    }
+    
+    /// <summary>
+    /// Interface para efeitos que fornecem modificadores persistentes.
+    /// Implementada por efeitos com Phase = Persistent.
+    /// </summary>
+    public interface IPersistentModifier
+    {
+        int GetModifier(PersistentModifierType type);
+    }
 }
