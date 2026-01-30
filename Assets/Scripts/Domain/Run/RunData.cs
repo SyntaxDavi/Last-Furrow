@@ -60,6 +60,15 @@ public class RunData
     [Tooltip("Lista de PatternIDs que foram quebrados (para detectar recriação e dar bonus).")]
     public List<string> BrokenPatternIDs;
 
+    // ===== TRADITIONS =====
+    
+    [Header("Traditions")]
+    [Tooltip("IDs das tradições ativas nesta run. Ordem importa para efeitos.")]
+    public List<string> ActiveTraditionIDs = new List<string>();
+    
+    [Tooltip("Máximo de tradições que podem ser equipadas. Pode ser aumentado por upgrades.")]
+    public int MaxTraditionSlots = 5;
+
     [Header("Daily State Tracking")]
     [Tooltip("CRÍTICO: Garante que o draw diário aconteça apenas uma vez por dia lógico.")]
     public int LastDrawnDay = -1;

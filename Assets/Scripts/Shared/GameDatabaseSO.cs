@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using LastFurrow.Traditions;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -10,6 +11,7 @@ public class GameDatabaseSO : ScriptableObject
 {
     public List<CropData> AllCrops = new List<CropData>();
     public List<CardData> AllCards = new List<CardData>();
+    public List<TraditionData> AllTraditions = new List<TraditionData>();
 
 #if UNITY_EDITOR
     [ContextMenu("Auto Populate")]
@@ -17,8 +19,9 @@ public class GameDatabaseSO : ScriptableObject
     {
         AllCrops = FindAssetsByType<CropData>();
         AllCards = FindAssetsByType<CardData>();
+        AllTraditions = FindAssetsByType<TraditionData>();
         EditorUtility.SetDirty(this);
-        Debug.Log("Database populado automaticamente!");
+        Debug.Log($"Database populado: {AllCrops.Count} crops, {AllCards.Count} cards, {AllTraditions.Count} traditions");
     }
 
     private List<T> FindAssetsByType<T>() where T : ScriptableObject
