@@ -12,7 +12,13 @@ namespace LastFurrow.Visual.Camera
     {
         [Header("Basic Scroll")]
         [SerializeField] private Vector2 _maxOffset = new Vector2(1.5f, 2.5f);
-        [Range(0.8f, 1f)] [SerializeField] private float _edgeThreshold = 0.95f;
+        
+        [Tooltip("Sensibilidade para o topo (Y+). Ex: 0.95")]
+        [Range(0.7f, 1f)] [SerializeField] private float _topThreshold = 0.95f;
+        
+        [Tooltip("Sensibilidade para a base (Y-). Ex: 0.85")]
+        [Range(0.7f, 1f)] [SerializeField] private float _bottomThreshold = 0.90f;
+        
         [SerializeField] private float _smoothTime = 0.2f;
 
         [Header("Juice Settings")]
@@ -81,13 +87,15 @@ namespace LastFurrow.Visual.Camera
                     (Input.mousePosition.y / Screen.height - 0.5f) * 2f
                 );
 
+                // Define qual threshold usar baseado no quadrante vertical
+                float currentThreshold = (mouseNorm.y >= 0) ? _topThreshold : _bottomThreshold;
                 float dist = mouseNorm.magnitude;
                 
-                // Se o mouse estiver fora da "zona morta" central
-                if (dist > _edgeThreshold)
+                // Se o mouse estiver fora da "zona morta" central (respeitando o threshold dinâmico)
+                if (dist > currentThreshold)
                 {
                     // Intensidade baseada em quão perto da borda está (0 a 1)
-                    float intensity = Mathf.Clamp01((dist - _edgeThreshold) / (1f - _edgeThreshold));
+                    float intensity = Mathf.Clamp01((dist - currentThreshold) / (1f - currentThreshold));
                     
                     // Direção exata do mouse (360 graus)
                     _targetOffset = mouseNorm.normalized * _maxOffset * intensity;
