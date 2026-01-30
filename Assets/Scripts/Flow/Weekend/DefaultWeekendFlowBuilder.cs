@@ -2,24 +2,27 @@ using System.Collections.Generic;
 
 public class DefaultWeekendFlowBuilder : IWeekendFlowBuilder
 {
-    // Depend�ncias (Os "ingredientes" que os passos precisam)
+    // Dependências (Os "ingredientes" que os passos precisam)
     private readonly IWeekendStateFlow _stateFlow;
     private readonly IWeekendUIFlow _uiFlow;
     private readonly IWeekendContentResolver _contentResolver;
+    private readonly ShopService _shopService;
     private readonly DailyHandSystem _handSystem;
     private readonly CardDrawPolicy _drawPolicy;
 
-    // Inje��o via Construtor (Puro C#)
+    // Injeção via Construtor (Puro C#)
     public DefaultWeekendFlowBuilder(
         IWeekendStateFlow stateFlow,
         IWeekendUIFlow uiFlow,
         IWeekendContentResolver contentResolver,
+        ShopService shopService,
         DailyHandSystem handSystem = null,
         CardDrawPolicy drawPolicy = null)
     {
         _stateFlow = stateFlow;
         _uiFlow = uiFlow;
         _contentResolver = contentResolver;
+        _shopService = shopService;
         _handSystem = handSystem;
         _drawPolicy = drawPolicy ?? new CardDrawPolicy();
     }
@@ -31,11 +34,11 @@ public class DefaultWeekendFlowBuilder : IWeekendFlowBuilder
         // 1. Fade Out
         pipeline.Add(new ScreenFadeStep(false, 0.5f));
 
-        // 2. Mudan�as de Bastidores
+        // 2. Mudanças de Bastidores
         pipeline.Add(new ChangeStateStep(_stateFlow, true));
         pipeline.Add(new UpdateHUDModeStep(_uiFlow, true));
 
-        // 3. Decis�o de Conte�do
+        // 3. Decisão de Conteúdo
         // No futuro: if (runData.CurrentWeek == 1) pipeline.Add(new TutorialStep());
         pipeline.Add(new ResolveContentStep(_contentResolver, runData));
 
@@ -50,6 +53,7 @@ public class DefaultWeekendFlowBuilder : IWeekendFlowBuilder
         var pipeline = new List<IFlowStep>
         {
             new ScreenFadeStep(false, 0.5f),
+            new ClearShopSessionStep(_shopService),
             new ChangeStateStep(_stateFlow, false),
             new UpdateHUDModeStep(_uiFlow, false),
             new ScreenFadeStep(true, 0.5f)
