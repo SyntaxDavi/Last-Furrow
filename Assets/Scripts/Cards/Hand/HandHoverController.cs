@@ -42,7 +42,8 @@ public class HandHoverController : MonoBehaviour
     private float _lastHoverCheckTime;
     private float _lastAppliedFactor;
     private int _currentPatternIndex = 0; 
-    
+    private bool _isAtTop = false;
+    private bool _isAtBottom = true; // Começa na base    
     // Cache de Performance
     private Bounds _cachedBounds;
     private bool _isBoundsDirty = true;
@@ -141,7 +142,11 @@ public class HandHoverController : MonoBehaviour
             _isHandHovered = isCurrentlyHovered;
             OnHandHoverChanged(_isHandHovered);
         }
-        else if (isCurrentlyHovered)
+        
+        // Detecção de limites para Áudio
+        UpdateLimitTriggers(elevationFactor);
+
+        if (isCurrentlyHovered)
         {
             // Dentro da área de hover (fade ou full):
             // Só aplicamos o fade contínuo se não estivermos rodando uma sequência
@@ -177,6 +182,36 @@ public class HandHoverController : MonoBehaviour
         foreach (var card in cards)
         {
             if (card != null) card.SetElevationFactor(factor);
+        }
+    }
+
+    private void UpdateLimitTriggers(float factor)
+    {
+        // Topo (Elevated)
+        if (factor >= HOVER_EXIT_THRESHOLD)
+        {
+            if (!_isAtTop)
+            {
+                _isAtTop = true;
+                _isAtBottom = false;
+                _handManager?.TriggerHandFullyElevated();
+            }
+        }
+        // Base (Lowered)
+        else if (factor <= HOVER_ENTER_THRESHOLD)
+        {
+            if (!_isAtBottom)
+            {
+                _isAtBottom = true;
+                _isAtTop = false;
+                _handManager?.TriggerHandFullyLowered();
+            }
+        }
+        else
+        {
+            // Resetar flags quando estiver no meio do caminho para permitir disparar de novo ao chegar nos limites
+            _isAtTop = false;
+            _isAtBottom = false;
         }
     }
     

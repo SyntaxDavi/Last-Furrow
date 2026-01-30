@@ -45,7 +45,20 @@ public class CardVisualConfig : ScriptableObject
     public float HandElevationSequenceDelay = 0.05f;
 
     [Header("9. Audio")]
-    public AudioClip CardDrawSound;
-    public AudioClip CardSelectSound;
-    public AudioClip CardHoverSound;
+    public SoundEffect[] CardDrawSounds;
+    public SoundEffect[] CardSelectSounds;
+    public SoundEffect[] CardHoverSounds;
+    public SoundEffect[] HandElevatedSounds;
+    public SoundEffect[] HandLoweredSounds;
+    public SoundEffect[] CardReorderSounds;
+    public SoundEffect[] OneCardReorderSounds;
+    public SoundEffect[] CardDragSounds;
+    public SoundEffect[] CardOnGridSounds;
+}
+
+[System.Serializable]
+public class SoundEffect
+{
+    public AudioClip Clip;
+    [Range(0, 1)] public float Volume = 1f;
 }

@@ -27,6 +27,11 @@ public class HandManager : MonoBehaviour
     public event System.Action<int> OnCardVisuallySpawned; // int = indice na sequencia de spawn (0, 1, 2...)
     public event System.Action OnCardVisuallySelected;
     public event System.Action OnCardVisuallyHovered;
+    public event System.Action OnHandFullyElevated;
+    public event System.Action OnHandFullyLowered;
+    public event System.Action OnCardVisuallyReordered;
+    public event System.Action OnCardVisuallyDragged;
+    public event System.Action OnCardVisuallyPlayed;
 
     // Runtime State
     private List<CardView> _activeCards = new List<CardView>();
@@ -90,6 +95,12 @@ public class HandManager : MonoBehaviour
             RecalculateLayoutTargets();
             _isLayoutDirty = false;
             OnHandLayoutChanged?.Invoke();
+            
+            // Only play reorder sound if cards are actually present and it wasn't a spawn sequence
+            if (!_isSpawning && _activeCards.Count > 0)
+            {
+                OnCardVisuallyReordered?.Invoke();
+            }
         }
     }
 
@@ -194,6 +205,9 @@ public class HandManager : MonoBehaviour
     }
     
     private void HandleCardHovered() => OnCardVisuallyHovered?.Invoke();
+    
+    public void TriggerHandFullyElevated() => OnHandFullyElevated?.Invoke();
+    public void TriggerHandFullyLowered() => OnHandFullyLowered?.Invoke();
 
     private void HandleGlobalClick()
     {
@@ -225,7 +239,11 @@ public class HandManager : MonoBehaviour
     private void HandleCardRemoved(CardInstance instance)
     {
         var cardView = _activeCards.FirstOrDefault(c => c.Instance.UniqueID == instance.UniqueID);
-        if (cardView != null) RemoveCardView(cardView);
+        if (cardView != null)
+        {
+            OnCardVisuallyPlayed?.Invoke();
+            RemoveCardView(cardView);
+        }
 
         if (_runData?.Hand != null)
             _runData.Hand.RemoveAll(c => c.UniqueID == instance.UniqueID);
@@ -262,6 +280,7 @@ public class HandManager : MonoBehaviour
 
     private void OnCardDragStart(CardView card)
     {
+        OnCardVisuallyDragged?.Invoke();
         foreach (var c in _activeCards)
         {
             if (c != card && c.CurrentState == CardVisualState.Selected) c.Deselect();

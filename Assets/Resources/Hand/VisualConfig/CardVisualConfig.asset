@@ -32,6 +32,19 @@ MonoBehaviour:
   HandElevationOffset: 2.3
   HandElevationSpeed: 3.3
   HandElevationSequenceDelay: 0.03
-  CardDrawSound: {fileID: 8300000, guid: a09bbc36f93f0d847b16979158709983, type: 3}
-  CardSelectSound: {fileID: 8300000, guid: 75361a6cb84575f48885aa6fda04dd4e, type: 3}
-  CardHoverSound: {fileID: 8300000, guid: 75361a6cb84575f48885aa6fda04dd4e, type: 3}
+  CardDrawSounds:
+  - {fileID: 8300000, guid: a09bbc36f93f0d847b16979158709983, type: 3}
+  CardSelectSounds:
+  - {fileID: 8300000, guid: 75361a6cb84575f48885aa6fda04dd4e, type: 3}
+  CardHoverSounds:
+  - {fileID: 8300000, guid: 75361a6cb84575f48885aa6fda04dd4e, type: 3}
+  HandElevatedSounds:
+  - {fileID: 8300000, guid: 7f213e3c3173bc64398e68470c3f81ca, type: 3}
+  HandLoweredSounds:
+  - {fileID: 8300000, guid: 8a16f8e2ba950174d965907024309def, type: 3}
+  CardReorderSounds:
+  - {fileID: 8300000, guid: 771266ab0f4c0f94fa0beef49f445e5c, type: 3}
+  CardDragSounds:
+  - {fileID: 8300000, guid: d3ec9a7eba4fc4a4b9a2dd03ae150eed, type: 3}
+  CardOnGridSounds:
+  - {fileID: 8300000, guid: 17e0d75e665accd4f9f19efab7f0b74f, type: 3}

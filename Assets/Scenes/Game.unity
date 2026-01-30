@@ -5031,6 +5031,10 @@ MonoBehaviour:
   _basePitch: 1
   _pitchStep: 0.15
   _maxPitch: 1.5
+  _hoverSoundCooldown: 0.05
+  _hoverPitchVariance: 0.02
+  _limitSoundCooldown: 0.5
+  _reorderSoundCooldown: 0.2
 --- !u!1 &1362975647
 GameObject:
   m_ObjectHideFlags: 0
