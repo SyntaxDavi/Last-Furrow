@@ -353,6 +353,19 @@ public class HandHoverController : MonoBehaviour
     
     private IEnumerator RunElevationSequence(bool isRaising)
     {
+        // DELAY GLOBAL antes de iniciar a sequência
+        if (_visualConfig != null)
+        {
+            float startDelay = isRaising 
+                ? _visualConfig.HandElevationStartDelay 
+                : _visualConfig.HandLoweringStartDelay;
+            
+            if (startDelay > 0)
+            {
+                yield return new WaitForSeconds(startDelay);
+            }
+        }
+        
         var cards = _handManager?.GetActiveCardsReadOnly();
         if (cards == null || cards.Count == 0) yield break;
         

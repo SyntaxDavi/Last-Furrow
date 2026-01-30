@@ -44,12 +44,28 @@ namespace LastFurrow.Traditions
         [Tooltip("Curva de animação do spawn")]
         public AnimationCurve spawnCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
         
-        [Header("Visual Effects")]
-        [Tooltip("Hover eleva a tradição")]
-        public float hoverElevation = 0.2f;
+        [Header("Idle Physics (Levitação)")]
+        [Tooltip("Velocidade de flutuação idle")]
+        public float idleFloatSpeed = 2.0f;
+        
+        [Tooltip("Amplitude da flutuação idle")]
+        public float idleFloatAmount = 0.08f;
+        
+        [Tooltip("Rotação sutil durante idle")]
+        public float idleRotationAmount = 0.5f;
+        
+        [Header("Hover (Mouse Over)")]
+        [Tooltip("Offset Y no hover (negativo = desce, positivo = sobe)")]
+        public float hoverElevation = -0.25f;
+        
+        [Tooltip("Escala da tradição no hover")]
+        public float hoverScale = 1.15f;
+        
+        [Tooltip("Suavização do movimento (menor = mais suave)")]
+        public float hoverSmoothTime = 0.12f;
         
         [Tooltip("Intensidade do glow ao passar o mouse")]
-        public float hoverGlowIntensity = 1.5f;
+        public float hoverGlowIntensity = 0.6f;
         
         /// <summary>
         /// Calcula a posição local X de uma tradição baseado no índice e total.

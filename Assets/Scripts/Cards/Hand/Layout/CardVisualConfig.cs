@@ -43,6 +43,12 @@ public class CardVisualConfig : ScriptableObject
     
     [Tooltip("Delay entre cada carta na sequencia (segundos).")]
     public float HandElevationSequenceDelay = 0.05f;
+    
+    [Tooltip("Delay global ANTES de iniciar a elevacao (subida) da mao.")]
+    public float HandElevationStartDelay = 0f;
+    
+    [Tooltip("Delay global ANTES de iniciar a descida da mao.")]
+    public float HandLoweringStartDelay = 0f;
 
     [Header("9. Audio")]
     public SoundEffect[] CardDrawSounds;

@@ -18,6 +18,9 @@ namespace LastFurrow.Visual.Camera
         
         [Tooltip("Sensibilidade para a base (Y-).")]
         [Range(0.7f, 1f)] [SerializeField] private float _bottomThreshold = 0.90f;
+        
+        [Tooltip("Se true, o scroll para baixo é bloqueado.")]
+        [SerializeField] private bool _blockDownScroll = true;
 
         [Tooltip("Sensibilidade para as laterais (X).")]
         [Range(0.7f, 1f)] [SerializeField] private float _sideThreshold = 0.93f;
@@ -134,6 +137,12 @@ namespace LastFurrow.Visual.Camera
             if (absY > vThreshold)
             {
                 yIntensity = Mathf.Clamp01((absY - vThreshold) / (1f - vThreshold)) * Mathf.Sign(lookIntent.y);
+            }
+            
+            // Bloqueia scroll para baixo se a flag estiver ativa
+            if (_blockDownScroll && yIntensity < 0)
+            {
+                yIntensity = 0f;
             }
             
             _targetOffset = new Vector2(xIntensity * _maxOffset.x, yIntensity * _maxOffset.y);
