@@ -1,4 +1,5 @@
 using UnityEngine;
+using LastFurrow.Visual.Camera;
 
 public class GameplayBootstrapper : MonoBehaviour
 {

@@ -1,91 +1,107 @@
 using UnityEngine;
 using DG.Tweening;
 
-/// <summary>
-/// Adiciona "Juice" ao jogo através de Screen Shake baseado em eventos.
-/// Responde a patterns completados com intensidade variável.
-/// </summary>
-[RequireComponent(typeof(Camera))]
-public class CameraShakeController : MonoBehaviour
+namespace LastFurrow.Visual.Camera
 {
-    [Header("Configuration")]
-    [Tooltip("Multiplicador global de força do shake")]
-    [SerializeField] private float _shakeStrengthMultiplier = 0.3f;
-    [Tooltip("Duração base do shake em segundos")]
-    [SerializeField] private float _baseDuration = 0.2f;
-
-    private Camera _cam;
-    private GameCameraController _camController;
-    private Tween _shakeTween;
-
-    private void Awake()
+    /// <summary>
+    /// Adiciona "Juice" ao jogo através de Screen Shake baseado em eventos.
+    /// Responde a patterns completados com intensidade variável.
+    /// Implementa ICameraEffect para integrar-se ao stack de processamento.
+    /// </summary>
+    [RequireComponent(typeof(GameCameraController))]
+    public class CameraShakeController : MonoBehaviour, ICameraEffect
     {
-        _cam = GetComponent<Camera>();
-        _camController = GetComponent<GameCameraController>();
-    }
+        [Header("Configuration")]
+        [Tooltip("Multiplicador global de força do shake")]
+        [SerializeField] private float _shakeStrengthMultiplier = 0.3f;
+        [Tooltip("Duração base do shake em segundos")]
+        [SerializeField] private float _baseDuration = 0.2f;
 
-    private void Start()
-    {
-        // Espera AppCore estar pronto
-        if (AppCore.Instance != null && AppCore.Instance.Events != null)
+        private GameCameraController _camController;
+        private Tween _shakeTween;
+        private Vector3 _shakeOffset;
+        private bool _isShaking;
+
+        // --- ICameraEffect Implementation ---
+        public int Priority => 100; // Alta prioridade (processado por último)
+        public bool IsActive => _isShaking;
+
+        public Vector3 GetPositionOffset() => _shakeOffset;
+        public Vector2 GetTiltOffset() => Vector2.zero;
+        public float GetRotationOffset() => 0f;
+        public float GetSizeOffset() => 0f;
+
+        private void Awake()
         {
-            AppCore.Instance.Events.Pattern.OnPatternSlotCompleted += OnPatternCompleted;
+            _camController = GetComponent<GameCameraController>();
         }
-    }
 
-    private void OnDestroy()
-    {
-        if (AppCore.Instance != null && AppCore.Instance.Events != null)
+        private void Start()
         {
-            AppCore.Instance.Events.Pattern.OnPatternSlotCompleted -= OnPatternCompleted;
+            if (AppCore.Instance != null && AppCore.Instance.Events != null)
+            {
+                AppCore.Instance.Events.Pattern.OnPatternSlotCompleted += OnPatternCompleted;
+            }
+            
+            _camController.RegisterEffect(this);
         }
-        _shakeTween?.Kill();
-    }
 
-    private void OnPatternCompleted(PatternMatch match)
-    {
-        if (match == null) return;
+        private void OnDestroy()
+        {
+            if (AppCore.Instance != null && AppCore.Instance.Events != null)
+            {
+                AppCore.Instance.Events.Pattern.OnPatternSlotCompleted -= OnPatternCompleted;
+            }
+            _shakeTween?.Kill();
+            
+            if (_camController != null)
+                _camController.UnregisterEffect(this);
+        }
 
-        // Calcula força baseada no Tier/Score do pattern
-        float strength = CalculateShakeStrength(match.BaseScore);
+        private void OnPatternCompleted(PatternMatch match)
+        {
+            if (match == null) return;
+
+            float strength = CalculateShakeStrength(match.BaseScore);
+            if (strength <= 0.05f) return;
+
+            DoShake(strength);
+        }
+
+        private float CalculateShakeStrength(int score)
+        {
+            if (score < 15) return 0.2f * _shakeStrengthMultiplier;
+            if (score < 35) return 0.3f * _shakeStrengthMultiplier;
+            if (score < 80) return 0.35f * _shakeStrengthMultiplier;
+            return 0.5f * _shakeStrengthMultiplier;
+        }
+
+        private void DoShake(float strength)
+        {
+            _shakeTween?.Kill();
+            
+            _isShaking = true;
+            float currentStrength = strength;
+
+            _shakeTween = DOTween.To(() => currentStrength, x => {
+                currentStrength = x;
+                _shakeOffset = (Vector3)Random.insideUnitCircle * currentStrength;
+            }, 0f, _baseDuration)
+            .SetEase(Ease.OutQuad)
+            .OnComplete(() => {
+                _shakeOffset = Vector3.zero;
+                _isShaking = false;
+                _shakeTween = null;
+            });
+
+            if (AppCore.Instance != null && AppCore.Instance.Events != null)
+                AppCore.Instance.Events.Camera.TriggerCameraUpdated();
+        }
         
-        // Se a força for muito pequena, ignora (evita tremedeira constante em tier 1 fraco)
-        if (strength <= 0.05f) return;
+        [ContextMenu("Test Weak Shake")]
+        public void TestWeak() => DoShake(0.1f * _shakeStrengthMultiplier);
 
-        DoShake(strength);
+        [ContextMenu("Test Strong Shake")]
+        public void TestStrong() => DoShake(0.8f * _shakeStrengthMultiplier);
     }
-
-    private float CalculateShakeStrength(int score)
-    {
-        // Tier 1 (<15): Shake muito leve ou nulo
-        if (score < 15) return 0.2f * _shakeStrengthMultiplier;
-
-        // Tier 2 (15-34): Shake leve
-        if (score < 35) return 0.3f * _shakeStrengthMultiplier;
-
-        // Tier 3 (35-79): Shake médio
-        if (score < 80) return 0.35f * _shakeStrengthMultiplier;
-
-        // Tier 4 (80+): Shake forte (Lendário)
-        return 0.5f * _shakeStrengthMultiplier;
-    }
-
-    private void DoShake(float strength)
-    {
-        if (_camController != null)
-        {
-            _camController.DoShake(_baseDuration, strength);
-        }
-
-        // Trigger manual para sincronizar anchors se necessário
-        if (AppCore.Instance != null && AppCore.Instance.Events != null)
-            AppCore.Instance.Events.Camera.TriggerCameraUpdated();
-    }
-    
-    // Test Cheat (Chame via Inspector context menu)
-    [ContextMenu("Test Weak Shake")]
-    public void TestWeak() => DoShake(0.1f * _shakeStrengthMultiplier);
-
-    [ContextMenu("Test Strong Shake")]
-    public void TestStrong() => DoShake(0.8f * _shakeStrengthMultiplier);
 }

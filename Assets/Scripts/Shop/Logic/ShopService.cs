@@ -28,6 +28,13 @@ public class ShopService
         _gameEvents = events;
     }
 
+    public void CloseShop()
+    {
+        CurrentSession = null;
+        Debug.Log("[ShopService] Sessão encerrada.");
+        OnStockRefreshed?.Invoke();
+    }
+
     public void OpenShop(IShopStrategy strategy)
     {
         var run = _saveManager.Data.CurrentRun;

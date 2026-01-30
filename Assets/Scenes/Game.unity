@@ -932,8 +932,6 @@ MonoBehaviour:
   _autoFitCamera: 1
   _groundSize: {x: 17.76, y: 10}
   _props: []
-  _pixelConfig: {fileID: 11400000, guid: 6f035f2e273f9fe4a8cffa7275d6174c, type: 2}
-  _snapToPixels: 1
 --- !u!4 &318129354
 Transform:
   m_ObjectHideFlags: 0
@@ -5584,7 +5582,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59d197a69aabeb94f874e85cfde65959, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraShakeController
-  _shakeStrengthMultiplier: 0.3
+  _shakeStrengthMultiplier: 0.4
   _baseDuration: 0.3
 --- !u!114 &1512505983
 MonoBehaviour:
@@ -5599,8 +5597,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.Visual.Camera.CameraEdgeScroll
   _maxOffset: {x: 1, y: 2.2}
-  _edgeThreshold: 0.993
-  _smoothTime: 0.5
+  _topThreshold: 1
+  _bottomThreshold: 1
+  _sideThreshold: 1
+  _smoothTime: 0.8
   _tiltAmount: 0.8
   _zoomOnScroll: -0.4
   _juiceSmoothTime: 0.5

@@ -31,10 +31,6 @@ public class BackgroundController : MonoBehaviour
     [Tooltip("Lista de objetos ao redor do grid")]
     [SerializeField] private List<PropSetup> _props = new List<PropSetup>();
 
-    [Header("Config")]
-    [SerializeField] private PixelArtConfig _pixelConfig;
-    [SerializeField] private bool _snapToPixels = GameSettings.USE_PIXEL_PERFECT;
-
     private SpriteRenderer _groundRenderer;
     private List<SpriteRenderer> _spawnedProps = new List<SpriteRenderer>();
     private Camera _mainCamera;
@@ -110,12 +106,7 @@ public class BackgroundController : MonoBehaviour
             GameObject propObj = new GameObject($"Prop_{prop.Name}");
             propObj.transform.SetParent(transform);
 
-            Vector3 position = prop.Position;
-            if (_snapToPixels && _pixelConfig != null)
-            {
-                position = _pixelConfig.SnapPosition(position);
-            }
-            propObj.transform.position = position;
+            propObj.transform.position = prop.Position;
 
             var sr = propObj.AddComponent<SpriteRenderer>();
             sr.sprite = prop.Sprite;

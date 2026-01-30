@@ -146,6 +146,7 @@ public class AppCore : MonoBehaviour
                 new WeekendStateFlow(GameStateManager),
                 new WeekendUIFlow(Events.UI),
                 new WeekendContentResolver(ShopService, _defaultShop, _specialShops),
+                ShopService,
                 DailyHandSystem,
                 new CardDrawPolicy()
             );
