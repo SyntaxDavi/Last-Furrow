@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// Provedor de Política de Música de Gameplay.
@@ -84,8 +84,8 @@ public class GameplayMusicController : MonoBehaviour
     {
         var state = AppCore.Instance.GameStateManager.CurrentState;
         
-        // Política 1: Só toca em Gameplay (Playing ou Paused)
-        if (state != GameState.Playing && state != GameState.Paused) return false;
+        // Política 1: Só toca em Gameplay (Playing, Paused ou Analyzing)
+        if (state != GameState.Playing && state != GameState.Paused && state != GameState.Analyzing) return false;
 
         var runData = AppCore.Instance.SaveManager?.Data?.CurrentRun;
         if (runData == null) return false;

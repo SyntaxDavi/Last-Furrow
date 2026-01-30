@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
@@ -165,6 +165,10 @@ public class SleepButtonControllerV2 : MonoBehaviour
             return;
         }
 
+        // IMEDIATO: Desabilita botão para evitar spam de cliques
+        _isProcessing = true;
+        UpdateButtonState();
+        
         AppCore.Instance.DailyResolutionSystem.StartEndDaySequence();
     }
 

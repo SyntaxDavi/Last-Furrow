@@ -1,4 +1,4 @@
-﻿    using UnityEngine;
+    using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -296,6 +296,23 @@ public class HandManager : MonoBehaviour
     /// <summary>
     /// Verifica se alguma carta está sendo arrastada no momento.
     /// </summary>
+
+    /// <summary>
+    /// Força todas as cartas a saírem do estado de Drag.
+    /// Usado quando uma fase de resolução começa abruptamente.
+    /// </summary>
+    public void ForceReleaseAllDrags()
+    {
+        foreach (var card in _activeCards)
+        {
+            if (card.CurrentState == CardVisualState.Dragging)
+            {
+                card.OnDragEnd();
+            }
+        }
+        DeselectAllCards();
+    }
+
     public bool IsDraggingAnyCard => _activeCards.Any(c => c.CurrentState == CardVisualState.Dragging);
     
     /// <summary>

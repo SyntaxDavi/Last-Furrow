@@ -8,7 +8,8 @@ public enum GameState
     Playing,
     Shopping,
     Paused,
-    GameOver
+    GameOver,
+    Analyzing  // Bloqueia interações de cartas durante análise de grid
 }
 
 /// <summary>

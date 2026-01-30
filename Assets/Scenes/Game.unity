@@ -7691,6 +7691,7 @@ MonoBehaviour:
   _analyzer: {fileID: 880657818}
   _scanner: {fileID: 434515750}
   _uiManager: {fileID: 1726399248}
+  _handManager: {fileID: 1345890251}
   _validateOnAwake: 1
 --- !u!4 &2132860108
 Transform:

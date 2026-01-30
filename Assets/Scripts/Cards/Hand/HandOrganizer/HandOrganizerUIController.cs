@@ -3,30 +3,30 @@ using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// Controla o bot„o UI para embaralhar as cartas da m„o.
-/// O sistema de reorganizaÁ„o manual via drag and drop j· funciona nativamente.
+/// Controla o bot√£o UI para embaralhar as cartas da m√£o.
+/// O sistema de reorganiza√ß√£o manual via drag and drop j√° funciona nativamente.
 /// </summary>
 public class HandOrganizerUIController : MonoBehaviour
 {
-    [Header("ReferÍncias")]
+    [Header("Refer√™ncias")]
     [SerializeField] private Button _shuffleButton;
     [SerializeField] private HandManager _handManager;
 
     // ==============================================================================================
-    // INICIALIZA«√O
+    // INICIALIZA√á√ÉO
     // ==============================================================================================
 
     private void Start()
     {
-        // Valida referÍncias
+        // Valida refer√™ncias
         if (_shuffleButton == null || _handManager == null)
         {
-            Debug.LogError("[HandOrganizerUIController] ReferÍncias n„o configuradas no Inspector!");
+            Debug.LogError("[HandOrganizerUIController] Refer√™ncias n√£o configuradas no Inspector!");
             enabled = false;
             return;
         }
 
-        // Conecta o bot„o ao evento de clique
+        // Conecta o bot√£o ao evento de clique
         _shuffleButton.onClick.AddListener(OnShuffleButtonClicked);
     }
 
@@ -37,14 +37,22 @@ public class HandOrganizerUIController : MonoBehaviour
     }
 
     // ==============================================================================================
-    // L”GICA PRINCIPAL
+    // L√ìGICA PRINCIPAL
     // ==============================================================================================
 
     /// <summary>
-    /// Embaralha as cartas da m„o quando o bot„o È clicado
+    /// Embaralha as cartas da m√£o quando o bot√£o √© clicado
     /// </summary>
     public void OnShuffleButtonClicked()
     {
+        // Bloqueia durante Analyzing (resolucao de dia)
+        var gameState = AppCore.Instance?.GameStateManager?.CurrentState ?? GameState.MainMenu;
+        if (gameState == GameState.Analyzing)
+        {
+            Debug.Log("[HandOrganizer] Bloqueado: Jogo em estado Analyzing");
+            return;
+        }
+        
         var organizer = _handManager.GetOrganizer();
         if (organizer != null)
         {
@@ -52,4 +60,4 @@ public class HandOrganizerUIController : MonoBehaviour
             Debug.Log("[HandOrganizer] Cartas embaralhadas!");
         }
     }
-}
+}

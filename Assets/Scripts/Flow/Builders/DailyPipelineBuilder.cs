@@ -50,7 +50,7 @@ public class DailyPipelineBuilder : IDailyFlowBuilder
             context.AnalysisResult 
         ));
         
-        // STEP 2: Deteco de Padres + Animaes
+        // STEP 2: Detecção de Padrões + Animações
         pipeline.Add(new DetectPatternsStep(
             context.GridService,
             context.PatternDetector,
@@ -60,7 +60,10 @@ public class DailyPipelineBuilder : IDailyFlowBuilder
             context.Events,
             visualContext?.Scanner,  // Null-safe: funciona sem visual
             context.AnalysisResult,
-            visualContext?.Analyzer // ⭐ INJETADO
+            visualContext?.Analyzer, // ⭐ INJETADO
+            AppCore.Instance?.GameStateManager,  // Para bloquear input durante análise
+            context.SaveManager,                  // Para salvar score preventivamente
+            visualContext?.HandManager            // Para liberar cartas em drag
         ));
         
         // STEP 3: Clculo de Score + Meta Semanal

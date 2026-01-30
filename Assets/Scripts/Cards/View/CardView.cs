@@ -331,6 +331,10 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     private bool CanPerformClick()
     {
         var gameState = AppCore.Instance?.GameStateManager?.CurrentState ?? GameState.MainMenu;
+        
+        // Bloqueia durante Analyzing (resolução de dia)
+        if (gameState == GameState.Analyzing) return false;
+        
         bool isAllowed = (gameState == GameState.Playing || gameState == GameState.Shopping);
         bool isFree = (CurrentState != CardVisualState.Dragging && CurrentState != CardVisualState.Consuming);
         return isAllowed && isFree;
