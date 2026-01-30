@@ -1141,7 +1141,7 @@ Transform:
   m_GameObject: {fileID: 413033042}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.2, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1160,7 +1160,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AnchorX: 0.5
-  AnchorY: 0.56
+  AnchorY: 0.5
   Offset: {x: 0, y: 0}
 --- !u!1 &430980903
 GameObject:
@@ -2811,6 +2811,7 @@ GameObject:
   - component: {fileID: 804040447}
   - component: {fileID: 804040446}
   - component: {fileID: 804040448}
+  - component: {fileID: 804040449}
   m_Layer: 0
   m_Name: Traditions_UI_Manager
   m_TagString: Untagged
@@ -2842,7 +2843,7 @@ Transform:
   m_GameObject: {fileID: 804040445}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2862,6 +2863,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.Traditions.TraditionsUIBootstrapper
   _viewManager: {fileID: 804040446}
+--- !u!114 &804040449
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 804040445}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b20bb1bc77565254e820f4180aa50b3a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScreenAnchor
+  AnchorX: 0.5
+  AnchorY: 0.25
+  Offset: {x: 0, y: 0}
 --- !u!1 &821510012
 GameObject:
   m_ObjectHideFlags: 0
@@ -5658,8 +5674,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf78543ed129e4641b95edefe33a7773, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.Visual.Camera.CameraEdgeScroll
-  _maxOffset: {x: 1, y: 2.2}
-  _topThreshold: 1
+  _maxOffset: {x: 1, y: 2.3}
+  _topThreshold: 0.94
   _bottomThreshold: 1
   _sideThreshold: 1
   _smoothTime: 0.8
@@ -6064,7 +6080,7 @@ Transform:
   m_GameObject: {fileID: 1682231126}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 7, z: 0}
+  m_LocalPosition: {x: 0, y: 15, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

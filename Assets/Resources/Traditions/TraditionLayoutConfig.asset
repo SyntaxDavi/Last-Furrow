@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad988fafcafdcd74ea24efe3a1e1976e, type: 3}
   m_Name: TraditionLayoutConfig
   m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.Traditions.TraditionLayoutConfig
-  verticalPosition: 4.5
-  horizontalCenter: 0
-  spacing: 1.5
-  scale: 0.7
+  alignment: 1
+  spacing: 4
+  scale: 1
+  zOffset: -0.1
   maxTraditions: 5
-  spawnDuration: 0.3
-  rearrangeDuration: 0.2
+  spawnDuration: 1
+  rearrangeDuration: 0.3
   spawnCurve:
     serializedVersion: 2
     m_Curve:
@@ -43,5 +43,5 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  hoverElevation: 0.2
+  hoverElevation: 0.5
   hoverGlowIntensity: 1.5

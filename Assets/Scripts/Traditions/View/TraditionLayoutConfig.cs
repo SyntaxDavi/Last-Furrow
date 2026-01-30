@@ -2,26 +2,33 @@ using UnityEngine;
 
 namespace LastFurrow.Traditions
 {
+    public enum TraditionAlignment
+    {
+        Left,
+        Center,
+        Right
+    }
+
     /// <summary>
-    /// Configuração de layout para as tradições no topo da tela.
-    /// Similar ao HandLayoutConfig mas para a barra de tradições.
+    /// Configuração de layout para as tradições.
+    /// Define espaçamento, escala e comportamento visual.
     /// </summary>
     [CreateAssetMenu(fileName = "TraditionLayoutConfig", menuName = "Last Furrow/Traditions/Layout Config")]
     public class TraditionLayoutConfig : ScriptableObject
     {
-        [Header("Position")]
-        [Tooltip("Posição Y do centro da barra de tradições (em world space)")]
-        public float verticalPosition = 4.5f;
-        
-        [Tooltip("Posição X central da barra")]
-        public float horizontalCenter = 0f;
-        
-        [Header("Spacing")]
+        [Header("Layout")]
+        [Tooltip("Como as tradições se alinham em relação ao container")]
+        public TraditionAlignment alignment = TraditionAlignment.Center;
+
         [Tooltip("Espaço entre cada tradição")]
         public float spacing = 1.2f;
         
-        [Tooltip("Escala das tradições (menor que cartas normais)")]
+        [Tooltip("Escala das tradições")]
         public float scale = 0.7f;
+
+        [Header("Z-Index")]
+        [Tooltip("Z-Offset para evitar Z-fighting")]
+        public float zOffset = -0.1f;
         
         [Header("Limits")]
         [Tooltip("Máximo de tradições que podem ser exibidas")]
@@ -45,25 +52,37 @@ namespace LastFurrow.Traditions
         public float hoverGlowIntensity = 1.5f;
         
         /// <summary>
-        /// Calcula a posição X de uma tradição baseado no índice e total.
+        /// Calcula a posição local X de uma tradição baseado no índice e total.
         /// </summary>
-        public float GetPositionX(int index, int total)
+        public float GetLocalPositionX(int index, int total)
         {
-            if (total <= 0) return horizontalCenter;
+            if (total <= 0) return 0f;
             
-            // Centraliza as tradições
             float totalWidth = (total - 1) * spacing;
-            float startX = horizontalCenter - (totalWidth / 2f);
+            float startX = 0f;
+
+            switch (alignment)
+            {
+                case TraditionAlignment.Left:
+                    startX = 0f;
+                    break;
+                case TraditionAlignment.Center:
+                    startX = -(totalWidth / 2f);
+                    break;
+                case TraditionAlignment.Right:
+                    startX = -totalWidth;
+                    break;
+            }
             
             return startX + (index * spacing);
         }
         
         /// <summary>
-        /// Retorna a posição world completa para uma tradição.
+        /// Retorna a posição local completa para uma tradição.
         /// </summary>
-        public Vector3 GetWorldPosition(int index, int total)
+        public Vector3 GetLocalPosition(int index, int total)
         {
-            return new Vector3(GetPositionX(index, total), verticalPosition, 0f);
+            return new Vector3(GetLocalPositionX(index, total), 0f, zOffset * index);
         }
     }
 }

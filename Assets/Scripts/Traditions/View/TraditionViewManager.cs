@@ -22,6 +22,7 @@ namespace LastFurrow.Traditions
     /// REAGE A:
     /// - Eventos do TraditionLoadout
     /// </summary>
+    [ExecuteAlways]
     public class TraditionViewManager : MonoBehaviour
     {
         [Header("Configuration")]
@@ -51,6 +52,16 @@ namespace LastFurrow.Traditions
         public bool IsSwapMode => _isSwapMode;
         public int SelectedSwapIndex => _selectedSwapIndex;
         
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (!Application.isPlaying && _views.Count > 0)
+            {
+                RecalculateLayout();
+            }
+        }
+#endif
+
         // --- Inicialização ---
         
         private void Awake()
@@ -116,7 +127,8 @@ namespace LastFurrow.Traditions
         {
             if (_viewPrefab == null || instance.Data == null) return;
             
-            Vector3 targetPos = _layoutConfig.GetWorldPosition(displayIndex, _loadout.Count);
+            int count = _loadout?.Count ?? 1;
+            Vector3 targetPos = _layoutConfig.GetLocalPosition(displayIndex, count);
             
             var viewGo = Instantiate(_viewPrefab, _container);
             var view = viewGo.GetComponent<TraditionView>();
@@ -155,7 +167,9 @@ namespace LastFurrow.Traditions
             
             // Animação de saída
             view.transform.DOScale(0, 0.2f).SetEase(Ease.InBack)
-                .OnComplete(() => Destroy(view.gameObject));
+                .OnComplete(() => {
+                    if (view != null) Destroy(view.gameObject);
+                });
         }
         
         private void ClearAllViews()
@@ -183,9 +197,32 @@ namespace LastFurrow.Traditions
                 var view = _views[i];
                 view.SetSlotIndex(i);
                 
-                Vector3 targetPos = _layoutConfig.GetWorldPosition(i, total);
+                Vector3 targetPos = _layoutConfig.GetLocalPosition(i, total);
                 view.MoveTo(targetPos, animate: true);
             }
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            if (_layoutConfig == null) return;
+
+            Gizmos.color = Color.cyan;
+            int previewCount = Application.isPlaying && _loadout != null ? _loadout.Count : 3;
+            
+            for (int i = 0; i < previewCount; i++)
+            {
+                Vector3 localPos = _layoutConfig.GetLocalPosition(i, previewCount);
+                Vector3 worldPos = (_container != null ? _container : transform).TransformPoint(localPos);
+                
+                // Desenha um retângulo simulando a tradição
+                Gizmos.matrix = Matrix4x4.TRS(worldPos, transform.rotation, transform.lossyScale);
+                Gizmos.DrawWireCube(Vector3.zero, new Vector3(1f, 1.4f, 0.1f) * _layoutConfig.scale);
+                
+                // Bolinha no centro
+                Gizmos.DrawSphere(Vector3.zero, 0.05f);
+            }
+            
+            Gizmos.matrix = Matrix4x4.identity;
         }
         
         // --- Event Handlers ---

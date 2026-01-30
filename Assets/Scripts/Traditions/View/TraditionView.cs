@@ -90,44 +90,44 @@ namespace LastFurrow.Traditions
         }
         
         /// <summary>
-        /// Move para uma nova posição com animação.
+        /// Move para uma nova posição local com animação.
         /// </summary>
-        public void MoveTo(Vector3 position, bool animate = true)
+        public void MoveTo(Vector3 localPosition, bool animate = true)
         {
-            _targetPosition = position;
+            _targetPosition = localPosition;
             
             _moveTween?.Kill();
             
             if (animate && _layoutConfig != null)
             {
-                _moveTween = transform.DOMove(position, _layoutConfig.rearrangeDuration)
+                _moveTween = transform.DOLocalMove(localPosition, _layoutConfig.rearrangeDuration)
                     .SetEase(Ease.OutQuad);
             }
             else
             {
-                transform.position = position;
+                transform.localPosition = localPosition;
             }
         }
         
         /// <summary>
         /// Animação de spawn (entrada dramática).
         /// </summary>
-        public void PlaySpawnAnimation(Vector3 targetPosition)
+        public void PlaySpawnAnimation(Vector3 targetLocalPosition)
         {
             if (_layoutConfig == null)
             {
-                transform.position = targetPosition;
+                transform.localPosition = targetLocalPosition;
                 return;
             }
             
-            // Começa acima e invisível
-            Vector3 startPos = targetPosition + Vector3.up * 2f;
-            transform.position = startPos;
+            // Começa acima e invisível (relativo ao target)
+            Vector3 startPos = targetLocalPosition + Vector3.up * 2f;
+            transform.localPosition = startPos;
             transform.localScale = Vector3.zero;
             
             // Anima para posição final
             var sequence = DOTween.Sequence();
-            sequence.Append(transform.DOMove(targetPosition, _layoutConfig.spawnDuration)
+            sequence.Append(transform.DOLocalMove(targetLocalPosition, _layoutConfig.spawnDuration)
                 .SetEase(_layoutConfig.spawnCurve));
             sequence.Join(transform.DOScale(Vector3.one * _layoutConfig.scale, _layoutConfig.spawnDuration)
                 .SetEase(Ease.OutBack));
@@ -154,10 +154,10 @@ namespace LastFurrow.Traditions
         {
             if (_layoutConfig == null) return;
             
-            // Eleva levemente
+            // Eleva levemente (local)
             Vector3 hoverPos = _targetPosition + Vector3.up * _layoutConfig.hoverElevation;
             _moveTween?.Kill();
-            _moveTween = transform.DOMove(hoverPos, 0.15f).SetEase(Ease.OutQuad);
+            _moveTween = transform.DOLocalMove(hoverPos, 0.15f).SetEase(Ease.OutQuad);
             
             // Ativa glow
             if (_glowRenderer != null)
@@ -173,9 +173,9 @@ namespace LastFurrow.Traditions
         {
             if (_layoutConfig == null) return;
             
-            // Retorna à posição normal
+            // Retorna à posição normal (local)
             _moveTween?.Kill();
-            _moveTween = transform.DOMove(_targetPosition, 0.15f).SetEase(Ease.OutQuad);
+            _moveTween = transform.DOLocalMove(_targetPosition, 0.15f).SetEase(Ease.OutQuad);
             
             // Desativa glow
             if (_glowRenderer != null)
