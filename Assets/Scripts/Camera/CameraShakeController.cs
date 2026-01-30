@@ -15,11 +15,13 @@ public class CameraShakeController : MonoBehaviour
     [SerializeField] private float _baseDuration = 0.2f;
 
     private Camera _cam;
+    private GameCameraController _camController;
     private Tween _shakeTween;
 
     private void Awake()
     {
         _cam = GetComponent<Camera>();
+        _camController = GetComponent<GameCameraController>();
     }
 
     private void Start()
@@ -70,20 +72,14 @@ public class CameraShakeController : MonoBehaviour
 
     private void DoShake(float strength)
     {
-        // Se já estiver tremendo, completa o shake atual e reseta?
-        // Ou melhor: se o novo shake for MAIOR, sobrescreve.
-        if (_shakeTween != null && _shakeTween.IsActive())
+        if (_camController != null)
         {
-            _shakeTween.Complete(); // Termina o atual para começar o novo do zero (completar garante retorno à posição original)
+            _camController.DoShake(_baseDuration, strength);
         }
 
-        // Shake de Posição
-        // Duration: Curto e grosso.
-        // Strength: Vetor de força (X e Y).
-        // Vibrato: 20 (padrão 10, 20 fica mais "buzz").
-        // Randomness: 90.
-        _shakeTween = transform.DOShakePosition(_baseDuration, strength, 20, 90, false, true)
-            .SetLink(gameObject);
+        // Trigger manual para sincronizar anchors se necessário
+        if (AppCore.Instance != null && AppCore.Instance.Events != null)
+            AppCore.Instance.Events.Camera.TriggerCameraUpdated();
     }
     
     // Test Cheat (Chame via Inspector context menu)

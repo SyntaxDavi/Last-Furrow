@@ -19,7 +19,7 @@ public class ScreenAnchor : MonoBehaviour
     {
         _cachedCam = Camera.main;
 
-        // Cache inicial da resolução para evitar cálculo no primeiro frame
+        // Cache inicial da resoluÃ§Ã£o para evitar cÃ¡lculo no primeiro frame
         _lastResolution = new Vector2Int(Screen.width, Screen.height);
 
         Align();
@@ -41,7 +41,7 @@ public class ScreenAnchor : MonoBehaviour
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        // Só alinha se estiver ativo na hierarquia para evitar erros de serialização
+        // S alinha se estiver ativo na hierarquia para evitar erros de serializao
         if (isActiveAndEnabled)
         {
             Align();
@@ -57,23 +57,24 @@ public class ScreenAnchor : MonoBehaviour
             if (_cachedCam == null) return;
         }
 
-        // Aviso de segurança (uma única vez)
+        // Aviso de segurana (uma nica vez)
         if (!_cachedCam.orthographic && !_isOrthographicWarningShown)
         {
-            Debug.LogWarning($"[ScreenAnchor] Câmera '{_cachedCam.name}' é Perspectiva. Alinhamento pode variar com Z.", gameObject);
+            Debug.LogWarning($"[ScreenAnchor] Cmera '{_cachedCam.name}'  Perspectiva. Alinhamento pode variar com Z.", gameObject);
             _isOrthographicWarningShown = true;
         }
 
-        // Lógica de Posicionamento Preservando Z
+        // Lgica de Posicionamento Preservando Z
         float currentZ = transform.position.z;
         float distFromCam = currentZ - _cachedCam.transform.position.z;
 
         Vector3 targetViewportPos = new Vector3(AnchorX, AnchorY, distFromCam);
         Vector3 newWorldPos = _cachedCam.ViewportToWorldPoint(targetViewportPos);
 
-        // Garante que o Z não flutuou devido a imprecisão de float
+        // Garante que o Z nÃ£o flutuou devido a imprecisÃ£o de float
         newWorldPos.z = currentZ;
 
+        // Aplica a posiÃ§Ã£o final
         transform.position = newWorldPos + (Vector3)Offset;
     }
 

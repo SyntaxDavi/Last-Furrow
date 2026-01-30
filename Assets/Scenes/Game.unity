@@ -5035,6 +5035,14 @@ MonoBehaviour:
   _hoverPitchVariance: 0.02
   _limitSoundCooldown: 0.5
   _reorderSoundCooldown: 0.2
+  _globalVolume: 1
+  _drawVolume: 1
+  _selectVolume: 1
+  _hoverVolume: 1
+  _limitVolume: 0.8
+  _reorderVolume: 0.8
+  _dragVolume: 1
+  _cardOnGridVolume: 1.2
 --- !u!1 &1362975647
 GameObject:
   m_ObjectHideFlags: 0
@@ -5539,6 +5547,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 9142570109580481003, guid: 2de54dac0c3d6ba438c9ee852f20ac3a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1512505982}
+    - targetCorrespondingSourceObject: {fileID: 9142570109580481003, guid: 2de54dac0c3d6ba438c9ee852f20ac3a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1512505983}
   m_SourcePrefab: {fileID: 100100000, guid: 2de54dac0c3d6ba438c9ee852f20ac3a, type: 3}
 --- !u!114 &1512505979 stripped
 MonoBehaviour:
@@ -5575,6 +5586,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraShakeController
   _shakeStrengthMultiplier: 0.3
   _baseDuration: 0.3
+--- !u!114 &1512505983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1512505981}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf78543ed129e4641b95edefe33a7773, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.Visual.Camera.CameraEdgeScroll
+  _maxOffset: {x: 1, y: 2.2}
+  _edgeThreshold: 0.993
+  _smoothTime: 0.5
+  _tiltAmount: 0.8
+  _zoomOnScroll: -0.4
+  _juiceSmoothTime: 0.5
 --- !u!1 &1528058628
 GameObject:
   m_ObjectHideFlags: 0

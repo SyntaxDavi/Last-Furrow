@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using DG.Tweening;
 
 /// <summary>
 /// Controlador de câmera para jogos de pixel art.
@@ -30,8 +31,15 @@ public class GameCameraController : MonoBehaviour
     private ICameraFitStrategy _fitStrategy;
 
     // Estado interno
+    private Vector3 _basePosition;
+    private Vector3 _dynamicOffset;
+    private Vector3 _shakeOffset;
+    private float _dynamicRotation; // Z-axis (Inertia)
+    private Vector2 _dynamicTilt;   // X and Y axis (Perspective)
+    private float _dynamicSizeOffset;
     private Vector3 _currentVelocity;
     private Coroutine _moveRoutine;
+    private DG.Tweening.Tween _shakeTween;
     private bool _isConfigured = false;
 
     // Cache configuração atual (para detectar mudanças)
@@ -41,24 +49,121 @@ public class GameCameraController : MonoBehaviour
     // Cache para debug/gizmos
     private Bounds _lastGridBounds;
     private Bounds _lastCameraBounds;
+    private float _baseOrthoSize;
 
     /// <summary>
-    /// ⭐ PIXEL PERFECT POSITION: Property setter com snap automático.
-    /// Garante que posição sempre alinha com pixel grid.
+    /// Posição base definida pelo enquadramento do Grid.
     /// </summary>
-    private Vector3 CameraPosition
+    public Vector3 CameraPosition
     {
-        get => transform.position;
+        get => _basePosition;
         set
         {
-            if (_snapPositionToPixels && _pixelConfig != null)
-            {
-                transform.position = _pixelConfig.SnapPosition(value);
-            }
-            else
-            {
-                transform.position = value;
-            }
+            _basePosition = value;
+            ApplyFinalPosition();
+        }
+    }
+
+    /// <summary>
+    /// Offset dinâmico (Scroll) que não altera a base.
+    /// </summary>
+    public Vector3 DynamicOffset
+    {
+        get => _dynamicOffset;
+        set
+        {
+            _dynamicOffset = value;
+            ApplyFinalPosition();
+        }
+    }
+
+    /// <summary>
+    /// Rotação dinâmica (Tilt Z) para "Juice".
+    /// </summary>
+    public float DynamicRotation
+    {
+        get => _dynamicRotation;
+        set
+        {
+            _dynamicRotation = value;
+            ApplyFinalPosition();
+        }
+    }
+
+    /// <summary>
+    /// Inclinação 3D (X e Y) para efeito de "espiar".
+    /// </summary>
+    public Vector2 DynamicTilt
+    {
+        get => _dynamicTilt;
+        set
+        {
+            _dynamicTilt = value;
+            ApplyFinalPosition();
+        }
+    }
+
+    /// <summary>
+    /// Offset de zoom dinâmico.
+    /// </summary>
+    public float DynamicSizeOffset
+    {
+        get => _dynamicSizeOffset;
+        set
+        {
+            _dynamicSizeOffset = value;
+            ApplyFinalPosition();
+        }
+    }
+
+    /// <summary>
+    /// Executa um shake na câmera usando um offset interno para não conflitar com o movimento.
+    /// </summary>
+    public void DoShake(float duration, float strength)
+    {
+        _shakeTween?.Kill();
+        
+        // Usamos uma força que decai ao longo do tempo
+        float currentStrength = strength;
+        _shakeTween = DOTween.To(() => currentStrength, x => {
+            currentStrength = x;
+            // Gera um offset aleatório baseado na força atual
+            // Multiplicamos por um valor fixo para dar mais "juice" se necessário
+            _shakeOffset = (Vector3)Random.insideUnitCircle * currentStrength;
+            ApplyFinalPosition();
+        }, 0f, duration)
+        .SetEase(Ease.OutQuad)
+        .OnComplete(() => {
+            _shakeOffset = Vector3.zero;
+            ApplyFinalPosition();
+            _shakeTween = null;
+        });
+    }
+
+    private void ApplyFinalPosition()
+    {
+        Vector3 finalPos = _basePosition + _dynamicOffset + _shakeOffset;
+
+        // 1. Aplica Posição (Snap)
+        if (_snapPositionToPixels && _pixelConfig != null)
+        {
+            transform.position = _pixelConfig.SnapPosition(finalPos);
+        }
+        else
+        {
+            transform.position = finalPos;
+        }
+
+        // 2. Aplica Rotação (Tilt 3D)
+        // X tilt: Rotação no eixo X faz olhar pra Cima/Baixo
+        // Y tilt: Rotação no eixo Y faz olhar pra Esquerda/Direita
+        // Z rotation: Rotação no eixo Z é a inércia lateral
+        transform.localRotation = Quaternion.Euler(_dynamicTilt.x, _dynamicTilt.y, _dynamicRotation);
+
+        // 3. Aplica Zoom Dinâmico
+        if (_cam != null)
+        {
+            _cam.orthographicSize = _baseOrthoSize + _dynamicSizeOffset;
         }
     }
 
@@ -264,7 +369,8 @@ public class GameCameraController : MonoBehaviour
         // 4. Converte de volta para Orthographic Size
         // Orthographic Size = Metade da altura visível
         float finalSize = (snappedHeightPixels / _pixelConfig.PPU) / 2f;
-        _cam.orthographicSize = finalSize;
+        _baseOrthoSize = finalSize;
+        _cam.orthographicSize = _baseOrthoSize + _dynamicSizeOffset;
 
         Debug.Log(
             $"[GameCamera] FitBounds: {width:F2}×{height:F2} units → " +
