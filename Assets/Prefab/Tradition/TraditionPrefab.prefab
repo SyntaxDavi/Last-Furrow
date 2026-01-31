@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8965876068736624664}
   - component: {fileID: 4958301899979353943}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Tradition_Icon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -101,7 +101,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9042016131478824289}
   - component: {fileID: 5038009875218158829}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Tradition_Frame
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -192,7 +192,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3876693582242352302}
   - component: {fileID: 4578974127784853298}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Tradition_background (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -286,7 +286,7 @@ GameObject:
   - component: {fileID: 1068885991906315706}
   - component: {fileID: 5476556304939814867}
   - component: {fileID: 6430047523404436199}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: TraditionPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -386,6 +386,7 @@ MonoBehaviour:
   _frameRenderer: {fileID: 4578974127784853298}
   _glowRenderer: {fileID: 7492573276726788603}
   _layoutConfig: {fileID: 11400000, guid: 3fba96222c258d94b96d46e1917c0802, type: 2}
+  _interactionPriority: 50
 --- !u!210 &5476556304939814867
 SortingGroup:
   m_ObjectHideFlags: 0

@@ -15,7 +15,7 @@ MonoBehaviour:
   PaddingLeft: 2
   PaddingRight: 2
   PaddingTop: 6
-  PaddingBottom: 6
+  PaddingBottom: 7.5
   SnapToMultipleOf4: 1
   ShowDebugBounds: 1
   GridBoundsColor: {r: 0, g: 1, b: 0, a: 1}

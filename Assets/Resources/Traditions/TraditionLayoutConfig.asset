@@ -46,7 +46,7 @@ MonoBehaviour:
   idleFloatSpeed: 2
   idleFloatAmount: 0.08
   idleRotationAmount: 0.5
-  hoverElevation: 0.7
+  hoverElevation: -0.8
   hoverScale: 1.15
   hoverSmoothTime: 0.13
   hoverGlowIntensity: 1.5

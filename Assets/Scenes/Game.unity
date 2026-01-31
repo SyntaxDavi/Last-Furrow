@@ -2843,7 +2843,7 @@ Transform:
   m_GameObject: {fileID: 804040445}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -5, z: 0}
+  m_LocalPosition: {x: 0, y: -5.8, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2876,7 +2876,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScreenAnchor
   AnchorX: 0.5
-  AnchorY: 0.25
+  AnchorY: 0.21
   Offset: {x: 0, y: 0}
 --- !u!1 &821510012
 GameObject:
@@ -5568,6 +5568,10 @@ PrefabInstance:
       propertyPath: _framingConfig
       value: 
       objectReference: {fileID: 11400000, guid: 82f4195fc922aa14d931eece96cf50e6, type: 2}
+    - target: {fileID: -7142436989694611846, guid: 2de54dac0c3d6ba438c9ee852f20ac3a, type: 3}
+      propertyPath: _moveSmoothTime
+      value: 0.35
+      objectReference: {fileID: 0}
     - target: {fileID: 5737600013906646829, guid: 2de54dac0c3d6ba438c9ee852f20ac3a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -5675,10 +5679,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.Visual.Camera.CameraEdgeScroll
   _maxOffset: {x: 1, y: 2.3}
-  _topThreshold: 0.94
+  _topThreshold: 0.9
   _bottomThreshold: 1
+  _blockDownScroll: 1
   _sideThreshold: 1
-  _smoothTime: 0.8
+  _smoothTime: 1
   _tiltAmount: 0.8
   _zoomOnScroll: -0.4
   _juiceSmoothTime: 0.5

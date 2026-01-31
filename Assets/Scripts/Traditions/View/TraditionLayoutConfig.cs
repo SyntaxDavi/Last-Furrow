@@ -56,7 +56,7 @@ namespace LastFurrow.Traditions
         
         [Header("Hover (Mouse Over)")]
         [Tooltip("Offset Y no hover (negativo = desce, positivo = sobe)")]
-        public float hoverElevation = -0.25f;
+        public float hoverElevation = -0.5f;
         
         [Tooltip("Escala da tradição no hover")]
         public float hoverScale = 1.15f;

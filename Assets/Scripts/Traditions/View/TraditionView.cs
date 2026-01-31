@@ -31,8 +31,15 @@ namespace LastFurrow.Traditions
         // Posição alvo (slot do layout)
         private Vector3 _basePosition;
         
-        // Estado de hover
+        // Estado de hover (com estabilidade igual ao CardView)
         private bool _isHovered;
+        
+        // Hover Stability (evita tremor)
+        [Header("Hover Stability")]
+        [SerializeField] private float _hoverExitDelay = 0.15f;
+        private float _hoverExitTimer = -1f;
+        private float _lastHoverChangeTime;
+        private const float HOVER_COOLDOWN = 0.05f;
         
         // Física suave (SmoothDamp)
         private Vector3 _currentPosition;
@@ -55,12 +62,24 @@ namespace LastFurrow.Traditions
         
         public void OnHoverEnter()
         {
-            _isHovered = true;
+            // Cooldown para evitar oscilações rápidas
+            if (Time.time - _lastHoverChangeTime < HOVER_COOLDOWN) return;
+            
+            _hoverExitTimer = -1f; // Cancela qualquer exit pendente
+            if (!_isHovered)
+            {
+                _isHovered = true;
+                _lastHoverChangeTime = Time.time;
+            }
         }
         
         public void OnHoverExit()
         {
-            _isHovered = false;
+            if (_isHovered)
+            {
+                // Não sai imediatamente - inicia timer
+                _hoverExitTimer = _hoverExitDelay;
+            }
         }
         
         // --- Properties ---
@@ -128,8 +147,23 @@ namespace LastFurrow.Traditions
         {
             if (_layoutConfig == null) return;
             
+            // Processa estabilidade do hover
+            ProcessHoverExitTimer();
+            
             // Calcula visuals e aplica física suave
             CalculateAndApplyVisuals();
+        }
+        
+        private void ProcessHoverExitTimer()
+        {
+            if (_hoverExitTimer > 0)
+            {
+                _hoverExitTimer -= Time.deltaTime;
+                if (_hoverExitTimer <= 0)
+                {
+                    _isHovered = false;
+                }
+            }
         }
         
         private void CalculateAndApplyVisuals()

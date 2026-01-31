@@ -85,7 +85,7 @@ public class HandHoverController : MonoBehaviour
         }
     }
     
-    private void InvalidateBoundsCache() => _isBoundsDirty = true;
+    public void InvalidateBoundsCache() => _isBoundsDirty = true;
     
     private void Start()
     {

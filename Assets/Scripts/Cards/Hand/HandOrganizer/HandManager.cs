@@ -281,13 +281,22 @@ public class HandManager : MonoBehaviour
     private void OnCardDragStart(CardView card)
     {
         OnCardVisuallyDragged?.Invoke();
+        
+        // Abaixa todas as outras cartas imediatamente
+        _hoverController?.ForceElevation(false);
+        
         foreach (var c in _activeCards)
         {
             if (c != card && c.CurrentState == CardVisualState.Selected) c.Deselect();
         }
     }
 
-    private void OnCardDragEnd(CardView card) { }
+    private void OnCardDragEnd(CardView card) 
+    { 
+        // Invalida o cache do hover controller para forçar reavaliação
+        // Isso garante que as cartas reajam à posição atual do mouse após soltar
+        _hoverController?.InvalidateBoundsCache();
+    }
 
     // ==========================================================================
     // API PUBLICA (Para HandOrganizer, HandHoverController e outros)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using LastFurrow.Traditions;
 
 public class ShopService
 {
@@ -95,8 +96,9 @@ public class ShopService
             return itemCheck;
         }
 
-        // B) Regras Econômicas (Dinheiro)
-        if (_economy.CurrentMoney < item.Price)
+        // B) Regras Econômicas (Dinheiro) - usa preço com modificadores de tradições
+        int finalPrice = GetFinalPrice(item);
+        if (_economy.CurrentMoney < finalPrice)
         {
             return PurchaseFailReason.InsufficientFunds;
         }
@@ -106,8 +108,9 @@ public class ShopService
 
     private void ProcessTransaction(IPurchasable item, PurchaseContext context)
     {
-        // A) Debitar Dinheiro
-        if (!_economy.TrySpend(item.Price, TransactionType.ShopPurchase))
+        // A) Debitar Dinheiro - usa preço com modificadores de tradições
+        int finalPrice = GetFinalPrice(item);
+        if (!_economy.TrySpend(finalPrice, TransactionType.ShopPurchase))
         {
             OnPurchaseFailed?.Invoke(PurchaseFailReason.InsufficientFunds);
             return;
@@ -124,6 +127,24 @@ public class ShopService
 
         OnItemPurchased?.Invoke(item);
         OnStockRefreshed?.Invoke();
+    }
+    
+    /// <summary>
+    /// Calcula o preço final do item aplicando modificadores de tradições.
+    /// </summary>
+    public int GetFinalPrice(IPurchasable item)
+    {
+        int basePrice = item.Price;
+        
+        // Consulta modificadores de tradições
+        var traditions = AppCore.Instance?.Services?.Traditions;
+        int priceModifier = traditions?.GetPersistentModifier(PersistentModifierType.ShopPriceModifier) ?? 0;
+        
+        // Aplica modificador (negativo = desconto)
+        int finalPrice = basePrice + priceModifier;
+        
+        // Garante preço mínimo de 1
+        return Mathf.Max(1, finalPrice);
     }
     public void SellCard(CardInstance cardInstance)
     {

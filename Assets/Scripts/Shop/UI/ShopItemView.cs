@@ -10,7 +10,7 @@ public class ShopItemView : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private TextMeshProUGUI _priceText;
 
-    [Header("Interação")]
+    [Header("Interaï¿½ï¿½o")]
     [SerializeField] private Button _selectionButton;
     [SerializeField] private GameObject _highlightBorder;
 
@@ -26,7 +26,7 @@ public class ShopItemView : MonoBehaviour
 
     private void Awake()
     {
-        // SEGURANÇA DE EVENTOS:
+        // SEGURANï¿½A DE EVENTOS:
         // Adicionamos o listener apenas UMA vez no ciclo de vida.
         // Nunca usamos RemoveAllListeners, pois designers podem ter colocado sons no Inspector.
         if (_selectionButton)
@@ -35,7 +35,7 @@ public class ShopItemView : MonoBehaviour
         }
         else
         {
-            Debug.LogError($"[ShopItemView] Botão de seleção não atribuído no objeto {gameObject.name}");
+            Debug.LogError($"[ShopItemView] Botï¿½o de seleï¿½ï¿½o nï¿½o atribuï¿½do no objeto {gameObject.name}");
         }
     }
 
@@ -46,27 +46,33 @@ public class ShopItemView : MonoBehaviour
 
     public void Setup(IPurchasable item, Action<ShopItemView> onSelected)
     {
-        // 1. GUARD CLAUSES (Validação Defensiva)
+        // 1. GUARD CLAUSES (Validaï¿½ï¿½o Defensiva)
         if (item == null)
         {
             Debug.LogError("[ShopItemView] Setup recebeu item nulo! Ignorando.");
-            gameObject.SetActive(false); // Esconde para não mostrar lixo na tela
+            gameObject.SetActive(false); // Esconde para nï¿½o mostrar lixo na tela
             return;
         }
 
         if (onSelected == null)
         {
-            Debug.LogWarning("[ShopItemView] Setup recebeu callback nulo. O item não será clicável.");
+            Debug.LogWarning("[ShopItemView] Setup recebeu callback nulo. O item nï¿½o serï¿½ clicï¿½vel.");
         }
 
-        // 2. Atualização de Dados
+        // 2. Atualizaï¿½ï¿½o de Dados
         _data = item;
         _onClickCallback = onSelected;
 
-        // 3. Atualização Visual (Data Binding)
-        // Aqui extraímos os dados primitivos (string/int) imediatamente
+        // 3. Atualizaï¿½ï¿½o Visual (Data Binding)
+        // Aqui extraï¿½mos os dados primitivos (string/int) imediatamente
         if (_nameText) _nameText.text = item.DisplayName;
-        if (_priceText) _priceText.text = $"${item.Price}";
+
+        if (_priceText)
+        {
+            var shop = AppCore.Instance?.Services?.Shop;
+            int finalPrice = shop?.GetFinalPrice(item) ?? item.Price;
+            _priceText.text = $"${finalPrice}";
+        }
 
         if (_iconImage)
         {
@@ -75,15 +81,15 @@ public class ShopItemView : MonoBehaviour
         }
 
         // 4. Reset de Estado
-        // Força atualização visual inicial garantindo que comece desmarcado
-        _isSelected = true; // Hack lógico para forçar o SetSelected(false) a rodar visualmente
+        // Forï¿½a atualizaï¿½ï¿½o visual inicial garantindo que comece desmarcado
+        _isSelected = true; // Hack lï¿½gico para forï¿½ar o SetSelected(false) a rodar visualmente
         SetSelected(false);
     }
 
     public void SetSelected(bool isSelected)
     {
-        // OTIMIZAÇÃO DE ESTADO:
-        // Se já estiver no estado desejado, não faz nada. Evita redraw desnecessário.
+        // OTIMIZAï¿½ï¿½O DE ESTADO:
+        // Se jï¿½ estiver no estado desejado, nï¿½o faz nada. Evita redraw desnecessï¿½rio.
         if (_isSelected == isSelected) return;
 
         _isSelected = isSelected;
@@ -91,12 +97,12 @@ public class ShopItemView : MonoBehaviour
         if (_highlightBorder)
             _highlightBorder.SetActive(_isSelected);
 
-        // Futuro: Tocar animação ou som de seleção aqui
+        // Futuro: Tocar animaï¿½ï¿½o ou som de seleï¿½ï¿½o aqui
     }
 
     private void HandleClick()
     {
-        // Se não tiver dados (clique antes do setup), ignora
+        // Se nï¿½o tiver dados (clique antes do setup), ignora
         if (_data == null) return;
 
         // Avisa quem estiver ouvindo (ShopView)
