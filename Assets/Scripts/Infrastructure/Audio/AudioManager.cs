@@ -77,7 +77,7 @@ public class AudioManager : MonoBehaviour
         {
             if (_musicSource.isPlaying) _musicSource.Pause();
         }
-        else if (newState == GameState.Playing)
+        else if (newState == GameState.Playing || newState == GameState.Analyzing)
         {
             // Só dá Resume se o que está no Source é o que realmente queremos tocar (Policy)
             if (_targetMusicClip != null && _musicSource.clip == _targetMusicClip && !_musicSource.isPlaying)

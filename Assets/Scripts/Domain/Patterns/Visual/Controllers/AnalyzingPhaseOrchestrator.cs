@@ -19,6 +19,7 @@ public class AnalyzingPhaseOrchestrator : MonoBehaviour
     [Header("References")]
     [SerializeField] private GridManager _gridManager;
     [SerializeField] private PatternUIManager _uiManager;
+    [SerializeField] private HandManager _handManager;
 
     private List<IAnalysisPhase> _phases;
     private CancellationTokenSource _cts;
@@ -37,6 +38,7 @@ public class AnalyzingPhaseOrchestrator : MonoBehaviour
         // Montagem do Pipeline (Composition Root local)
         _phases = new List<IAnalysisPhase>
         {
+            new HandFanOutPhase(_handManager),  // FIRST: Cards exit screen
             new NightCyclePhase(),
             new PassiveScoresPhase(_gridConfig),
             new PatternAnalysisPhase(_uiManager, _patternConfig)
@@ -113,6 +115,12 @@ public class AnalyzingPhaseOrchestrator : MonoBehaviour
         }
         finally
         {
+            // SEMPRE retorna as cartas, mesmo em erro ou cancelamento
+            if (_handManager != null)
+            {
+                await _handManager.FanIn();
+            }
+            
             _cts.Dispose();
             _cts = null;
         }
