@@ -76,6 +76,14 @@ public class CardVisualConfig : ScriptableObject
     public SoundEffect[] OneCardReorderSounds;
     public SoundEffect[] CardDragSounds;
     public SoundEffect[] CardOnGridSounds;
+
+    [Header("11. Drag Ghost (Transparency)")]
+    [Tooltip("Alpha da carta quando está sobre um drop target válido durante drag.")]
+    [Range(0.1f, 0.9f)]
+    public float DragGhostAlpha = 0.5f;
+    
+    [Tooltip("Velocidade da transição de transparência (maior = mais rápido).")]
+    public float DragGhostTransitionSpeed = 10f;
 }
 
 [System.Serializable]

@@ -1,32 +1,39 @@
 using UnityEngine;
 
 /// <summary>
-/// Sistema respons·vel APENAS por gerenciar drag & drop.
+/// Sistema respons√°vel APENAS por gerenciar drag & drop.
 /// 
 /// Responsabilidades:
-/// - Detectar inÌcio de drag (threshold de pixels)
-/// - Atualizar posiÁ„o durante drag
+/// - Detectar in√≠cio de drag (threshold de pixels)
+/// - Atualizar posi√ß√£o durante drag
 /// - Detectar drop zones e fazer hover nelas
 /// - Finalizar drop (sucesso ou cancelamento)
-/// 
-/// N√O decide se pode ou n„o arrastar - isso È do InteractionPolicy.
+///
+/// N√ÉO decide se pode ou n√£o arrastar - isso √© do InteractionPolicy.
 /// </summary>
 public class DragDropSystem
 {
-    // ConfiguraÁ„o
+    // Configura√ß√£o
     private readonly float _dragThresholdPx;
     private readonly LayerMask _dropLayer;
-    
+
     // Estado
     private IDraggable _potentialDrag;
     private IDraggable _activeDrag;
     private IInteractable _currentDropHover;
     private Vector2 _dragStartScreenPos;
     private bool _isDragging;
+    private bool _isOverValidDropTarget;
 
     public bool IsDragging => _isDragging;
     public IDraggable ActiveDrag => _activeDrag;
     public IDraggable PotentialDrag => _potentialDrag;
+    
+    /// <summary>
+    /// Retorna true se o drag atual est√° sobre um drop target v√°lido.
+    /// Usado para feedback visual (ex: transpar√™ncia ghost).
+    /// </summary>
+    public bool IsOverValidDropTarget => _isOverValidDropTarget;
 
     public DragDropSystem(float dragThresholdPx, LayerMask dropLayer)
     {
@@ -35,7 +42,7 @@ public class DragDropSystem
     }
 
     /// <summary>
-    /// Registra um potencial drag quando mouse È pressionado sobre um draggable.
+    /// Registra um potencial drag quando mouse √© pressionado sobre um draggable.
     /// </summary>
     public void RegisterPotentialDrag(IDraggable draggable, Vector2 screenPos)
     {
@@ -52,12 +59,12 @@ public class DragDropSystem
     }
 
     /// <summary>
-    /// Verifica se deve iniciar drag baseado na dist‚ncia do mouse.
+    /// Verifica se deve iniciar drag baseado na dist√¢ncia do mouse.
     /// </summary>
     public bool ShouldStartDrag(Vector2 currentScreenPos)
     {
         if (_potentialDrag == null || _isDragging) return false;
-        
+
         float dist = Vector2.Distance(currentScreenPos, _dragStartScreenPos);
         return dist > _dragThresholdPx;
     }
@@ -68,7 +75,7 @@ public class DragDropSystem
     public void StartDrag()
     {
         if (_potentialDrag == null) return;
-        
+
         _isDragging = true;
         _activeDrag = _potentialDrag;
         _activeDrag.OnDragStart();
@@ -80,7 +87,7 @@ public class DragDropSystem
     public void UpdateDrag(Vector2 worldPos)
     {
         if (!_isDragging || _activeDrag == null) return;
-        
+
         _activeDrag.OnDragUpdate(worldPos);
         UpdateDropZoneHover(worldPos);
     }
@@ -96,9 +103,9 @@ public class DragDropSystem
         // Encontra target
         Collider2D col = Physics2D.OverlapPoint(worldPos, _dropLayer);
         IDropTarget target = col != null ? col.GetComponent<IDropTarget>() : null;
-        
+
         bool success = false;
-        
+
         if (target != null && target.CanReceive(_activeDrag))
         {
             target.OnReceive(_activeDrag);
@@ -107,15 +114,16 @@ public class DragDropSystem
 
         _activeDrag.OnDragEnd();
 
-        // Limpa drop hover
+        // Limpa drop hover e validade
         ClearDropHover();
+        _isOverValidDropTarget = false;
 
         // Reset estado
         var result = new DragResult(success, target);
         _isDragging = false;
         _activeDrag = null;
         _potentialDrag = null;
-        
+
         return result;
     }
 
@@ -128,8 +136,9 @@ public class DragDropSystem
         {
             _activeDrag.OnDragEnd();
         }
-        
+
         ClearDropHover();
+        _isOverValidDropTarget = false;
         _isDragging = false;
         _activeDrag = null;
         _potentialDrag = null;
@@ -139,6 +148,10 @@ public class DragDropSystem
     {
         Collider2D col = Physics2D.OverlapPoint(worldPos, _dropLayer);
         IInteractable newDropHover = col != null ? col.GetComponent<IInteractable>() : null;
+
+        // Verifica se √© um drop target v√°lido para o draggable atual
+        IDropTarget dropTarget = col != null ? col.GetComponent<IDropTarget>() : null;
+        _isOverValidDropTarget = dropTarget != null && _activeDrag != null && dropTarget.CanReceive(_activeDrag);
 
         if (newDropHover != _currentDropHover)
         {
@@ -174,7 +187,7 @@ public class DragDropSystem
 }
 
 /// <summary>
-/// Resultado de uma operaÁ„o de drop.
+/// Resultado de uma opera√ß√£o de drop.
 /// </summary>
 public readonly struct DragResult
 {

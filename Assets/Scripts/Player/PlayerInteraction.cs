@@ -36,6 +36,11 @@ public class PlayerInteraction : MonoBehaviour
     private InteractionPolicy _policy;
     private HoverSystem _hoverSystem;
     private DragDropSystem _dragSystem;
+
+    /// <summary>
+    /// Expõe o DragDropSystem para classes que precisam verificar estado de drag.
+    /// </summary>
+    public DragDropSystem DragSystem => _dragSystem;
     private ClickSystem _clickSystem;
 
     // --- INICIALIZAÇÃO ---

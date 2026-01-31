@@ -223,7 +223,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4692948965524322639}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -406,7 +406,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5207395668537263503}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -568,8 +568,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _movement: {fileID: 6074425940253990869}
   _artRenderer: {fileID: 1459893232433217688}
+  _frameRenderer: {fileID: 1459893232433217688}
   _nameText: {fileID: 3333785428317760283}
   _interactionPriority: 100
+  _hoverExitDelay: 0.15
+  _hoverHitboxPadding: 0.3
 --- !u!114 &6074425940253990869
 MonoBehaviour:
   m_ObjectHideFlags: 0

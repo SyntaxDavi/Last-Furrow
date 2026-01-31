@@ -12,6 +12,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     [Header("Referências Externas")]
     [SerializeField] private CardMovementController _movement;
     [SerializeField] private SpriteRenderer _artRenderer;
+    [SerializeField] private SpriteRenderer _frameRenderer;
     [SerializeField] private TextMeshPro _nameText;
 
     [Header("Interação")]
@@ -19,6 +20,8 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
 
     private CardVisualConfig _config;
     private InputManager _inputManager;
+    private DragDropSystem _dragDropSystem;
+    private CardDragGhostModifier _ghostModifier;
 
     [Header("Hover Stability")]
     [SerializeField] private float _hoverExitDelay = 0.15f;
@@ -63,13 +66,14 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     // ==============================================================================================
     // CICLO DE VIDA & INICIALIZAÇÃO
     // ==============================================================================================
-    public void Initialize(CardData data, CardInstance instance, CardVisualConfig config, InputManager inputManager)
+    public void Initialize(CardData data, CardInstance instance, CardVisualConfig config, InputManager inputManager, DragDropSystem dragDropSystem = null)
     {
         // Injeção de Dependência
         Data = data;
         Instance = instance;
         _config = config;
         _inputManager = inputManager;
+        _dragDropSystem = dragDropSystem;
 
         // Setup Inicial
         _randomSeed = UnityEngine.Random.Range(0f, 100f);
@@ -78,6 +82,10 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         // Inicializa modificadores
         _elevationModifier = new HandElevationModifier();
         _activeModifiers.Add(_elevationModifier);
+        
+        // Inicializa ghost modifier para transparência durante drag
+        var ghostRenderers = new[] { _artRenderer, _frameRenderer };
+        _ghostModifier = new CardDragGhostModifier(ghostRenderers, _config);
 
         // Setup Visual
         if (Data != null)
@@ -241,6 +249,13 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         target.Rotation = Quaternion.Euler(0, 0, tiltZ);
 
         sortOrder = CardSortingConstants.DRAG_LAYER;
+        
+        // Ghost effect: transparência quando sobre drop target válido
+        if (_ghostModifier != null && _dragDropSystem != null)
+        {
+            _ghostModifier.SetGhostMode(_dragDropSystem.IsOverValidDropTarget);
+            _ghostModifier.Update();
+        }
     }
 
     private void ApplyDynamicTilt(ref CardVisualTarget target, Vector3 focusPoint)
@@ -292,6 +307,9 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     public void OnDragEnd()
     {
         if (CurrentState == CardVisualState.Dragging) SetState(CardVisualState.Idle);
+        
+        // Reset ghost transparency imediatamente
+        _ghostModifier?.ForceReset();
     }
     public void OnClick() => PerformClick();
     public void OnPointerClick(PointerEventData d) => PerformClick();

@@ -158,7 +158,8 @@ public class HandManager : MonoBehaviour
             data,
             instance,
             _visualConfig,
-            AppCore.Instance.InputManager
+            AppCore.Instance.InputManager,
+            FindFirstObjectByType<PlayerInteraction>()?.DragSystem   
         );
 
         Vector3 spawnPos = _handCenter.position + (Vector3)_layoutConfig.SpawnOffset;
