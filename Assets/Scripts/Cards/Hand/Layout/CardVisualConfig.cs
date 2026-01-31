@@ -84,6 +84,12 @@ public class CardVisualConfig : ScriptableObject
     
     [Tooltip("Velocidade da transição de transparência (maior = mais rápido).")]
     public float DragGhostTransitionSpeed = 10f;
+
+    [Header("12. Use Animation (Slam Cake)")]
+    public float UseAnticipationY = 0.5f;
+    public float UseAnticipationDuration = 0.2f;
+    public float UseSlamDuration = 0.1f;
+    public float UsePunchAmount = 0.2f;
 }
 
 [System.Serializable]

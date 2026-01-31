@@ -66,9 +66,9 @@ MonoBehaviour:
   CardOnGridSounds:
   - Clip: {fileID: 8300000, guid: 17e0d75e665accd4f9f19efab7f0b74f, type: 3}
     Volume: 1
-  CardFanOutSounds:
-  - Clip: {fileID: 8300000, guid: a09bbc36f93f0d847b16979158709983, type: 3}
-    Volume: 1
-  CardFanInSounds:
-  - Clip: {fileID: 8300000, guid: a09bbc36f93f0d847b16979158709983, type: 3}
-    Volume: 0
+  DragGhostAlpha: 0.5
+  DragGhostTransitionSpeed: 10
+  UseAnticipationY: 2
+  UseAnticipationDuration: 0.2
+  UseSlamDuration: 0.3
+  UsePunchAmount: 0.6

@@ -273,8 +273,8 @@ public class HandManager : MonoBehaviour
                 AppCore.Instance.Events.Player.TriggerCardClicked(null);
 
             _activeCards.Remove(card);
-            Destroy(card.gameObject);
-            _isLayoutDirty = true;
+                card.PlayUseAnimation();
+                _isLayoutDirty = true;
         }
     }
 

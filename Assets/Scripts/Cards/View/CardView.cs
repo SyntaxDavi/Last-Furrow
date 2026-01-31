@@ -3,6 +3,7 @@ using UnityEngine.EventSystems;
 using System;
 using TMPro;
 using System.Collections.Generic;
+using DG.Tweening;
 
 public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickHandler
 {
@@ -104,6 +105,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     private void Update()
     {
         if (_config == null) return;
+        if (CurrentState == CardVisualState.Consuming) return;
         
         ProcessHoverExitTimer();
         ValidateHoverByBasePosition();
@@ -408,4 +410,40 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     /// 1.0 = Totalmente levantada, 0.0 = Abaixada.
     /// </summary>
     public void SetElevationFactor(float factor) => _elevationModifier?.SetElevationFactor(factor);
+
+    /// <summary>
+    /// Executa a animação de "Slam" quando a carta é usada e depois se destrói.
+    /// </summary>
+    public void PlayUseAnimation()
+    {
+        if (CurrentState == CardVisualState.Consuming) return;
+        SetState(CardVisualState.Consuming);
+        
+        // Reset ghost para garantir alpha 1 durante a animação de uso
+        _ghostModifier?.ForceReset();
+
+        Vector3 startPos = transform.position;
+        Vector3 peakPos = startPos + Vector3.up * _config.UseAnticipationY;
+        
+        Sequence seq = DOTween.Sequence();
+        
+        // 1. Antecipação (Sobe e gira)
+        seq.Append(transform.DOMove(peakPos, _config.UseAnticipationDuration).SetEase(Ease.OutQuad));
+        seq.Join(transform.DORotate(new Vector3(0, 0, 10f), _config.UseAnticipationDuration).SetEase(Ease.OutQuad));
+        
+        // 2. Slam (Desce rápido)
+        seq.Append(transform.DOMove(startPos, _config.UseSlamDuration).SetEase(Ease.InQuad));
+        seq.Join(transform.DORotate(Vector3.zero, _config.UseSlamDuration).SetEase(Ease.InQuad));
+        
+        // 3. Impacto (Punch & Squash)
+        seq.AppendCallback(() => {
+            _currentSquashVal = -_config.ClickSquashAmount * 1.5f; // Squash extra no impacto
+            transform.DOPunchScale(Vector3.one * _config.UsePunchAmount, 0.2f, 10, 1f);
+        });
+        
+        // 4. Finalização (Fade out rápido e Destroy)
+        seq.AppendInterval(0.1f);
+        seq.Append(transform.DOScale(Vector3.zero, 0.15f).SetEase(Ease.InBack));
+        seq.OnComplete(() => Destroy(gameObject));
+    }
 }
