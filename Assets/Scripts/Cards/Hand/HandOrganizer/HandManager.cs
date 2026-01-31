@@ -407,7 +407,7 @@ public class HandManager : MonoBehaviour
         }
         
         // Aguarda a física suave completar a animação
-        float animTime = _visualConfig?.LayoutSmoothTime ?? 0.3f;
+        float animTime = _visualConfig?.PositionSmoothTime ?? 0.3f;
         await Cysharp.Threading.Tasks.UniTask.Delay((int)(animTime * 1000 * 1.5f));
         
         UnityEngine.Debug.Log("[HandManager] FanOut complete.");
@@ -425,7 +425,7 @@ public class HandManager : MonoBehaviour
         RecalculateLayoutTargets();
         
         // Aguarda a física suave completar a animação
-        float animTime = _visualConfig?.LayoutSmoothTime ?? 0.3f;
+        float animTime = _visualConfig?.PositionSmoothTime ?? 0.3f;
         await Cysharp.Threading.Tasks.UniTask.Delay((int)(animTime * 1000 * 1.5f));
         
         UnityEngine.Debug.Log("[HandManager] FanIn complete.");
