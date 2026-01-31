@@ -43,5 +43,10 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  hoverElevation: 0.5
+  idleFloatSpeed: 2
+  idleFloatAmount: 0.08
+  idleRotationAmount: 0.5
+  hoverElevation: 0.7
+  hoverScale: 1.15
+  hoverSmoothTime: 0.13
   hoverGlowIntensity: 1.5

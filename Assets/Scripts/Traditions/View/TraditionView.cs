@@ -5,10 +5,11 @@ namespace LastFurrow.Traditions
 {
     /// <summary>
     /// Componente visual de uma Tradição.
-    /// Implementa física idle (levitação) e hover suave similar ao CardView.
+    /// Implementa IInteractable para integração com HoverSystem centralizado.
     /// </summary>
     [RequireComponent(typeof(SpriteRenderer))]
-    public class TraditionView : MonoBehaviour
+    [RequireComponent(typeof(Collider2D))]
+    public class TraditionView : MonoBehaviour, IInteractable
     {
         [Header("Visual References")]
         [SerializeField] private SpriteRenderer _iconRenderer;
@@ -17,6 +18,9 @@ namespace LastFurrow.Traditions
         
         [Header("Config")]
         [SerializeField] private TraditionLayoutConfig _layoutConfig;
+        
+        [Header("Interaction")]
+        [SerializeField] private int _interactionPriority = 50; // Abaixo das cartas (100)
         
         // Estado interno
         private TraditionInstance _instance;
@@ -40,6 +44,26 @@ namespace LastFurrow.Traditions
         
         // Evento de clique (para ViewManager)
         public event System.Action<TraditionView> OnClicked;
+        
+        // --- IInteractable Implementation ---
+        public int InteractionPriority => _interactionPriority;
+        
+        public void OnClick()
+        {
+            OnClicked?.Invoke(this);
+        }
+        
+        public void OnHoverEnter()
+        {
+            _isHovered = true;
+        }
+        
+        public void OnHoverExit()
+        {
+            _isHovered = false;
+        }
+        
+        // --- Properties ---
         
         /// <summary>
         /// Instância da tradição que este view representa.
@@ -113,17 +137,20 @@ namespace LastFurrow.Traditions
             float time = Time.time + _randomSeed;
             float dt = Time.deltaTime;
             
-            // 1. POSIÇÃO BASE + IDLE FLOAT
+            // 1. POSIÇÃO BASE
             Vector3 targetPos = _basePosition;
             
-            // Flutuação Idle (senoide)
-            float floatY = Mathf.Sin(time * _layoutConfig.idleFloatSpeed) * _layoutConfig.idleFloatAmount;
-            targetPos.y += floatY;
-            
-            // 2. HOVER OFFSET (desce ao invés de subir)
+            // 2. IDLE vs HOVER
             if (_isHovered)
             {
+                // Durante hover: posição estável + offset para baixo
                 targetPos.y += _layoutConfig.hoverElevation;
+            }
+            else
+            {
+                // Idle: flutuação senoide
+                float floatY = Mathf.Sin(time * _layoutConfig.idleFloatSpeed) * _layoutConfig.idleFloatAmount;
+                targetPos.y += floatY;
             }
             
             // 3. ESCALA
@@ -133,9 +160,19 @@ namespace LastFurrow.Traditions
                 targetScale = Vector3.one * _layoutConfig.scale * _layoutConfig.hoverScale;
             }
             
-            // 4. ROTAÇÃO IDLE (sutil)
-            float rotZ = Mathf.Cos(time * _layoutConfig.idleFloatSpeed * 0.7f) * _layoutConfig.idleRotationAmount;
-            Quaternion targetRotation = Quaternion.Euler(0, 0, rotZ);
+            // 4. ROTAÇÃO
+            Quaternion targetRotation;
+            if (_isHovered)
+            {
+                // Hover: rotação neutra (estável)
+                targetRotation = Quaternion.identity;
+            }
+            else
+            {
+                // Idle: rotação sutil
+                float rotZ = Mathf.Cos(time * _layoutConfig.idleFloatSpeed * 0.7f) * _layoutConfig.idleRotationAmount;
+                targetRotation = Quaternion.Euler(0, 0, rotZ);
+            }
             
             // 5. GLOW
             float targetGlow = _isHovered ? _layoutConfig.hoverGlowIntensity : 0f;
@@ -215,23 +252,6 @@ namespace LastFurrow.Traditions
             _slotIndex = index;
         }
         
-        // --- Hover ---
-        
-        private void OnMouseEnter()
-        {
-            _isHovered = true;
-        }
-        
-        private void OnMouseExit()
-        {
-            _isHovered = false;
-        }
-        
-        private void OnMouseDown()
-        {
-            OnClicked?.Invoke(this);
-        }
-        
         private void OnDestroy()
         {
             DOTween.Kill(transform);
@@ -242,3 +262,4 @@ namespace LastFurrow.Traditions
         }
     }
 }
+
