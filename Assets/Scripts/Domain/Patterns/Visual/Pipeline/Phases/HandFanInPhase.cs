@@ -6,16 +6,16 @@ using UnityEngine;
 namespace LastFurrow.Domain.Patterns.Visual.Pipeline.Phases
 {
     /// <summary>
-    /// Fase 0: Fan-Out da Mão.
-    /// Move as cartas para fora da tela antes da análise começar.
+    /// Fase final do pipeline: Fan-In da Mão.
+    /// Retorna as cartas para a tela de forma sequencial após a câmera se estabilizar.
     /// </summary>
-    public class HandFanOutPhase : IAnalysisPhase
+    public class HandFanInPhase : IAnalysisPhase
     {
-        public string Name => "Hand Fan-Out";
+        public string Name => "Hand Fan-In";
         
         private readonly HandManager _handManager;
         
-        public HandFanOutPhase(HandManager handManager)
+        public HandFanInPhase(HandManager handManager)
         {
             _handManager = handManager;
         }
@@ -27,7 +27,7 @@ namespace LastFurrow.Domain.Patterns.Visual.Pipeline.Phases
         {
             if (_handManager == null)
             {
-                Debug.LogWarning("[HandFanOutPhase] HandManager not available, skipping fan-out.");
+                Debug.LogWarning("[HandFanInPhase] HandManager not available, skipping fan-in.");
                 return new PhaseResult
                 {
                     Success = true,
@@ -39,7 +39,7 @@ namespace LastFurrow.Domain.Patterns.Visual.Pipeline.Phases
             {
                 PhaseName = Name,
                 Percentage = 0f,
-                CurrentAction = "Cards exiting screen..."
+                CurrentAction = "Cards returning to screen..."
             });
 
             if (ct.IsCancellationRequested)
@@ -48,20 +48,20 @@ namespace LastFurrow.Domain.Patterns.Visual.Pipeline.Phases
             var fanController = _handManager.GetFanController();
             if (fanController != null)
             {
-                await fanController.FanOut();
+                await fanController.FanIn();
             }
 
             progress?.Report(new PhaseProgress
             {
                 PhaseName = Name,
                 Percentage = 1f,
-                CurrentAction = "Cards hidden"
+                CurrentAction = "Cards returned"
             });
 
             return new PhaseResult
             {
                 Success = true,
-                Message = "Hand cards fanned out successfully."
+                Message = "Hand cards returned to screen."
             };
         }
     }

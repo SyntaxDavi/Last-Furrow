@@ -19,6 +19,9 @@ public class HandManager : MonoBehaviour
     [Header("Organizacao")]
     [SerializeField] private HandOrganizer _handOrganizer;
     
+    [Header("Fan Controller")]
+    [SerializeField] private HandFanController _fanController;
+    
     [Header("Hover Controller")]
     [SerializeField] private HandHoverController _hoverController;
 
@@ -50,6 +53,12 @@ public class HandManager : MonoBehaviour
         if (_handOrganizer != null)
         {
             _handOrganizer.Initialize(this);
+        }
+        
+        // Inicializa o FanController se estiver presente
+        if (_fanController != null)
+        {
+            _fanController.Initialize(this);
         }
         
         // Inicializa o HoverController se estiver presente
@@ -208,6 +217,7 @@ public class HandManager : MonoBehaviour
     
     public void TriggerHandFullyElevated() => OnHandFullyElevated?.Invoke();
     public void TriggerHandFullyLowered() => OnHandFullyLowered?.Invoke();
+    public void TriggerCardVisuallySpawned(int sequenceIndex) => OnCardVisuallySpawned?.Invoke(sequenceIndex);
 
     private void HandleGlobalClick()
     {
@@ -363,6 +373,30 @@ public class HandManager : MonoBehaviour
     {
         return _hoverController;
     }
+    
+    /// <summary>
+    /// Retorna o HandFanController
+    /// </summary>
+    public HandFanController GetFanController()
+    {
+        return _fanController;
+    }
+    
+    /// <summary>
+    /// Retorna o CardVisualConfig (usado por controllers externos)
+    /// </summary>
+    public CardVisualConfig GetVisualConfig()
+    {
+        return _visualConfig;
+    }
+    
+    /// <summary>
+    /// Retorna o HandLayoutConfig (usado por controllers externos)
+    /// </summary>
+    public HandLayoutConfig GetLayoutConfig()
+    {
+        return _layoutConfig;
+    }
 
     /// <summary>
     /// Reordena internamente a lista de cartas ativas.
@@ -379,60 +413,4 @@ public class HandManager : MonoBehaviour
         _isLayoutDirty = true;
     }
 
-    // =====================================================================
-    // FAN OUT / FAN IN (Analysis Phase)
-    // =====================================================================
-    
-    private bool _isFannedOut = false;
-    
-    /// <summary>
-    /// Move todas as cartas para fora da tela (usado durante análise).
-    /// As cartas animam para a posição de spawn invertida (ex: sair pela esquerda/baixo).
-    /// </summary>
-    public async Cysharp.Threading.Tasks.UniTask FanOut()
-    {
-        if (_isFannedOut || _activeCards.Count == 0) return;
-        _isFannedOut = true;
-        
-        // Usa o SpawnOffset invertido para sair pelo mesmo lugar que entra
-        Vector3 exitOffset = -(Vector3)_layoutConfig.SpawnOffset;
-        
-        foreach (var card in _activeCards)
-        {
-            if (card == null) continue;
-            
-            var current = card.BaseLayoutTarget;
-            current.Position += exitOffset;
-            card.UpdateLayoutTarget(current);
-        }
-        
-        // Aguarda a física suave completar a animação
-        float animTime = _visualConfig?.PositionSmoothTime ?? 0.3f;
-        await Cysharp.Threading.Tasks.UniTask.Delay((int)(animTime * 1000 * 1.5f));
-        
-        UnityEngine.Debug.Log("[HandManager] FanOut complete.");
-    }
-    
-    /// <summary>
-    /// Retorna as cartas para suas posições normais na mão.
-    /// </summary>
-    public async Cysharp.Threading.Tasks.UniTask FanIn()
-    {
-        if (!_isFannedOut) return;
-        _isFannedOut = false;
-        
-        // Recalcula posições normais
-        RecalculateLayoutTargets();
-        
-        // Aguarda a física suave completar a animação
-        float animTime = _visualConfig?.PositionSmoothTime ?? 0.3f;
-        await Cysharp.Threading.Tasks.UniTask.Delay((int)(animTime * 1000 * 1.5f));
-        
-        UnityEngine.Debug.Log("[HandManager] FanIn complete.");
-    }
-    
-    /// <summary>
-    /// Indica se as cartas estão atualmente fora da tela (fanned out).
-    /// </summary>
-    public bool IsFannedOut => _isFannedOut;
 }

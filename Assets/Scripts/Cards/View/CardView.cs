@@ -361,7 +361,28 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
 
     // API Externa
     public HandLayoutCalculator.CardTransformTarget BaseLayoutTarget => _baseLayoutTarget;
-    public void UpdateLayoutTarget(HandLayoutCalculator.CardTransformTarget target) => _baseLayoutTarget = target;
+    
+    /// <summary>
+    /// Target atual da carta (pode incluir offsets visuais como FanOut).
+    /// Usado para convergence polling.
+    /// </summary>
+    public HandLayoutCalculator.CardTransformTarget CurrentLayoutTarget => _currentLayoutTarget;
+    private HandLayoutCalculator.CardTransformTarget _currentLayoutTarget;
+    
+    public void UpdateLayoutTarget(HandLayoutCalculator.CardTransformTarget target)
+    {
+        _baseLayoutTarget = target;
+        _currentLayoutTarget = target; // Por padrão, current = base
+    }
+    
+    /// <summary>
+    /// Atualiza apenas o target visual (não altera o layout base).
+    /// Usado para efeitos temporários como FanOut.
+    /// </summary>
+    public void UpdateVisualTarget(HandLayoutCalculator.CardTransformTarget target)
+    {
+        _currentLayoutTarget = target;
+    }
     
     // API para controle de elevação
     /// <summary>

@@ -50,7 +50,23 @@ public class CardVisualConfig : ScriptableObject
     [Tooltip("Delay global ANTES de iniciar a descida da mao.")]
     public float HandLoweringStartDelay = 0f;
 
-    [Header("9. Audio")]
+    [Header("9. Fan Out/In (Analysis Phase)")]
+    [Tooltip("Offset para onde as cartas vão durante análise (relativo ao HandCenter)")]
+    public Vector3 FanOutOffset = new Vector3(-15f, -10f, 0f);
+    
+    [Tooltip("Delay antes de começar o Fan-In (respiro visual)")]
+    public float FanInPreDelay = 0.5f;
+    
+    [Tooltip("Delay entre cada carta no Fan-Out sequencial")]
+    public float FanOutSequenceDelay = 0.12f;
+    
+    [Tooltip("Delay entre cada carta no Fan-In sequencial")]
+    public float FanInSequenceDelay = 0.08f;
+    
+    [Tooltip("Distância mínima para considerar que a carta 'chegou' no target")]
+    public float ConvergenceThreshold = 0.1f;
+
+    [Header("10. Audio")]
     public SoundEffect[] CardDrawSounds;
     public SoundEffect[] CardSelectSounds;
     public SoundEffect[] CardHoverSounds;

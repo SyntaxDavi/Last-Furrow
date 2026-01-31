@@ -74,7 +74,7 @@ public class DailyResolutionSystem : MonoBehaviour
             });
 
         // 3. Finaliza
-        _logicContext.Events.Time.TriggerResolutionEnded();
+        // Nota: TriggerResolutionEnded() é chamado pela CameraUnfocusPhase dentro do pipeline
         Debug.Log("[DailyResolution] ✓ Resolução do Dia Concluída");
 
         _isProcessing = false;

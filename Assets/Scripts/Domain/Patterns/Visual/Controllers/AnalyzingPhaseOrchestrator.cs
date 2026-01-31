@@ -38,10 +38,14 @@ public class AnalyzingPhaseOrchestrator : MonoBehaviour
         // Montagem do Pipeline (Composition Root local)
         _phases = new List<IAnalysisPhase>
         {
-            new HandFanOutPhase(_handManager),  // FIRST: Cards exit screen
-            new NightCyclePhase(),
-            new PassiveScoresPhase(_gridConfig),
-            new PatternAnalysisPhase(_uiManager, _patternConfig)
+            new HandFanOutPhase(_handManager),              // 1. Cards exit screen
+            new CameraFocusPhase(400f),                     // 2. Wait for camera to focus on grid
+            new NightCyclePhase(),                          // 3. Visual night cycle
+            new PassiveScoresPhase(_gridConfig),            // 4. Passive scores animation
+            new PatternAnalysisPhase(_uiManager, _patternConfig), // 5. Pattern detection
+            new CameraUnfocusPhase(500f),                   // 6. Camera returns to normal + wait
+            new HandFanInPhase(_handManager),               // 7. Cards return to screen
+            new PostAnalysisDelayPhase(600f),               // 8. Respiro visual antes do draw
         };
     }
 
@@ -115,13 +119,22 @@ public class AnalyzingPhaseOrchestrator : MonoBehaviour
         }
         finally
         {
-            // SEMPRE retorna as cartas, mesmo em erro ou cancelamento
-            if (_handManager != null)
+            // FALLBACK DE SEGURANÇA: Garante que cartas voltem e câmera se estabilize
+            // mesmo em caso de erro ou cancelamento
+            if (report.Cancelled || !report.Success)
             {
-                await _handManager.FanIn();
+                // Força câmera a voltar se ainda não voltou
+                AppCore.Instance?.Events?.Time.TriggerResolutionEnded();
+                
+                // Força cartas a voltarem (se ainda não voltaram)
+                var fanController = _handManager?.GetFanController();
+                if (fanController != null && fanController.IsFannedOut)
+                {
+                    await fanController.FanIn();
+                }
             }
             
-            _cts.Dispose();
+            _cts?.Dispose();
             _cts = null;
         }
 

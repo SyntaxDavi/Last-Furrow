@@ -3200,6 +3200,7 @@ MonoBehaviour:
   _gridConfig: {fileID: 11400000, guid: 09dc2df871bee3f4dac51ec7ad347b21, type: 2}
   _gridManager: {fileID: 434515749}
   _uiManager: {fileID: 1726399248}
+  _handManager: {fileID: 1345890251}
 --- !u!1 &888648029
 GameObject:
   m_ObjectHideFlags: 0
@@ -4970,6 +4971,7 @@ GameObject:
   - component: {fileID: 1345890252}
   - component: {fileID: 1345890253}
   - component: {fileID: 1345890255}
+  - component: {fileID: 1345890256}
   - component: {fileID: 1345890254}
   m_Layer: 0
   m_Name: HandSystem
@@ -5011,6 +5013,7 @@ MonoBehaviour:
   _cardPrefab: {fileID: 6941554981388740021, guid: 47e21a452166bc344bf0e6af08ad0e32, type: 3}
   _handCenter: {fileID: 2128607302}
   _handOrganizer: {fileID: 1345890252}
+  _fanController: {fileID: 1345890256}
   _hoverController: {fileID: 1345890253}
 --- !u!114 &1345890252
 MonoBehaviour:
@@ -5119,6 +5122,20 @@ MonoBehaviour:
   _reorderVolume: 0.8
   _dragVolume: 1
   _cardOnGridVolume: 1.2
+--- !u!114 &1345890256
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1345890249}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a799b236a3e799499fca4d983fd7fca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HandFanController
+  _visualConfig: {fileID: 11400000, guid: e3cf8478dfad57044b0a6fdd75881fe4, type: 2}
+  _layoutConfig: {fileID: 11400000, guid: 8a3da3928d50c514dbc63bea31cd3b17, type: 2}
 --- !u!1 &1362975647
 GameObject:
   m_ObjectHideFlags: 0
