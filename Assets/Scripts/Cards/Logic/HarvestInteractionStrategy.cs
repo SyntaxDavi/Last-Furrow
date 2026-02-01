@@ -44,7 +44,12 @@ public class HarvestInteractionStrategy : ICardInteractionStrategy
         // IMPORTANTE: N�o apenas verificar CurrentGrowth,
         // mas garantir que a planta foi plantada h� pelo menos 1 dia
         // Uma planta no DIA 0 n�o pode ser colhida mesmo que acelerada
-        return slot.DaysMature >= 0 && slot.CurrentGrowth > 0;
+        if (_context.Library.TryGetCrop(slot.CropID, out var cropData))
+        {
+            return slot.CurrentGrowth >= cropData.DaysToMature;
+        }
+
+        return false;
     }
 
     public InteractionResult Execute(int index, IGridService grid, CardData card)
