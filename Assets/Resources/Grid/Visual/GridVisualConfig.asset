@@ -28,6 +28,10 @@ MonoBehaviour:
   analyzingPulse: {r: 1, g: 0.69093144, b: 0.21226418, a: 0.7647059}
   flashDuration: 0.626
   pulseDuration: 0.373
+  slotHoverPulseScale: 1.1
+  slotHoverPulseDuration: 0.5
+  slotReceivePunchAmount: 0.7
+  slotReceivePunchDelay: 0.8
   stateOverlayOffset: 6
   gameStateOverlayOffset: 7
   hoverHighlightOffset: 5

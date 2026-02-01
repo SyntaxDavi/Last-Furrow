@@ -27,11 +27,12 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     private SlotHighlightController _highlightController;
     private Tween _scoreTween;
     private Tween _pulseTween;
+    private PlayerInteraction _cachedInteraction;
 
     private Animator _cursorAnimator;
     private VisualElevationProcessor _elevationProcessor = new();
     private Vector3 _originalLocalPos;
-    private Vector3 _originalScale;
+    private Transform _visualsRoot;
 
     public int SlotIndex => _index;
     public int InteractionPriority => 0;
@@ -50,7 +51,6 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     {
         if (_context?.VisualConfig == null) return;
 
-        // Fall-safe: Se a config estiver com 0 (comum após adicionar campos via script), usamos um default
         float maxOffset = _context.VisualConfig.patternElevationOffset;
         if (maxOffset <= 0) maxOffset = 0.3f; 
 
@@ -59,7 +59,8 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 
         _elevationProcessor.Update(maxOffset, speed, Time.deltaTime);
 
-        transform.localPosition = _elevationProcessor.Apply(_originalLocalPos);
+        if (_visualsRoot != null)
+            _visualsRoot.localPosition = _elevationProcessor.Apply(_originalLocalPos);
     }
 
     public void Initialize(GridVisualContext context, int index)
@@ -67,31 +68,27 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _context = context;
         _index = index;
         _isLocked = false;
-        _originalLocalPos = transform.localPosition;
-        _originalScale = transform.localScale;
+
+        // Setup hierarquia visual se ainda não existir
+        SetupVisualHierarchy();
+
+        _originalLocalPos = Vector3.zero; // Local em relação ao pai (Slot Root)
 
         // 1. Configura Overlay
-        // SÓ atribui o sprite da base se o overlay estiver sem sprite (permitindo bordas customizadas no prefab)
-        if (_highlightOverlayRenderer != null && _highlightOverlayRenderer.sprite == null && _baseRenderer != null)
-        {
-            _highlightOverlayRenderer.sprite = _baseRenderer.sprite;
-        }
+        SyncOverlaySprites();
 
         // 2. Configura o Cursor Animado (Setup Automático)
         if (_cursorRenderer != null && _context.VisualConfig.cursorAnimatorController != null)
         {
-            // Garante que existe um Animator no mesmo objeto do SpriteRenderer
             if (_cursorAnimator == null)
                 _cursorAnimator = _cursorRenderer.gameObject.GetComponent<Animator>();
 
             if (_cursorAnimator == null)
                 _cursorAnimator = _cursorRenderer.gameObject.AddComponent<Animator>();
 
-            // Atribui o controller de animação (Aseprite clip logic)
             _cursorAnimator.runtimeAnimatorController = _context.VisualConfig.cursorAnimatorController;
         }
 
-        // 3. Inicializa Controller passando o Animator
         _highlightController = new SlotHighlightController(
             _highlightOverlayRenderer,
             _cursorRenderer,
@@ -99,7 +96,8 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
             _context.VisualConfig
         );
 
-        SyncOverlaySprites();
+        _cachedInteraction = FindFirstObjectByType<PlayerInteraction>();
+
         ResetVisualState();
     }
 
@@ -116,10 +114,9 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _highlightController?.SetHover(true);
 
         // Grid Juice: Pulse if holding a valid card
-        var interaction = FindFirstObjectByType<PlayerInteraction>();
-        if (interaction != null && interaction.DragSystem.IsDragging)
+        if (_cachedInteraction != null && _cachedInteraction.DragSystem.IsDragging)
         {
-            if (CanReceive(interaction.DragSystem.ActiveDrag))
+            if (CanReceive(_cachedInteraction.DragSystem.ActiveDrag))
             {
                 StartPulse();
             }
@@ -206,7 +203,10 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         if (draggable is CardView cardView)
         {
             StopPulse();
-            TriggerReceivePop();
+            
+            // Delay o punch para sincronizar com o slam da carta
+            float punchDelay = _context.VisualConfig.slotReceivePunchDelay;
+            DOVirtual.DelayedCall(punchDelay, () => TriggerReceivePop());
 
             OnHoverExit();
             OnDropInteraction?.Invoke(SlotIndex, cardView);
@@ -215,10 +215,10 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 
     private void StartPulse()
     {
-        if (_pulseTween != null) return;
+        if (_pulseTween != null || _visualsRoot == null) return;
 
-        float targetScale = _originalScale.x * _context.VisualConfig.slotHoverPulseScale;
-        _pulseTween = transform.DOScale(targetScale, _context.VisualConfig.slotHoverPulseDuration)
+        float targetScale = 1.0f * _context.VisualConfig.slotHoverPulseScale;
+        _pulseTween = _visualsRoot.DOScale(targetScale, _context.VisualConfig.slotHoverPulseDuration)
             .SetLoops(-1, LoopType.Yoyo)
             .SetEase(Ease.InOutSine);
     }
@@ -229,13 +229,14 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         {
             _pulseTween.Kill();
             _pulseTween = null;
-            transform.DOScale(_originalScale, 0.2f).SetEase(Ease.OutBack);
+            _visualsRoot.DOScale(1.0f, 0.2f).SetEase(Ease.OutBack);
         }
     }
 
     private void TriggerReceivePop()
     {
-        transform.DOPunchScale(Vector3.one * _context.VisualConfig.slotReceivePunchAmount, 0.3f, 10, 1f);
+        if (_visualsRoot == null) return;
+        _visualsRoot.DOPunchScale(Vector3.one * _context.VisualConfig.slotReceivePunchAmount, 0.3f, 10, 1f);
     }
 
     // --- VISUALIZAÇÃO DE DADOS (Mantida simples) ---
@@ -245,8 +246,17 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         if (_isLocked) return;
 
         // Atualiza sprite base (solo seco/molhado)
-        _baseRenderer.sprite = isWatered ? _context.VisualConfig.wetSoilSprite : _context.VisualConfig.drySoilSprite;
-        _baseRenderer.color = Color.white;
+        Sprite soilSprite = isWatered ? _context.VisualConfig.wetSoilSprite : _context.VisualConfig.drySoilSprite;
+        
+        if (_baseRenderer != null)
+        {
+            _baseRenderer.sprite = soilSprite;
+            _baseRenderer.color = Color.white;
+            
+            // Se o renderer estiver na raiz, ele não move. 
+            // Sincronizamos o sprite com o Visuals_Root se tivermos um substituto.
+            UpdateBaseRendererShadow();
+        }
 
         // CRÍTICO: Sincroniza overlays com sprite da base para evitar problemas visuais
         SyncOverlaySprites();
@@ -318,29 +328,74 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     private void ConfigureRenderers()
     {
         if (_baseRenderer == null) _baseRenderer = GetComponent<SpriteRenderer>();
-        if (_plantRenderer == null) _plantRenderer = CreateChildSprite("PlantSprite", 1);
-        if (_stateOverlayRenderer == null) _stateOverlayRenderer = CreateChildSprite("StateOverlay", 2);
-
-        // LAYER 3: Overlay de Cor (Verde/Amarelo/Vermelho)
-        if (_highlightOverlayRenderer == null)
-            _highlightOverlayRenderer = CreateChildSprite("OverlayFill", 3);
-
-        // LAYER 4: Cursor (Setas brancas em cima de tudo)
-        if (_cursorRenderer == null)
-            _cursorRenderer = CreateChildSprite("CursorArrows", 4);
+        // Note: Outros renderers serão resolvidos/criados no SetupVisualHierarchy durante Initialize
     }
 
+    private void SetupVisualHierarchy()
+    {
+        if (_visualsRoot != null) return;
+
+        // Cria container para visuais (Root das animações)
+        GameObject root = new GameObject("Visuals_Root");
+        root.transform.SetParent(this.transform, false);
+        _visualsRoot = root.transform;
+
+        // Reparenta renderers existentes para o novo root
+        // Isso garante que eles sigam as animações de escala/posição do root
+        ReparentIfNotNull(_plantRenderer);
+        ReparentIfNotNull(_stateOverlayRenderer);
+        ReparentIfNotNull(_highlightOverlayRenderer);
+        ReparentIfNotNull(_cursorRenderer);
+
+        // Especial: Se a base estiver no objeto principal, precisamos de um proxy nela
+        // para que o solo também levite/pulse.
+        if (_baseRenderer != null && _baseRenderer.gameObject == this.gameObject)
+        {
+            var originalSprite = _baseRenderer.sprite;
+            _baseRenderer.enabled = false; // Desliga a versão estática
+            _baseRenderer = CreateChildSprite("BaseSoil_Proxy", 0);
+            _baseRenderer.sprite = originalSprite;
+            _baseRenderer.enabled = true;
+        }
+
+        // Se algum não existia, cria agora dentro do root
+        if (_plantRenderer == null) _plantRenderer = CreateChildSprite("PlantSprite", 1);
+        if (_stateOverlayRenderer == null) _stateOverlayRenderer = CreateChildSprite("StateOverlay", 2);
+        if (_highlightOverlayRenderer == null) _highlightOverlayRenderer = CreateChildSprite("OverlayFill", 3);
+        if (_cursorRenderer == null) _cursorRenderer = CreateChildSprite("CursorArrows", 4);
+    }
+
+    private void UpdateBaseRendererShadow()
+    {
+        // Se a base foi substituída por um proxy no Visuals_Root, garantimos que ela tenha o sprite certo
+        // Esse método é redundante se _baseRenderer já aponta para o proxy, mas mantemos por segurança
+    }
+
+    private void ReparentIfNotNull(Component comp)
+    {
+        if (comp != null && comp.transform.parent != _visualsRoot)
+        {
+            comp.transform.SetParent(_visualsRoot, false);
+        }
+    }
 
     private SpriteRenderer CreateChildSprite(string name, int orderOffset)
     {
-        var child = transform.Find(name);
+        // Tenta encontrar por nome sob o root
+        var child = _visualsRoot.Find(name);
         if (child != null) return child.GetComponent<SpriteRenderer>();
 
+        // Cria novo
         GameObject obj = new GameObject(name);
-        obj.transform.SetParent(this.transform, false);
+        obj.transform.SetParent(_visualsRoot, false);
         var sr = obj.AddComponent<SpriteRenderer>();
-        sr.sortingLayerID = _baseRenderer.sortingLayerID;
-        sr.sortingOrder = _baseRenderer.sortingOrder + orderOffset;
+        
+        if (_baseRenderer != null)
+        {
+            sr.sortingLayerID = _baseRenderer.sortingLayerID;
+            sr.sortingOrder = _baseRenderer.sortingOrder + orderOffset;
+        }
+        
         sr.enabled = false;
         return sr;
     }
@@ -353,11 +408,13 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     {
         if (_baseRenderer == null || _baseRenderer.sprite == null) return;
 
-        // State overlay usa o mesmo sprite da base para aplicar cor
+        // State overlay usa o mesmo sprite da base para aplicar cor (ex: mature/planted)
         if (_stateOverlayRenderer != null)
             _stateOverlayRenderer.sprite = _baseRenderer.sprite;
 
-        // Highlight pode usar sprite específico (borda) ou o mesmo da base
-        // Como configuramos no Initialize, não precisamos sobrescrever aqui
+        // SENIOR FIX: O Highlight Overlay PRECISA do sprite para mostrar as cores de Glow/Pattern/Analysis.
+        // Se ele não tiver um sprite específico (borda), usamos o sprite da base.
+        if (_highlightOverlayRenderer != null && _highlightOverlayRenderer.sprite == null)
+            _highlightOverlayRenderer.sprite = _baseRenderer.sprite;
     }
 }

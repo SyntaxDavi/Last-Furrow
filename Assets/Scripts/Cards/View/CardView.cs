@@ -85,7 +85,8 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         _activeModifiers.Add(_elevationModifier);
         
         // Inicializa ghost modifier para transparência durante drag
-        var ghostRenderers = new[] { _artRenderer, _frameRenderer };
+        // SENIOR FIX: Inclui TODOS os renderers filhos para evitar falhas em cartas complexas
+        var ghostRenderers = GetComponentsInChildren<SpriteRenderer>();
         _ghostModifier = new CardDragGhostModifier(ghostRenderers, _config);
 
         // Setup Visual
@@ -253,10 +254,20 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         sortOrder = CardSortingConstants.DRAG_LAYER;
         
         // Ghost effect: transparência quando sobre drop target válido
-        if (_ghostModifier != null && _dragDropSystem != null)
+        if (_ghostModifier != null)
         {
-            _ghostModifier.SetGhostMode(_dragDropSystem.IsOverValidDropTarget);
-            _ghostModifier.Update();
+            // SENIOR FIX: Fallback caso DragDropSystem não tenha sido injetado no Initialize (timing issue)
+            if (_dragDropSystem == null)
+            {
+                var interaction = FindFirstObjectByType<PlayerInteraction>();
+                if (interaction != null) _dragDropSystem = interaction.DragSystem;
+            }
+
+            if (_dragDropSystem != null)
+            {
+                _ghostModifier.SetGhostMode(_dragDropSystem.IsOverValidDropTarget);
+                _ghostModifier.Update();
+            }
         }
     }
 

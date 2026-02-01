@@ -51,6 +51,8 @@ public class GridVisualConfig : ScriptableObject
     public float slotHoverPulseDuration = 0.6f;
     [Tooltip("Força do punch ao receber uma carta.")]
     public float slotReceivePunchAmount = 0.15f;
+    [Tooltip("Delay antes do punch ao receber uma carta (segundos). Sincroniza com animação da carta.")]
+    public float slotReceivePunchDelay = 0.3f;
 
     [Header("Render Layers (Priority System)")]
     [Tooltip("Sorting order offset para overlay de estado (+1 sobre base)")]      
