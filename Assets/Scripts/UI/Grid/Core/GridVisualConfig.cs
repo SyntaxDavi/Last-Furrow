@@ -44,6 +44,14 @@ public class GridVisualConfig : ScriptableObject
     [Range(0.1f, 2f)]
     public float pulseDuration = 0.5f;
 
+    [Header("Juice Feedback")]
+    [Tooltip("Escala extra durante o pulse de hover válido.")]
+    public float slotHoverPulseScale = 1.05f;
+    [Tooltip("Duração de um ciclo do pulse de hover (segundos).")]
+    public float slotHoverPulseDuration = 0.6f;
+    [Tooltip("Força do punch ao receber uma carta.")]
+    public float slotReceivePunchAmount = 0.15f;
+
     [Header("Render Layers (Priority System)")]
     [Tooltip("Sorting order offset para overlay de estado (+1 sobre base)")]      
     public int stateOverlayOffset = 1;

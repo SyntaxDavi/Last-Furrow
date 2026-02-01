@@ -26,10 +26,12 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 
     private SlotHighlightController _highlightController;
     private Tween _scoreTween;
+    private Tween _pulseTween;
 
     private Animator _cursorAnimator;
     private VisualElevationProcessor _elevationProcessor = new();
     private Vector3 _originalLocalPos;
+    private Vector3 _originalScale;
 
     public int SlotIndex => _index;
     public int InteractionPriority => 0;
@@ -66,6 +68,7 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _index = index;
         _isLocked = false;
         _originalLocalPos = transform.localPosition;
+        _originalScale = transform.localScale;
 
         // 1. Configura Overlay
         // SÓ atribui o sprite da base se o overlay estiver sem sprite (permitindo bordas customizadas no prefab)
@@ -108,8 +111,26 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 
     // --- API PÚBLICA DE HIGHLIGHT (Delegada) ---
 
-    public void OnHoverEnter() => _highlightController?.SetHover(true);
-    public void OnHoverExit() => _highlightController?.SetHover(false);
+    public void OnHoverEnter() 
+    {
+        _highlightController?.SetHover(true);
+
+        // Grid Juice: Pulse if holding a valid card
+        var interaction = FindFirstObjectByType<PlayerInteraction>();
+        if (interaction != null && interaction.DragSystem.IsDragging)
+        {
+            if (CanReceive(interaction.DragSystem.ActiveDrag))
+            {
+                StartPulse();
+            }
+        }
+    }
+
+    public void OnHoverExit() 
+    {
+        _highlightController?.SetHover(false);
+        StopPulse();
+    }
     public void OnClick() { }
 
     public void SetPatternHighlight(Color color, bool enable = true)
@@ -184,9 +205,37 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     {
         if (draggable is CardView cardView)
         {
+            StopPulse();
+            TriggerReceivePop();
+
             OnHoverExit();
             OnDropInteraction?.Invoke(SlotIndex, cardView);
         }
+    }
+
+    private void StartPulse()
+    {
+        if (_pulseTween != null) return;
+
+        float targetScale = _originalScale.x * _context.VisualConfig.slotHoverPulseScale;
+        _pulseTween = transform.DOScale(targetScale, _context.VisualConfig.slotHoverPulseDuration)
+            .SetLoops(-1, LoopType.Yoyo)
+            .SetEase(Ease.InOutSine);
+    }
+
+    private void StopPulse()
+    {
+        if (_pulseTween != null)
+        {
+            _pulseTween.Kill();
+            _pulseTween = null;
+            transform.DOScale(_originalScale, 0.2f).SetEase(Ease.OutBack);
+        }
+    }
+
+    private void TriggerReceivePop()
+    {
+        transform.DOPunchScale(Vector3.one * _context.VisualConfig.slotReceivePunchAmount, 0.3f, 10, 1f);
     }
 
     // --- VISUALIZAÇÃO DE DADOS (Mantida simples) ---
