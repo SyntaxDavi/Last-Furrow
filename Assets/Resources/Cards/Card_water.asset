@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ID:
     _value: card_water
+  CropID:
+    _value: 
   Name: Water
-  Icon: {fileID: 6585668884048488018, guid: e7b252851c7f00c46947c3e5beb21ce7, type: 3}
+  Icon: {fileID: 6215499061508300752, guid: 9060d110775f5844ba1f4e253256f0a1, type: 3}
   Type: 1
   BaseSellValue: 2
   CropToPlant: {fileID: 0}

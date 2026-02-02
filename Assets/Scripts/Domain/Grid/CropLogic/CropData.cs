@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 [System.Serializable]
 public enum CropValidationSeverity { Info, Warning, Error }
@@ -10,6 +11,20 @@ public struct CropValidationIssue
     public string Message;
     public CropValidationSeverity Severity;
     public string PropertyName;
+}
+
+/// <summary>
+/// Estados de vida da planta (domínio puro, sem visual).
+/// Usado para separar regras de jogo de rendering.
+/// </summary>
+public enum PlantLifeStage
+{
+    Seed,            // Dia 0
+    Growing,         // Entre plantio e maturação
+    Mature,          // Amadureceu, dentro da janela de frescor
+    NearlyOverripe,  // Último dia antes de passar
+    Overripe,        // Passou da janela de frescor
+    Withered         // Morte (prioridade máxima)
 }
 
 [CreateAssetMenu(fileName = "New Crop", menuName = "Last Furrow/Crop Data")]
@@ -60,6 +75,9 @@ public class CropData : ScriptableObject
     {
         var issues = new List<CropValidationIssue>();
 
+        // Validação de ID Único
+        CheckForDuplicateID(issues);
+
         // Validação de Sprites Obrigatórios
         if (SeedSprite == null) issues.Add(new CropValidationIssue { Message = "Semente (SeedSprite) é obrigatória.", Severity = CropValidationSeverity.Error, PropertyName = nameof(SeedSprite) });
         if (MatureSprite == null) issues.Add(new CropValidationIssue { Message = "Planta Madura (MatureSprite) é obrigatória.", Severity = CropValidationSeverity.Error, PropertyName = nameof(MatureSprite) });
@@ -87,35 +105,125 @@ public class CropData : ScriptableObject
 
         return issues;
     }
-    #endregion
 
-    /// <summary>
-    /// Retorna o sprite baseado no estado completo.
-    /// </summary>
-    public Sprite GetSpriteForStage(int currentGrowth, int daysMature, bool isWithered)
+    private void CheckForDuplicateID(List<CropValidationIssue> issues)
     {
-        if (isWithered) return WitheredSprite;
-
-        // Fase de Maturação (inclui Janela de Frescor)
-        if (currentGrowth >= DaysToMature)
+        if (!ID.IsValid)
         {
-            // Estado Final: Podre
-            if (daysMature >= FreshnessWindow && FreshnessWindow > 0 && OverripeSprite != null) 
-                return OverripeSprite;
-            
-            // Estado Intermediário: Quase Podre (1 dia antes do FreshnessWindow)
-            if (daysMature == FreshnessWindow - 1 && FreshnessWindow > 0 && NearlyOverripeSprite != null)
-                return NearlyOverripeSprite;
-            
-            return MatureSprite;
+            issues.Add(new CropValidationIssue 
+            { 
+                Message = "ID da planta é inválido ou vazio.", 
+                Severity = CropValidationSeverity.Error, 
+                PropertyName = nameof(ID) 
+            });
+            return;
         }
 
-        // Fase de Crescimento
-        if (currentGrowth == 0) return SeedSprite;
+#if UNITY_EDITOR
+        // Resources.FindObjectsOfTypeAll é pesado - apenas em Editor
+        var allCrops = Resources.FindObjectsOfTypeAll<CropData>();
+        var duplicates = allCrops.Where(c => c != this && c.ID == this.ID).ToList();
         
-        if (GrowthStages == null || GrowthStages.Length == 0) return SeedSprite;
-        
-        int index = Mathf.Clamp(currentGrowth - 1, 0, GrowthStages.Length - 1);
-        return GrowthStages[index];
+        if (duplicates.Count > 0)
+        {
+            var duplicateNames = string.Join(", ", duplicates.Select(c => c.Name));
+            issues.Add(new CropValidationIssue 
+            { 
+                Message = $"ID '{ID.Value}' duplicado! Usado também em: {duplicateNames}", 
+                Severity = CropValidationSeverity.Error, 
+                PropertyName = nameof(ID) 
+            });
+        }
+#endif
     }
+    #endregion
+
+    #region Life Stage Logic (Domain)
+    /// <summary>
+    /// Resolve o estado da planta baseado em regras de jogo.
+    /// DOMÍNIO PURO: não sabe nada sobre Sprite, só decide estado.
+    /// Isso separa gameplay de visual, reduzindo bugs de balanceamento.
+    /// </summary>
+    /// <param name="currentGrowth">Dias desde o plantio (idade total da planta).</param>
+    /// <param name="daysMature">Dias desde que a planta atingiu maturidade (deve ser max(0, currentGrowth - DaysToMature)).</param>
+    /// <param name="isWithered">Se a planta está morta/murcha.</param>
+    /// <returns>Estado de vida da planta.</returns>
+    public PlantLifeStage ResolveLifeStage(int currentGrowth, int daysMature, bool isWithered)
+    {
+        // Validação defensiva: não confia que outros sistemas sempre mandam valores limpos
+        currentGrowth = Mathf.Max(0, currentGrowth);
+        daysMature = Mathf.Max(0, daysMature);
+
+        // 1. Withered tem prioridade máxima (morte sobrescreve tudo)
+        if (isWithered) return PlantLifeStage.Withered;
+
+        // 2. Antes de amadurecer
+        if (currentGrowth < DaysToMature)
+        {
+            // Seed existe apenas no dia 0 (definição de design)
+            return currentGrowth == 0 ? PlantLifeStage.Seed : PlantLifeStage.Growing;
+        }
+
+        // 3. Planta madura (currentGrowth >= DaysToMature)
+        // Se FreshnessWindow == 0, planta fica Mature para sempre
+        if (FreshnessWindow == 0) return PlantLifeStage.Mature;
+
+        // 4. Passou da janela de frescor → Overripe
+        if (daysMature >= FreshnessWindow) return PlantLifeStage.Overripe;
+
+        // 5. Último dia antes de passar → NearlyOverripe
+        if (daysMature == FreshnessWindow - 1) return PlantLifeStage.NearlyOverripe;
+
+        // 6. Dentro da janela de frescor → Mature
+        return PlantLifeStage.Mature;
+    }
+    #endregion
+
+    #region Visual Mapping (Rendering)
+    /// <summary>
+    /// Mapeia estado da planta → sprite.
+    /// SEM REGRAS DE JOGO: apenas escolhe sprite baseado no estado já resolvido.
+    /// Para Growing, usa array de estágios indexado por currentGrowth.
+    /// </summary>
+    public Sprite GetSpriteForStage(PlantLifeStage stage, int currentGrowth)
+    {
+        switch (stage)
+        {
+            case PlantLifeStage.Seed:
+                return SeedSprite;
+
+            case PlantLifeStage.Growing:
+                if (GrowthStages == null || GrowthStages.Length == 0) return SeedSprite;
+                int index = Mathf.Clamp(currentGrowth - 1, 0, GrowthStages.Length - 1);
+                return GrowthStages[index];
+
+            case PlantLifeStage.Mature:
+                return MatureSprite;
+
+            case PlantLifeStage.NearlyOverripe:
+                return NearlyOverripeSprite ?? MatureSprite; // Fallback para Mature
+
+            case PlantLifeStage.Overripe:
+                return OverripeSprite ?? MatureSprite; // Fallback para Mature
+
+            case PlantLifeStage.Withered:
+                return WitheredSprite;
+
+            default:
+                Debug.LogWarning($"[CropData] Estado desconhecido: {stage}. Usando SeedSprite.");
+                return SeedSprite;
+        }
+    }
+
+    /// <summary>
+    /// Método legado mantido para compatibilidade.
+    /// Use ResolveLifeStage() + GetSpriteForStage(stage, growth) para novo código.
+    /// </summary>
+    [System.Obsolete("Use ResolveLifeStage() seguido de GetSpriteForStage(stage, growth) ao invés deste método.")]
+    public Sprite GetSpriteForStage(int currentGrowth, int daysMature, bool isWithered)
+    {
+        var stage = ResolveLifeStage(currentGrowth, daysMature, isWithered);
+        return GetSpriteForStage(stage, currentGrowth);
+    }
+    #endregion
 }

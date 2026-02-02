@@ -263,15 +263,20 @@ public class GridManager : MonoBehaviour
                 {
                     if (_context.Library.TryGetCrop(state.CropID, out var cropData))
                     {
-                        spriteToRender = cropData.GetSpriteForStage(
+                        // Resolve estado da planta (domínio)
+                        var stage = cropData.ResolveLifeStage(
                             state.CurrentGrowth,
                             state.DaysMature, 
                             state.IsWithered
                         );
                         
+                        // Mapeia estado → sprite (visual)
+                        spriteToRender = cropData.GetSpriteForStage(stage, state.CurrentGrowth);
+                        
                         if (spriteToRender != null)
                         {
-                            isMature = (state.CurrentGrowth >= state.DaysMature) && !isWithered;
+                            // Usa estado ao invés de calcular manualmente
+                            isMature = (stage == PlantLifeStage.Mature || stage == PlantLifeStage.NearlyOverripe) && !isWithered;
                         }
                     }
                     else

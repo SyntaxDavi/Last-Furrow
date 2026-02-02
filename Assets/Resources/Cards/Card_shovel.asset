@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ID:
     _value: card_shovel
+  CropID:
+    _value: 
   Name: Shovel
-  Icon: {fileID: 6585668884048488018, guid: e7b252851c7f00c46947c3e5beb21ce7, type: 3}
+  Icon: {fileID: 7055372436312125094, guid: 2d0523f15178385489a676e72ee0da9e, type: 3}
   Type: 3
   BaseSellValue: 10
   CropToPlant: {fileID: 0}
