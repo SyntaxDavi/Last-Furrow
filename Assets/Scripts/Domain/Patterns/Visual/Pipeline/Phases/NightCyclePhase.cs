@@ -28,7 +28,8 @@ namespace LastFurrow.Domain.Patterns.Visual.Pipeline.Phases
 
                 if (context.GridService.IsSlotUnlocked(i))
                 {
-                    context.GridService.ProcessNightCycleForSlot(i);
+                    // REMOVIDO: A lógica agora é processada exclusivamente no GrowGridStep.
+                    // Esta fase agora serve apenas para efeitos visuais de noite.
                     processedCount++;
                 }
 

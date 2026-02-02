@@ -45,6 +45,9 @@ namespace LastFurrow.Domain.Patterns.Visual.Pipeline.Phases
 
                 if (slotView != null)
                 {
+                    // 🔥 SINCRONIA: Revela o novo sprite (crescimento/morte) agora!
+                    context.GridService.ForceVisualRefresh(passive.SlotIndex);
+
                     // Dispara evento para o VisualHandler (Levitação + Popup)
                     context.Events.Grid.TriggerCropPassiveScore(
                         passive.SlotIndex, 

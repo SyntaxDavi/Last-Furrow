@@ -1,19 +1,13 @@
 fileFormatVersion: 2
-guid: d471b7617d6db3f42bb0121155e91a05
+guid: ad4d374588d02aa4ba6ccf17d1ddafb9
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 5346928031986697999
-    second: Carrot_Seed_0
+      213: 3832338831644277045
+    second: Carrot_NO_0
   - first:
-      213: -3494964858285672760
-    second: Carrot_Seed_1
-  - first:
-      213: -2141088714691061806
-    second: Carrot_Seed_2
-  - first:
-      213: 1417201331850252913
-    second: Carrot_Seed_3
+      213: -1337094857955513266
+    second: Carrot_NO_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -109,7 +103,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Carrot_Seed_0
+      name: Carrot_NO_0
       rect:
         serializedVersion: 2
         x: 0
@@ -124,8 +118,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f07452247ba143a40800000000000000
-      internalID: 5346928031986697999
+      spriteID: 539b71fdcd33f2530800000000000000
+      internalID: 3832338831644277045
       vertices: []
       indices: 
       edges: []
@@ -134,7 +128,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 3420cba52e43d214c8f8b780ba7726e2
+    spriteID: 98f572c4a6b60ad4785fd8e49678a4c7
     internalID: 0
     vertices: []
     indices: 
@@ -146,7 +140,7 @@ TextureImporter:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":24.0,"y":24.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      Carrot_Seed_0: 5346928031986697999
+      Carrot_NO_0: 3832338831644277045
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

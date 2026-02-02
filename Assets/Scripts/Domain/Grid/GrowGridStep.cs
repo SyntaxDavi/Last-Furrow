@@ -34,8 +34,10 @@ public class GrowGridStep : IFlowStep
         for (int i = 0; i < _runData.GridSlots.Length; i++)
         {
             if (!_gridService.IsSlotUnlocked(i)) continue;
-            _gridService.ProcessNightCycleForSlot(i);
             
+            // PROCESSAMENTO SILENCIOSO: A lógica roda, mas não troca o sprite agora.
+            _gridService.ProcessNightCycleForSlot(i, out _, silent: true);    
+
             // 2. Pré-calcula pontos passivos para a fase visual posterior
             if (_analysisResult != null)
             {

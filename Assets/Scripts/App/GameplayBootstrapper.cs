@@ -74,7 +74,6 @@ public class GameplayBootstrapper : MonoBehaviour
             AppCore.Instance.InputManager.SetCamera(_gameCamera.GetComponent<Camera>());
         }
 
-        AppCore.Instance.Events.Time.OnDayChanged += HandleDayChanged;
         AppCore.Instance.GameStateManager.SetState(GameState.Playing);
     }
 
@@ -82,14 +81,7 @@ public class GameplayBootstrapper : MonoBehaviour
     {
         // REMOVIDO: AppCore.Instance.UnregisterGridService() 
         // Isso causava race condition em trocas de cena
-        if (AppCore.Instance != null && AppCore.Instance.Events != null)
-        {
-            AppCore.Instance.Events.Time.OnDayChanged -= HandleDayChanged;
-        }
+        
     }
 
-    private void HandleDayChanged(int day)
-    {
-        if (_gridManager != null) _gridManager.RefreshAllSlots();
     }
-}

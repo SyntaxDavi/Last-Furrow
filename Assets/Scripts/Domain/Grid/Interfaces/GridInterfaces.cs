@@ -1,11 +1,11 @@
-using System;
+Ôªøusing System;
 
 /// <summary>
-/// Interface para o serviÁo de grid/cultivo
+/// Interface para o servi√ßo de grid/cultivo
 /// </summary>
 public interface IGridService
 {
-    // Evento antigo (mantemos para UI simples que sÛ quer dar refresh)
+    // Evento antigo (mantemos para UI simples que s√≥ quer dar refresh)
     event Action<int> OnSlotStateChanged;
 
     // NOVO EVENTO RICO (Para Feedback/Audio/Particles)
@@ -15,7 +15,7 @@ public interface IGridService
 
     GridSlotState GetSlotStateReadOnly(int index);
     
-    // Acesso mut·vel para strategies (Idealmente seria internal, mas interfaces s„o publicas)
+    // Acesso mut√°vel para strategies (Idealmente seria internal, mas interfaces s√£o publicas)
     CropState GetSlot(int index);
     
     // Acesso somente leitura
@@ -28,7 +28,8 @@ public interface IGridService
     bool TryUnlockSlot(int index);
 
 
-    void ProcessNightCycleForSlot(int slotIndex);
+    bool ProcessNightCycleForSlot(int slotIndex, out GridChangeEvent result, bool silent = false);
+    void ForceVisualRefresh(int index);
 
     bool CanReceiveCard(int index, CardData card);
     float GetGridContaminationPercentage();
@@ -50,7 +51,7 @@ public interface IReadOnlyCropState
 }
 
 /// <summary>
-/// Resultado estruturado de uma interaÁ„o com o grid
+/// Resultado estruturado de uma intera√ß√£o com o grid
 /// </summary>
 public readonly struct InteractionResult
 {
@@ -76,3 +77,4 @@ public readonly struct InteractionResult
     public static InteractionResult Ok()
         => new InteractionResult(true, "", GridEventType.GenericUpdate, true);
 }
+

@@ -141,9 +141,10 @@ public class GridService : IGridService
         return (float)contaminatedSlots / totalSlots;
     }
 
-    public void ProcessNightCycleForSlot(int index)
+    public bool ProcessNightCycleForSlot(int index, out GridChangeEvent result, bool silent = false)
     {
-        if (!IsValidIndex(index)) return;
+        result = default;
+        if (!IsValidIndex(index)) return false;
 
         // ⭐ EARLY EXIT: Slots bloqueados não são processados
         // RAZÃO: 
@@ -151,7 +152,7 @@ public class GridService : IGridService
         // - Bloqueados nunca têm plantas (estado garantido vazio)
         // - Bloqueados não podem ser molhados (sem estado residual)
         // - Evita processamento desnecessário e eventos inválidos
-        if (!IsSlotUnlocked(index)) return;
+        if (!IsSlotUnlocked(index)) return false;
 
         var slot = _runData.GridSlots[index];
         bool wasWatered = slot.IsWatered;
@@ -167,12 +168,12 @@ public class GridService : IGridService
         // 2. Processa Biologia
         if (!slot.IsEmpty && _library.TryGetCrop(slot.CropID, out var data))
         {
-            var result = CropLogic.ProcessNightlyGrowth(slot, data);
+            var growthResult = CropLogic.ProcessNightlyGrowth(slot, data);
 
-            if (result.EventType != GrowthEventType.None)
+            if (growthResult.EventType != GrowthEventType.None)
             {
                 visualUpdateNeeded = true;
-                switch (result.EventType)
+                switch (growthResult.EventType)
                 {
                     case GrowthEventType.Matured:
                         eventToEmit = GridEventType.Matured;
@@ -188,12 +189,38 @@ public class GridService : IGridService
             }
         }
 
-        if (visualUpdateNeeded)
+        var impact = new GridChangeImpact
         {
-            OnSlotStateChanged?.Invoke(index);
-            OnSlotUpdated?.Invoke(index, eventToEmit);
-            OnDataDirty?.Invoke();
+            RequiresVisualUpdate = visualUpdateNeeded && !silent,
+            RequiresSave = true,
+            AffectsScore = false
+        };
+
+        var gridEvent = GridChangeEvent.Create(
+            index,
+            eventToEmit,
+            impact,
+            GridSlotSnapshot.FromCropState(slot)
+        );
+
+        if (!silent)
+        {
+            EmitGridChangeEvent(index, eventToEmit, impact);
         }
+
+        result = gridEvent;
+        return true;
+    }
+
+    /// <summary>
+    /// Força o disparo do evento de atualização visual para um slot.
+    /// Usado pelo orquestrador para sincronizar a troca de sprite com efeitos visuais.
+    /// </summary>
+    public void ForceVisualRefresh(int index)
+    {
+        if (!IsValidIndex(index)) return;
+        OnSlotStateChanged?.Invoke(index);
+        OnSlotUpdated?.Invoke(index, GridEventType.GenericUpdate);
     }
 
     public bool IsSlotUnlocked(int index)
