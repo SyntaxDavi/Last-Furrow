@@ -19,9 +19,9 @@ MonoBehaviour:
   wetSoilSprite: {fileID: -8421498797493290970, guid: f11243876febb5c45a4904a740d3cf74, type: 3}
   lockedSoilSprite: {fileID: -1259536347818134243, guid: abbbe807427a02445b7988434c51cd2f, type: 3}
   plantedOverlay: {r: 0.5, g: 1, b: 0.5, a: 0.15}
-  matureOverlay: {r: 0.3314347, g: 0.5283019, b: 0.3314347, a: 0.6862745}
-  witheredOverlay: {r: 1, g: 1, b: 0.7, a: 0.3}
-  validHover: {r: 0.34109113, g: 0.990566, b: 0.4968389, a: 0.19607843}
+  matureOverlay: {r: 1, g: 1, b: 1, a: 0.6862745}
+  witheredOverlay: {r: 1, g: 1, b: 1, a: 0.3}
+  validHover: {r: 0.5990566, g: 0.6853067, b: 1, a: 0.19607843}
   patternElevationOffset: 0.5
   elevationSpeed: 30
   errorFlash: {r: 0.8867924, g: 0.1966002, b: 0.20945916, a: 0.6745098}

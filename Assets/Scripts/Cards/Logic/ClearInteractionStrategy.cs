@@ -1,12 +1,12 @@
 using UnityEngine;
 
 /// <summary>
-/// Estratégia para limpeza de plantas mortas.
-/// Recebe RunIdentityContext via injeção.
+/// Estratï¿½gia para limpeza de plantas mortas.
+/// Recebe RunIdentityContext via injeï¿½ï¿½o.
 /// 
-/// Validações contra:
+/// Validaï¿½ï¿½es contra:
 /// - Null references
-/// - Estados inválidos
+/// - Estados invï¿½lidos
 /// - Double cleanup
 /// </summary>
 public class ClearInteractionStrategy : ICardInteractionStrategy
@@ -15,9 +15,9 @@ public class ClearInteractionStrategy : ICardInteractionStrategy
 
     public ClearInteractionStrategy(RunIdentityContext context)
     {
-        // Context não é estritamente necessário, mas mantém consistência
+        // Context nï¿½o ï¿½ estritamente necessï¿½rio, mas mantï¿½m consistï¿½ncia
         if (context.Library == null)
-            Debug.LogWarning("[ClearInteractionStrategy] RunIdentityContext.Library é nulo, mas a estratégia funcionará.");
+            Debug.LogWarning("[ClearInteractionStrategy] RunIdentityContext.Library ï¿½ nulo, mas a estratï¿½gia funcionarï¿½.");
         
         _context = context;
     }
@@ -25,28 +25,27 @@ public class ClearInteractionStrategy : ICardInteractionStrategy
     public bool CanInteract(int index, IGridService grid, CardData card)
     {
         var slot = grid.GetSlotReadOnly(index);
-        
         if (slot == null || card == null)
             return false;
-
-        // Regra: Pá serve para remover coisas mortas
-        return slot.IsWithered || (!slot.IsEmpty && card.Type == CardType.Clear);
+        // Regra: PÃ¡ serve para remover APENAS coisas mortas (Withered)
+        // Isso garante que a carta sÃ³ fique transparente sobre plantas que podem ser removidas.
+        return slot.IsWithered;
     }
 
     public InteractionResult Execute(int index, IGridService grid, CardData card)
     {
         var slot = grid.GetSlot(index);
-        if (slot == null) return InteractionResult.Fail("Slot inválido!");
+        if (slot == null) return InteractionResult.Fail("Slot invï¿½lido!");
 
-        // Validações defensivas
+        // Validaï¿½ï¿½es defensivas
         if (card == null)
-            return InteractionResult.Fail("[ERRO] CardData é null!");
+            return InteractionResult.Fail("[ERRO] CardData ï¿½ null!");
 
         if (slot.IsEmpty)
-            return InteractionResult.Fail("O slot já está vazio, nada para limpar.");
+            return InteractionResult.Fail("O slot jï¿½ estï¿½ vazio, nada para limpar.");
 
         if (!slot.IsWithered)
-            return InteractionResult.Fail("A planta ainda está viva! Use a Foice (Harvest) para colher.");
+            return InteractionResult.Fail("A planta ainda estï¿½ viva! Use a Foice (Harvest) para colher.");
 
         try
         {

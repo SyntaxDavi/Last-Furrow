@@ -21,7 +21,10 @@ MonoBehaviour:
   BasePassiveScore: 10
   MatureScoreMultiplier: 1.5
   BaseSellValue: 2
-  SeedSprite: {fileID: 0}
-  GrowthStages: []
-  MatureSprite: {fileID: 0}
+  SeedSprite: {fileID: -2141088714691061806, guid: d471b7617d6db3f42bb0121155e91a05, type: 3}
+  GrowthStages:
+  - {fileID: 2227018436342549918, guid: 8c4c85ab5d783ea4e8836c51293438a7, type: 3}
+  MatureSprite: {fileID: -596375226648447219, guid: 171ba5f16d6a808418375043f8d766c9, type: 3}
+  NearlyOverripeSprite: {fileID: 0}
+  OverripeSprite: {fileID: 0}
   WitheredSprite: {fileID: 0}
