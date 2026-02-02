@@ -203,14 +203,22 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         if (draggable is CardView cardView)
         {
             StopPulse();
-            
-            // Delay o punch para sincronizar com o slam da carta
-            float punchDelay = _context.VisualConfig.slotReceivePunchDelay;
-            DOVirtual.DelayedCall(punchDelay, () => TriggerReceivePop());
-
             OnHoverExit();
             OnDropInteraction?.Invoke(SlotIndex, cardView);
         }
+    }
+
+    /// <summary>
+    /// Dispara o efeito visual de feedback (pop/punch) ao receber uma carta.
+    /// Chamado externamente (ex: GridManager) após confirmação de sucesso da ação.
+    /// </summary>
+    public void PlayReceiveJuice()
+    {
+        if (_context?.VisualConfig == null) return;
+
+        // Delay o punch para sincronizar com o slam da carta
+        float punchDelay = _context.VisualConfig.slotReceivePunchDelay;
+        DOVirtual.DelayedCall(punchDelay, () => TriggerReceivePop());
     }
 
     private void StartPulse()

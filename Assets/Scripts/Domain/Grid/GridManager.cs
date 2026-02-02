@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
@@ -7,15 +7,15 @@ using System.Collections.Generic;
 /// RESPONSABILIDADE:
 /// - Spawnar e posicionar slots visuais (GridSlotView)
 /// - Injetar GridVisualContext em cada slot
-/// - Atualizar visual quando estado do domínio muda
+/// - Atualizar visual quando estado do domÃ­nio muda
 /// - Traduzir IReadOnlyCropState para comandos visuais
 /// 
 /// ARQUITETURA:
-/// - Recebe GridVisualContext via Initialize() (injeção)
+/// - Recebe GridVisualContext via Initialize() (injeÃ§Ã£o)
 /// - Escuta GridService.OnSlotStateChanged (event-driven)
-/// - Manager Push: Empurra atualizações para slots
+/// - Manager Push: Empurra atualizaÃ§Ãµes para slots
 /// 
-/// NÃO FAZ:
+/// NÃƒO FAZ:
 /// - Validar regras de jogo (IDropValidator faz)
 /// - Renderizar (GridSlotView faz)
 /// - Decidir cores (GridVisualConfig faz)
@@ -186,6 +186,12 @@ public class GridManager : MonoBehaviour
 
         if (result.IsSuccess)
         {
+            // SUCESSO: Ativa o feedback visual (pop/punch) sincronizado com o slam da carta
+            if (index >= 0 && index < _spawnedSlots.Count)
+            {
+                _spawnedSlots[index].PlayReceiveJuice();
+            }
+
             if (result.ShouldConsumeCard)
             {
                 AppCore.Instance.Events.Player.TriggerCardRemoved(instance);
@@ -285,3 +291,4 @@ public class GridManager : MonoBehaviour
         }
     }
 }
+
