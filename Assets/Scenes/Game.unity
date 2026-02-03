@@ -930,7 +930,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _groundSprite: {fileID: 701453656183128031, guid: 0c6c09317e536b14dbb7239293f6903b, type: 3}
   _autoFitCamera: 1
+  _scrollSafetyMargin: 5
   _groundSize: {x: 17.76, y: 10}
+  _parallaxEffect: 0
   _props: []
 --- !u!4 &318129354
 Transform:

@@ -21,11 +21,19 @@ public class BackgroundController : MonoBehaviour
     [Tooltip("Sprite do chão (grama, terra)")]
     [SerializeField] private Sprite _groundSprite;
     
-    [Tooltip("AUTO: Preenche tela inteira | MANUAL: usa Ground Size")]
+    [Tooltip("AUTO: Preenche tela + margem de scroll | MANUAL: usa Ground Size")]
     [SerializeField] private bool _autoFitCamera = true;
+
+    [Tooltip("Margem extra para que o chão não acabe quando a câmera se mover (Edge Scroll)")]
+    [SerializeField] private float _scrollSafetyMargin = 5.0f;
     
     [Tooltip("(Apenas se Auto Fit desligado) Tamanho manual")]
     [SerializeField] private Vector2 _groundSize = new Vector2(12f, 8f);
+
+    [Header("Parallax (Profundidade)")]
+    [Tooltip("Se > 0, o background se move levemente com a câmera. 0.1f é um bom valor.")]
+    [Range(0f, 0.5f)]
+    [SerializeField] private float _parallaxEffect = 0.05f;
 
     [Header("Props Decorativos (Pedras, Árvores)")]
     [Tooltip("Lista de objetos ao redor do grid")]
@@ -34,11 +42,25 @@ public class BackgroundController : MonoBehaviour
     private SpriteRenderer _groundRenderer;
     private List<SpriteRenderer> _spawnedProps = new List<SpriteRenderer>();
     private Camera _mainCamera;
+    private Vector3 _lastCameraPos;
 
     private void Start()
     {
         _mainCamera = Camera.main;
+        if (_mainCamera != null) _lastCameraPos = _mainCamera.transform.position;
         SpawnEnvironment();
+    }
+
+    private void LateUpdate()
+    {
+        if (_parallaxEffect > 0 && _mainCamera != null)
+        {
+            Vector3 delta = _mainCamera.transform.position - _lastCameraPos;
+            // Move o background na mesma direção da câmera, mas mais devagar,
+            // criando a ilusão de que está "mais longe".
+            transform.position += delta * _parallaxEffect;
+            _lastCameraPos = _mainCamera.transform.position;
+        }
     }
 
     public void SpawnEnvironment()
@@ -60,18 +82,19 @@ public class BackgroundController : MonoBehaviour
         _groundRenderer.sortingLayerName = "Background";
         _groundRenderer.sortingOrder = -100;
 
-        // ? MODO AUTO: Calcula tamanho exato da câmera
         if (_autoFitCamera && _mainCamera != null)
         {
             Vector2 cameraSize = CalculateCameraSize();
-            _groundRenderer.drawMode = SpriteDrawMode.Sliced;
-            _groundRenderer.size = cameraSize;
+            // Adicionamos a margem de segurança para o scroll
+            Vector2 finalSize = cameraSize + new Vector2(_scrollSafetyMargin * 2, _scrollSafetyMargin * 2);
             
-            Debug.Log($"[BackgroundController] AUTO-FIT: Camera size = {cameraSize}");
+            _groundRenderer.drawMode = SpriteDrawMode.Sliced;
+            _groundRenderer.size = finalSize;
+            
+            Debug.Log($"[BackgroundController] AUTO-FIT: Camera size {cameraSize} + Margin {_scrollSafetyMargin} = {finalSize}");
         }
         else
         {
-            // MODO MANUAL: Usa valor do Inspector
             _groundRenderer.drawMode = SpriteDrawMode.Tiled;
             _groundRenderer.size = _groundSize;
         }
@@ -80,16 +103,9 @@ public class BackgroundController : MonoBehaviour
             _groundSprite.texture.filterMode = FilterMode.Point;
     }
     
-    /// <summary>
-    /// Calcula tamanho da câmera em unidades Unity.
-    /// </summary>
     private Vector2 CalculateCameraSize()
     {
-        if (_mainCamera == null)
-        {
-            Debug.LogWarning("[BackgroundController] Camera não encontrada! Usando tamanho padrão.");
-            return new Vector2(12f, 8f);
-        }
+        if (_mainCamera == null) return new Vector2(12f, 8f);
 
         float height = _mainCamera.orthographicSize * 2f;
         float width = height * _mainCamera.aspect;
@@ -123,16 +139,14 @@ public class BackgroundController : MonoBehaviour
 #if UNITY_EDITOR
     private void OnDrawGizmos()
     {
-        // Área do chão
         Gizmos.color = new Color(0, 1, 0, 0.2f);
-        Gizmos.DrawCube(transform.position, new Vector3(_groundSize.x, _groundSize.y, 0.1f));
+        Vector2 drawSize = _autoFitCamera ? CalculateCameraSize() + new Vector2(_scrollSafetyMargin * 2, _scrollSafetyMargin * 2) : _groundSize;
+        Gizmos.DrawCube(transform.position, new Vector3(drawSize.x, drawSize.y, 0.1f));
 
-        // Posições dos props
         foreach (var prop in _props)
         {
             Gizmos.color = prop.InFrontOfGrid ? Color.yellow : Color.cyan;
             Gizmos.DrawWireSphere(prop.Position, 0.2f);
-            UnityEditor.Handles.Label(prop.Position + Vector3.up * 0.3f, prop.Name);
         }
     }
 #endif
