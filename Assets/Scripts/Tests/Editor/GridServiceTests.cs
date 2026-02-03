@@ -1,6 +1,8 @@
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// Testes unitários para o GridService.
@@ -39,6 +41,23 @@ public class GridServiceTests
             _mockState,
             _mockConfig
         );
+
+        // Inicializa o InteractionFactory para evitar o erro de Factory não inicializado
+        if (!InteractionFactory.IsInitialized)
+        {
+            var mockRun = new MockRunManager();
+            var mockSave = new MockSaveManager();
+            var mockEco = new MockEconomy();
+            var mockLib = new MockLibrary();
+            var mockRand = new SeededRandomProvider(123);
+            var pEvents = new PlayerEvents();
+            var gEvents = new GameEvents();
+            
+            var identity = new RunIdentityContext(mockRun, mockSave, mockEco, mockLib, mockRand, pEvents, gEvents);
+            var runtime = new RunRuntimeContext(_gridService);
+            
+            InteractionFactory.Initialize(identity, runtime);
+        }
     }
     
     [TearDown]
@@ -46,7 +65,10 @@ public class GridServiceTests
     {
         // Limpa ScriptableObject criado
         if (_mockConfig != null)
-            Object.DestroyImmediate(_mockConfig);
+            UnityEngine.Object.DestroyImmediate(_mockConfig);
+
+        // Limpa o Factory para não poluir outros testes
+        InteractionFactory.Cleanup();
     }
 
     [Test]
@@ -55,7 +77,7 @@ public class GridServiceTests
         // Setup: Estado do jogo é Shopping, não Playing
         _mockState.CurrentState = GameState.Shopping;
         _mockState.PreviousState = GameState.Initialization;
-        var card = new CardData(); // Dummy card
+        var card = ScriptableObject.CreateInstance<CardData>(); // Dummy card
 
         // Act
         var result = _gridService.ApplyCard(0, card);
@@ -70,7 +92,7 @@ public class GridServiceTests
     {
         // Setup: Estado correto mas índice fora do grid
         _mockState.SetState(GameState.Playing);
-        var card = new CardData();
+        var card = ScriptableObject.CreateInstance<CardData>();
 
         // Act
         var result = _gridService.ApplyCard(99, card); // Fora do range 0-8
@@ -80,7 +102,59 @@ public class GridServiceTests
         Assert.That(result.Message, Does.Contain("Slot inválido"));
     }
 
+    [Test]
+    public void ApplyCard_UpdatesRunData_WhenSuccess()
+    {
+        // Setup
+        _mockState.SetState(GameState.Playing);
+        var card = ScriptableObject.CreateInstance<CardData>();
+        card.ID = new CardID("TEST_CROP");
+        card.Type = CardType.Plant;
+        card.CropToPlant = ScriptableObject.CreateInstance<CropData>();
+        card.CropToPlant.ID = new CropID("trio");
+
+        // Act
+        var result = _gridService.ApplyCard(0, card);
+
+        // Assert
+        Assert.IsTrue(result.IsSuccess, $"Erro ao aplicar carta: {result.Message}");
+        Assert.AreEqual(new CropID("trio"), _runData.GridSlots[0].CropID);
+    }
+
     // --- MOCKS AUXILIARES ---
+    
+    private class MockRunManager : IRunManager {
+        public void StartNewRun() {}
+        public void AdvanceDay() {}
+        public bool IsRunActive => true;
+        public void StartNextWeek(RunData run) {}
+        public RunPhase CurrentPhase => RunPhase.Production;
+    }
+
+    private class MockSaveManager : ISaveManager {
+        public void SaveGame() {}
+        public void LoadGame() {}
+        public GameData Data => null;
+        public void DeleteSave() {}
+    }
+
+    private class MockEconomy : IEconomyService {
+        public int CurrentMoney => 0;
+        public void Earn(int amount, TransactionType source) {}
+        public bool TrySpend(int amount, TransactionType reason) => true;
+        public event Action<int, int, TransactionType> OnBalanceChanged;
+    }
+
+    private class MockLibrary : IGameLibrary {
+        public bool TryGetCrop(CropID id, out CropData data) { data = null; return false; }
+        public bool TryGetCard(CardID id, out CardData data) { data = null; return false; }
+        public bool TryGetTradition(TraditionID id, out TraditionData data) { data = null; return false; }
+        public List<CardData> GetRandomCards(int count, IRandomProvider random = null) => new List<CardData>();
+        public List<TraditionData> GetRandomTraditions(int count, IRandomProvider random = null) => new List<TraditionData>();
+        public IEnumerable<CropData> GetAllCrops() => new List<CropData>();
+        public IEnumerable<CardData> GetAllCards() => new List<CardData>();
+        public IEnumerable<TraditionData> GetAllTraditions() => new List<TraditionData>();
+    }
 
     private class MockGameStateProvider : IGameStateProvider
     {

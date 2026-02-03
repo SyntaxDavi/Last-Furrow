@@ -214,16 +214,5 @@ public class CropData : ScriptableObject
                 return SeedSprite;
         }
     }
-
-    /// <summary>
-    /// Método legado mantido para compatibilidade.
-    /// Use ResolveLifeStage() + GetSpriteForStage(stage, growth) para novo código.
-    /// </summary>
-    [System.Obsolete("Use ResolveLifeStage() seguido de GetSpriteForStage(stage, growth) ao invés deste método.")]
-    public Sprite GetSpriteForStage(int currentGrowth, int daysMature, bool isWithered)
-    {
-        var stage = ResolveLifeStage(currentGrowth, daysMature, isWithered);
-        return GetSpriteForStage(stage, currentGrowth);
-    }
     #endregion
 }
