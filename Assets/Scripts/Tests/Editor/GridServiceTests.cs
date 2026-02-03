@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using System;
 using System.Collections.Generic;
+using LastFurrow.Traditions;
 
 /// <summary>
 /// Testes unitários para o GridService.
