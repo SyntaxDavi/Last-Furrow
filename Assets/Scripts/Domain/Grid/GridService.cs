@@ -9,11 +9,6 @@ public class GridService : IGridService
     private readonly GridConfiguration _config;
     private readonly PatternWeightConfig _patternConfig;
 
-    public event Action<int> OnSlotStateChanged;
-    public event Action OnDataDirty;
-    public event Action<int, GridEventType> OnSlotUpdated;
-
-    // ⭐ NOVO: Evento composto (substitui os 3 acima gradualmente)
     public event System.Action<GridChangeEvent> OnGridChanged;
 
     public int SlotCount => _runData?.GridSlots?.Length ?? 0;
@@ -219,8 +214,13 @@ public class GridService : IGridService
     public void ForceVisualRefresh(int index)
     {
         if (!IsValidIndex(index)) return;
-        OnSlotStateChanged?.Invoke(index);
-        OnSlotUpdated?.Invoke(index, GridEventType.GenericUpdate);
+        
+        // Unificado:
+        EmitGridChangeEvent(index, GridEventType.ManualRefresh, new GridChangeImpact
+        {
+            RequiresVisualUpdate = true,
+            RequiresSave = false
+        });
     }
 
     public bool IsSlotUnlocked(int index)
@@ -238,7 +238,6 @@ public class GridService : IGridService
     }
 
     public bool TryUnlockSlot(int index)
-
     {
         if (!IsValidIndex(index)) return false;
         if (IsSlotUnlocked(index)) return false; 
@@ -246,8 +245,15 @@ public class GridService : IGridService
         if (IsAdjacentToUnlocked(index))
         {
             _runData.SlotStates[index].IsUnlocked = true;
-            OnSlotStateChanged?.Invoke(index);
-            OnDataDirty?.Invoke();
+            
+            // Unificado:
+            EmitGridChangeEvent(index, GridEventType.SlotUnlocked, new GridChangeImpact 
+            {
+                RequiresVisualUpdate = true,
+                RequiresSave = true,
+                AffectsScore = false // Unlocks podem afetar score no futuro?
+            });
+
             return true;
         }
         return false;
@@ -287,12 +293,7 @@ public class GridService : IGridService
     }
 
     /// <summary>
-    /// ⭐ NOVO: Emite evento composto + eventos legados (transição gradual).
-    /// 
-    /// MIGRAÇÃO:
-    /// - Mantém eventos antigos para compatibilidade
-    /// - Adiciona evento novo (OnGridChanged)
-    /// - Futuramente, remover eventos antigos e manter só OnGridChanged
+    /// ⭐ NOVO: Emite evento composto.
     /// </summary>
     private void EmitGridChangeEvent(int index, GridEventType eventType, GridChangeImpact impact)
     {
@@ -304,18 +305,6 @@ public class GridService : IGridService
             GridSlotSnapshot.FromCropState(GetSlot(index))
         );
         OnGridChanged?.Invoke(gridEvent);
-
-        // 2. Eventos legados (compatibilidade)
-        if (impact.RequiresVisualUpdate)
-        {
-            OnSlotStateChanged?.Invoke(index);
-            OnSlotUpdated?.Invoke(index, eventType);
-        }
-
-        if (impact.RequiresSave)
-        {
-            OnDataDirty?.Invoke();
-        }
     }
 
     // --- HELPER UNIFICADO ---

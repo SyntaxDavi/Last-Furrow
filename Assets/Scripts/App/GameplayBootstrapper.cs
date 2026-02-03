@@ -54,7 +54,16 @@ public class GameplayBootstrapper : MonoBehaviour
         AppCore.Instance.InitializePatternTracking(runData); 
 
         // 3. Configura eventos locais
-        _gridService.OnDataDirty += () => AppCore.Instance.SaveManager.SaveGame();
+        _gridService.OnGridChanged += (evt) => 
+        {
+            AppCore.Instance.Events.Grid.TriggerGridChanged(evt);
+            
+            // Bridge para Save System
+            if (evt.Impact.RequiresSave)
+            {
+                AppCore.Instance.SaveManager.SaveGame();
+            }
+        };
 
         // 4. Injeta nos consumidores da cena
         // GridManager agora é inicializado por GridVisualBootstrapper

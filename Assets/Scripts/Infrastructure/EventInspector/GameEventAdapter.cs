@@ -41,7 +41,7 @@ namespace LastFurrow.EventInspector
             _events.GameState.OnStateChanged += HandleStateChanged;
 
             // Grid
-            _events.Grid.OnSlotUpdated += HandleSlotUpdated;
+            _events.Grid.OnGridChanged += HandleGridChanged;
             _events.Grid.OnCardDropped += HandleCardDropped;
             _events.Grid.OnCropPassiveScore += HandleCropPassiveScore;
 
@@ -72,7 +72,7 @@ namespace LastFurrow.EventInspector
             if (_events == null || !_subscribed) return;
 
             _events.GameState.OnStateChanged -= HandleStateChanged;
-            _events.Grid.OnSlotUpdated -= HandleSlotUpdated;
+            _events.Grid.OnGridChanged -= HandleGridChanged;
             _events.Grid.OnCardDropped -= HandleCardDropped;
             _events.Grid.OnCropPassiveScore -= HandleCropPassiveScore;
             _events.Player.OnCardAdded -= HandleCardAdded;
@@ -104,12 +104,23 @@ namespace LastFurrow.EventInspector
             }, "GameState");
         }
 
-        private void HandleSlotUpdated(int slotIndex)
+        private void HandleGridChanged(GridChangeEvent evt)
         {
-            EventLogger.Instance.LogCustom("SLOT_UPDATED", new Dictionary<string, object>
+            var payload = new Dictionary<string, object>
             {
-                { "slotIndex", slotIndex }
-            }, "Grid");
+                { "slotIndex", evt.SlotIndex },
+                { "type", evt.EventType.ToString() },
+                { "visual", evt.Impact.RequiresVisualUpdate },
+                { "save", evt.Impact.RequiresSave }
+            };
+
+            if (evt.Snapshot.CropID.IsValid)
+            {
+                payload["crop"] = evt.Snapshot.CropID.ToString();
+                payload["growth"] = evt.Snapshot.CurrentGrowth;
+            }
+
+            EventLogger.Instance.LogCustom("GRID_CHANGE", payload, "Grid");
         }
 
         private void HandleCardDropped(int slotIndex, CardData cardData)

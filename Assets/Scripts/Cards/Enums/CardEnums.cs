@@ -1,10 +1,7 @@
-/// <summary>
-/// Tipos de cartas no jogo
-/// </summary>
-public enum CardType
+ï»¿public enum CardType
 {
-    Plant,      // Plantação
-    Modify,     // Modificador (água, fertilizante)
+    Plant,      // PlantaÃ§Ã£o
+    Modify,     // Modificador (Ã¡gua, fertilizante)
     Harvest,    // Colheita
     Clear,      // Limpeza
     Care,       // Cuidado
@@ -12,7 +9,7 @@ public enum CardType
 }
 
 /// <summary>
-/// Eventos de crescimento biológico
+/// Eventos de crescimento biolÃ³gico
 /// </summary>
 public enum GrowthEventType
 {
@@ -20,21 +17,23 @@ public enum GrowthEventType
     Growing,
     Matured,
     WitheredByAge,
-    WitheredByOverdose, 
+    WitheredByOverdose,
     LastFreshDayWarning
 }
 
 /// <summary>
-/// Eventos de atualização do grid
+/// Eventos de atualizaÃ§Ã£o do grid
 /// </summary>
 public enum GridEventType
 {
-    GenericUpdate = 0, 
+    GenericUpdate = 0,
     Planted,
     Watered,
     Harvested,
     Matured,
     Withered,
     DryOut,
-    ModificationApplied
+    ModificationApplied,
+    SlotUnlocked,
+    ManualRefresh
 }

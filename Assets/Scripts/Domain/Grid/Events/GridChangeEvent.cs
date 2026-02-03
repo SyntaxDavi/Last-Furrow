@@ -1,43 +1,21 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
-/// <summary>
-/// Evento de domínio representando mudança atômica no grid.
-/// 
-/// Um evento = UMA transação de gameplay completa.
-/// Listeners não precisam consultar GridService para entender o que houve.
-/// </summary>
-public class GridChangeEvent
+public struct GridChangeEvent
 {
     public int SlotIndex { get; private set; }
     public GridEventType EventType { get; private set; }
     public GridChangeImpact Impact { get; private set; }
-    public GridSlotSnapshot FinalState { get; private set; }
+    public GridSlotSnapshot Snapshot { get; private set; }
 
-    private GridChangeEvent() { }
-
-    public static GridChangeEvent Create(
-        int slotIndex,
-        GridEventType eventType,
-        GridChangeImpact impact,
-        GridSlotSnapshot finalState)
+    public static GridChangeEvent Create(int slotIndex, GridEventType eventType, GridChangeImpact impact, GridSlotSnapshot snapshot)
     {
         return new GridChangeEvent
         {
             SlotIndex = slotIndex,
             EventType = eventType,
             Impact = impact,
-            FinalState = finalState
+            Snapshot = snapshot
         };
-    }
-
-    public static GridChangeEvent Simple(int slotIndex, GridEventType eventType)
-    {
-        return Create(
-            slotIndex,
-            eventType,
-            new GridChangeImpact { RequiresVisualUpdate = true, RequiresSave = true },
-            GridSlotSnapshot.Empty
-        );
     }
 }
 
@@ -50,24 +28,30 @@ public struct GridChangeImpact
 
 public struct GridSlotSnapshot
 {
-    public bool IsEmpty;
-    public bool IsWatered;
-    public bool IsMature;
-    public bool IsWithered;
-    public CropID CropID;
+    public bool IsEmpty { get; private set; }
+    public bool IsWatered { get; private set; }
+    public bool IsMature { get; private set; }
+    public bool IsWithered { get; private set; }
+    
+    // Growth Data for Visuals
+    public int CurrentGrowth { get; private set; }
+    public int DaysMature { get; private set; }
+    
+    public CropID CropID { get; private set; }
 
     public static GridSlotSnapshot Empty => new GridSlotSnapshot { IsEmpty = true };
 
-    public static GridSlotSnapshot FromCropState(CropState state)
+    public static GridSlotSnapshot FromCropState(IReadOnlyCropState state)
     {
         if (state == null) return Empty;
-
         return new GridSlotSnapshot
         {
-            IsEmpty = state.IsEmpty,
+            IsEmpty = !state.CropID.IsValid,
             IsWatered = state.IsWatered,
             IsMature = state.DaysMature > 0,
             IsWithered = state.IsWithered,
+            CurrentGrowth = state.CurrentGrowth,
+            DaysMature = state.DaysMature,
             CropID = state.CropID
         };
     }

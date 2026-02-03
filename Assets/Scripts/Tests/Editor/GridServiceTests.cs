@@ -143,7 +143,9 @@ public class GridServiceTests
         public int CurrentMoney => 0;
         public void Earn(int amount, TransactionType source) {}
         public bool TrySpend(int amount, TransactionType reason) => true;
+#pragma warning disable 67
         public event Action<int, int, TransactionType> OnBalanceChanged;
+#pragma warning restore 67
     }
 
     private class MockLibrary : IGameLibrary {

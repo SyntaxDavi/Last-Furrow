@@ -12,7 +12,7 @@ using System.Collections.Generic;
 /// 
 /// ARQUITETURA:
 /// - Recebe GridVisualContext via Initialize() (injeção)
-/// - Escuta GridService.OnSlotStateChanged (event-driven)
+/// - Escuta GridService.OnGridChanged (event-driven)
 /// - Manager Push: Empurra atualizações para slots
 /// 
 /// NÃO FAZ:
@@ -74,7 +74,7 @@ public class GridManager : MonoBehaviour
         if (_showDebugLogs)
             Debug.Log("[GridManager] Iniciando configuracao do grid visual...");
 
-        _context.GridService.OnSlotStateChanged += RefreshSingleSlot;
+        _context.GridService.OnGridChanged += HandleGridChanged;
 
         GenerateGrid();
         RefreshAllSlots();
@@ -97,7 +97,7 @@ public class GridManager : MonoBehaviour
     {
         if (_context != null && _context.GridService != null)
         {
-            _context.GridService.OnSlotStateChanged -= RefreshSingleSlot;
+            _context.GridService.OnGridChanged -= HandleGridChanged;
         }
     }
 
@@ -226,7 +226,15 @@ public class GridManager : MonoBehaviour
           //  Debug.Log($"[GridManager] {_spawnedSlots.Count} slots atualizados");
     }
 
-    private void RefreshSingleSlot(int index)
+    private void HandleGridChanged(GridChangeEvent evt)
+    {
+        if (evt.Impact.RequiresVisualUpdate)
+        {
+            RefreshSingleSlot(evt.SlotIndex, evt.Snapshot);
+        }
+    }
+
+    private void RefreshSingleSlot(int index, GridSlotSnapshot? snapshot = null)
     {
         if (index < 0 || index >= _spawnedSlots.Count)
         {
@@ -234,7 +242,6 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        IReadOnlyCropState state = _context.GridService.GetSlotReadOnly(index);
         var view = _spawnedSlots[index];
 
         bool isUnlocked = _context.GridService.IsSlotUnlocked(index);
@@ -251,38 +258,62 @@ public class GridManager : MonoBehaviour
         bool isWatered = false;
         bool isMature = false;
         bool isWithered = false;
+        
+        // Data Extraction (Snapshot vs Fetch)
+        CropID cropId = default;
+        int currentGrowth = 0;
+        int daysMature = 0;
+        bool hasPlant = false;
 
-        if (state != null)
+        if (snapshot.HasValue)
         {
-            isWatered = state.IsWatered;
-            isWithered = state.IsWithered;
+            var s = snapshot.Value;
+            isWatered = s.IsWatered;
+            isWithered = s.IsWithered;
+            currentGrowth = s.CurrentGrowth;
+            daysMature = s.DaysMature;
+            cropId = s.CropID;
+            hasPlant = s.CropID.IsValid;
+        }
+        else
+        {
+             IReadOnlyCropState state = _context.GridService.GetSlotReadOnly(index);
+             if (state != null)
+             {
+                 isWatered = state.IsWatered;
+                 isWithered = state.IsWithered;
+                 currentGrowth = state.CurrentGrowth;
+                 daysMature = state.DaysMature;
+                 cropId = state.CropID;
+                 hasPlant = cropId.IsValid;
+             }
+        }
 
-            if (state.CropID.IsValid) 
+        if (hasPlant) 
+        {
+            if (_context.Library != null)
             {
-                if (_context.Library != null)
+                if (_context.Library.TryGetCrop(cropId, out var cropData))
                 {
-                    if (_context.Library.TryGetCrop(state.CropID, out var cropData))
+                    // Resolve estado da planta (domínio)
+                    var stage = cropData.ResolveLifeStage(
+                        currentGrowth,
+                        daysMature, 
+                        isWithered
+                    );
+                    
+                    // Mapeia estado -> sprite (visual)
+                    spriteToRender = cropData.GetSpriteForStage(stage, currentGrowth);
+                    
+                    if (spriteToRender != null)
                     {
-                        // Resolve estado da planta (domínio)
-                        var stage = cropData.ResolveLifeStage(
-                            state.CurrentGrowth,
-                            state.DaysMature, 
-                            state.IsWithered
-                        );
-                        
-                        // Mapeia estado → sprite (visual)
-                        spriteToRender = cropData.GetSpriteForStage(stage, state.CurrentGrowth);
-                        
-                        if (spriteToRender != null)
-                        {
-                            // Usa estado ao invés de calcular manualmente
-                            isMature = (stage == PlantLifeStage.Mature || stage == PlantLifeStage.NearlyOverripe) && !isWithered;
-                        }
+                        // Usa estado ao invés de calcular manualmente
+                        isMature = (stage == PlantLifeStage.Mature || stage == PlantLifeStage.NearlyOverripe) && !isWithered;
                     }
-                    else
-                    {
-                        Debug.LogWarning($"[GridManager] Crop nao encontrado: {state.CropID}");
-                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[GridManager] Crop nao encontrado: {cropId}");
                 }
             }
         }

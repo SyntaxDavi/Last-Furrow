@@ -79,9 +79,7 @@ public class PatternDetectionTests
         public MockGridService(RunData data) => _data = data;
 
         // Events required by IGridService
-        public event Action<int> OnSlotStateChanged;
-        public event Action<int, GridEventType> OnSlotUpdated;
-        public event Action OnDataDirty;
+        public event Action<GridChangeEvent> OnGridChanged;
 
         // Properties
         public int SlotCount => _data.GridSlots.Length;

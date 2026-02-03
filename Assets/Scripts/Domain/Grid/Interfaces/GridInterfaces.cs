@@ -5,13 +5,8 @@
 /// </summary>
 public interface IGridService
 {
-    // Evento antigo (mantemos para UI simples que só quer dar refresh)
-    event Action<int> OnSlotStateChanged;
-
-    // NOVO EVENTO RICO (Para Feedback/Audio/Particles)
-    event Action<int, GridEventType> OnSlotUpdated;
-
-    event Action OnDataDirty;
+    // Evento composto unificado (Único ponto de verdade)
+    event Action<GridChangeEvent> OnGridChanged;
 
     GridSlotState GetSlotStateReadOnly(int index);
     

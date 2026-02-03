@@ -1,7 +1,7 @@
 # 🗺️ Master Flow Map - LAST FURROW
 
-> **Status:** Active Documentation (v1.0)
-> **Last Update:** 2026-02-03
+> **Status:** Active Documentation (v1.1)
+> **Last Update:** 2026-02-03 (Arch Refactor)
 > **Description:** This document serves as the "Single Source of Truth" for the game's high-level logic flow and system interactions.
 
 ---
@@ -94,12 +94,16 @@ The game uses a **Pipeline/Step** architecture. Instead of complex transitions, 
 
 ### 🌾 Domain Logic (`Assets/Scripts/Domain`)
 *   **GridService:** The "Brain" of the grid. Manages slots, crops, and state.
+    *   **Refactoring (2026-02):** Migrated to a **Unified "Rich" Event System** (`OnGridChanged`).
+    *   **Architecture:** Push-based. The service emits a `GridChangeEvent` containing a full `Snapshot` of the slot. Listeners (UI/Save) no longer need to query the service ("Pull") to update.
+    *   **Legacy:** `OnSlotStateChanged`, `OnSlotUpdated`, and `OnDataDirty` were removed.
+*   **HealthService:** (NEW) Manages player lives, healing, and damage rules. Decoupled from data.
 *   **PatternDetector:** Stateless logic that scans the grid for specific shapes.
 *   **PatternCalculator:** Assigns values and scores to detected patterns.
 *   **EconomyService:** Manages Gold and Meta-progression currency.
 
 ### 📊 Progression (`Assets/Scripts/Progression`)
-*   **RunData:** Permanent state of the current run (Day, Week, Score, Deck).
+*   **RunData:** "Pure Data" container. Holds the permanent state of the run (Day, Week, Score, Deck, Grid). No business logic.
 *   **GoalSystem:** Checks if the player met the weekly quota to continue.
 
 ---
