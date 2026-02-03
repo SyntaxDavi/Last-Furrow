@@ -147,7 +147,13 @@ public class GridServiceTests
     }
 
     private class MockLibrary : IGameLibrary {
-        public bool TryGetCrop(CropID id, out CropData data) { data = null; return false; }
+        public bool TryGetCrop(CropID id, out CropData data) { 
+            data = ScriptableObject.CreateInstance<CropData>();
+            data.ID = id;
+            data.Name = "Mock " + id.Value;
+            data.DaysToMature = 3;
+            return true; 
+        }
         public bool TryGetCard(CardID id, out CardData data) { data = null; return false; }
         public bool TryGetTradition(TraditionID id, out TraditionData data) { data = null; return false; }
         public List<CardData> GetRandomCards(int count, IRandomProvider random = null) => new List<CardData>();
