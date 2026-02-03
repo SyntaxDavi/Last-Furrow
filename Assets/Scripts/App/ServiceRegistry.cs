@@ -18,6 +18,7 @@ public class ServiceRegistry
     // Módulo: Domínio (Lógica de Jogo)
     public IRunManager Run { get; private set; }
     public IEconomyService Economy { get; private set; }
+    public IHealthService Health { get; private set; }
     public DailyHandSystem DailyHand { get; private set; }
     public WeeklyGoalSystem WeeklyGoal { get; private set; }
     
@@ -45,10 +46,11 @@ public class ServiceRegistry
         GameLibrary = library;
     }
 
-    public void RegisterDomain(IRunManager run, IEconomyService economy, DailyHandSystem dailyHand, WeeklyGoalSystem weeklyGoal)
+    public void RegisterDomain(IRunManager run, IEconomyService economy, IHealthService health, DailyHandSystem dailyHand, WeeklyGoalSystem weeklyGoal)
     {
         Run = run;
         Economy = economy;
+        Health = health;
         DailyHand = dailyHand;
         WeeklyGoal = weeklyGoal;
     }

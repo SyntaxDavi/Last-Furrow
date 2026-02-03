@@ -9,6 +9,7 @@ public class ShopService
     private readonly ISaveManager _saveManager;
     private readonly IGameLibrary _library;
     private readonly GameEvents _gameEvents;
+    private readonly IHealthService _health;
 
     public ShopSession CurrentSession { get; private set; }
 
@@ -21,12 +22,13 @@ public class ShopService
     public event Action<IPurchasable> OnItemPurchased;
     public event Action<PurchaseFailReason> OnPurchaseFailed;
 
-    public ShopService(IEconomyService economy, ISaveManager save, IGameLibrary library, GameEvents events)
+    public ShopService(IEconomyService economy, ISaveManager save, IGameLibrary library, GameEvents events, IHealthService health)
     {
         _economy = economy;
         _saveManager = save;
         _library = library;
         _gameEvents = events;
+        _health = health;
     }
 
     public void CloseShop()
@@ -72,7 +74,7 @@ public class ShopService
 
         // 1. Preparação
         var run = _saveManager.Data.CurrentRun;
-        var context = new PurchaseContext(run, _gameEvents);
+        var context = new PurchaseContext(run, _health, _gameEvents);
 
         // 2. Validação
         var failReason = ValidatePurchase(item, context);

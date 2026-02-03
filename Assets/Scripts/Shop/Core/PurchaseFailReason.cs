@@ -2,6 +2,7 @@ public enum PurchaseFailReason
 {
     None,
     InsufficientFunds,
-    ConditionsNotMet, // Ex: Vida cheia, Mão cheia
+    ConditionsNotMet, // Ex: Mao cheia
+    PlayerLifeFull,  // Erro especifico para pocao/cura
     ItemUnavailable
 }

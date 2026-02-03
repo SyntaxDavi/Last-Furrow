@@ -22,3 +22,18 @@ public interface IRunManager
     void StartNextWeek(RunData run);
     RunPhase CurrentPhase { get; }
 }
+
+/// <summary>
+/// Interface para gerenciamento de vida do jogador.
+/// </summary>
+public interface IHealthService
+{
+    int CurrentLives { get; }
+    int MaxLives { get; }
+    bool IsAtFullHealth { get; }
+    
+    void Heal(int amount);
+    void TakeDamage(int amount);
+    
+    event Action<int, int> OnHealthChanged; // (current, max)
+}

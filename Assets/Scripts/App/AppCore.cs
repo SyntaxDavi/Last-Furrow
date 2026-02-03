@@ -43,6 +43,7 @@ public class AppCore : MonoBehaviour
     public IGameLibrary GameLibrary { get; private set; } // Agora inicializado no AppCore
     public GameEvents Events => Services?.Events;
     public IEconomyService EconomyService => Services?.Economy;
+    public IHealthService HealthService => Services?.Health;
     public DailyHandSystem DailyHandSystem => Services?.DailyHand;
     public WeeklyGoalSystem WeeklyGoalSystem => Services?.WeeklyGoal;
     public ShopService ShopService => Services?.Shop;

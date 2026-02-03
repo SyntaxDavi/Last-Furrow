@@ -1,12 +1,14 @@
 public struct PurchaseContext
 {
     public RunData RunData;
-    public ProgressionEvents ProgressionEvents; // Para itens que afetam vida/meta
-    public PlayerEvents PlayerEvents;           // Para itens que afetam cartas
+    public IHealthService Health;
+    public ProgressionEvents ProgressionEvents;
+    public PlayerEvents PlayerEvents;
 
-    public PurchaseContext(RunData run, GameEvents events)
+    public PurchaseContext(RunData run, IHealthService health, GameEvents events)
     {
         RunData = run;
+        Health = health;
         ProgressionEvents = events.Progression;
         PlayerEvents = events.Player;
     }

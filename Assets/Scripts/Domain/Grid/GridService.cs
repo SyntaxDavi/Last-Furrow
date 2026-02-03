@@ -260,13 +260,6 @@ public class GridService : IGridService
         int width = _config.Columns;
         int height = _config.Rows;
         
-        // Verifica consistência
-        if (width * height != SlotCount) 
-        {
-             // Fallback para grid quadrado se a config não bater com dados (ex: migração incompleta)
-             width = (int)Mathf.Sqrt(SlotCount);
-        }
-
         int r = index / width;
         int c = index % width;
 

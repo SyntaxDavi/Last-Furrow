@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
+using System.Collections.Generic;
 using LastFurrow.Traditions;
 
 [Serializable]
@@ -20,8 +21,9 @@ public class RunData
     [Tooltip("CONTRATO EXPLÍCITO: Flag que indica se grid foi inicializado. Previne reinicializações acidentais.")]    
     public bool IsGridInitialized;
 
-    [Tooltip("Cache do padrão gerado (pode ser regenerado a partir do Seed se necessário).")]
-    public GridUnlockState UnlockState;
+    [Tooltip("CONTRATO DE GERAÇÃO: Cache do padrão gerado. Serve como referência para validação e auto-cura.")]
+    [FormerlySerializedAs("UnlockState")]
+    public GridUnlockState GenerationContract;
 
     [Header("Progressão Semanal")]
     public int CurrentWeeklyScore;
@@ -98,25 +100,9 @@ public class RunData
     // FACTORY METHOD (A Regra de Negócio mora aqui)
     // É aqui que definimos como uma Run começa de verdade.
     public void MarkDailyHandDrawn()
-{
-    LastDrawnDay = CurrentDay;
-    LastDrawnWeek = CurrentWeek;
-}
-    public bool IsHealthFull()
     {
-        return CurrentLives >= MaxLives;
-    }
-    public void Heal(int amount)
-    {
-        if (amount <= 0) return;
-
-        CurrentLives += amount;
-        if (CurrentLives > MaxLives)
-        {
-            CurrentLives = MaxLives;
-        }
-        // Nota: Não disparamos evento aqui porque RunData é apenas DADOS.
-        // Quem chama (Service ou Item) dispara o evento.
+        LastDrawnDay = CurrentDay;
+        LastDrawnWeek = CurrentWeek;
     }
     public static RunData CreateNewRun(GridConfiguration config)
     {

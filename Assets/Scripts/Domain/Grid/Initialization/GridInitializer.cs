@@ -52,9 +52,9 @@ public static class GridInitializer
         }
 
         // 2. Validação de Contrato de Desbloqueio (Versão e Grid)
-        if (runData.UnlockState == null || !runData.UnlockState.IsCompatibleWith(config.Columns, config.Rows, ALGORITHM_VERSION))
+        if (runData.GenerationContract == null || !runData.GenerationContract.IsCompatibleWith(config.Columns, config.Rows, ALGORITHM_VERSION))
         {
-            Debug.LogWarning($"[{nameof(GridInitializer)}] UnlockState ausente ou incompatível. Regenerando a partir do Seed...");
+            Debug.LogWarning($"[{nameof(GridInitializer)}] GenerationContract ausente ou incompatível. Regenerando a partir do Seed...");
             ReapplyUnlockPattern(runData, config);
             needsRepair = true;
         }
@@ -79,7 +79,7 @@ public static class GridInitializer
             runData.UnlockPatternSeed = GenerateSecureSeed();
         }
 
-        int targetSlotCount = runData.UnlockState?.TargetSlotCount ?? GetInitialSlotCount(config);
+        int targetSlotCount = runData.GenerationContract?.TargetSlotCount ?? GetInitialSlotCount(config);
 
         var random = new SeededRandomProvider(runData.UnlockPatternSeed);
         var patternCoords = UnlockPatternGenerator.Generate(
@@ -91,7 +91,7 @@ public static class GridInitializer
         );
 
         // Atualiza o cache de contrato
-        runData.UnlockState = GridUnlockState.Create(
+        runData.GenerationContract = GridUnlockState.Create(
             config.Columns,
             config.Rows,
             targetSlotCount,
@@ -117,7 +117,7 @@ public static class GridInitializer
             patternConfig
         );
 
-        runData.UnlockState = GridUnlockState.Create(
+        runData.GenerationContract = GridUnlockState.Create(
             config.Columns,
             config.Rows,
             slotCount,
