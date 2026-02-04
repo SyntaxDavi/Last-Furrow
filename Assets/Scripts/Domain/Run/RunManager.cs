@@ -146,11 +146,17 @@ public class RunManager : MonoBehaviour, IRunManager
     // Chamado quando o dia vira 7 (resetando para 1)
     public void StartNextWeek(RunData run)
     {
+        if (run == null)
+        {
+            Debug.LogError("[RunManager] Tentativa de iniciar próxima semana com RunData nulo!");
+            return;
+        }
+
         // 1. Atualiza Dados
         run.CurrentWeek++;
         run.CurrentDay = 1;
 
-        Debug.Log($"[RunManager] Fase mudou para: Production (Semana {run.CurrentWeek})");
+        Debug.Log($"[RunManager] >>> INICIANDO SEMANA {run.CurrentWeek} <<<");
 
         // 2. Atualiza Dado
         _currentPhase = RunPhase.Production;
@@ -158,10 +164,13 @@ public class RunManager : MonoBehaviour, IRunManager
         // ONDA 4: Reset semanal do Pattern Tracking - usa callback injetado
         _onWeeklyResetCallback?.Invoke();
 
-        // 3. Dispara Fato
+        // 3. Persistência (CRÍTICO: Faltava o Save aqui ao ser chamado fora do AdvanceDay)
+        _saveManager.SaveGame();
+
+        // 4. Dispara Fatos (Fase primeiro para o FlowController reagir)
         OnProductionStarted?.Invoke(run);
 
-        // Eventos legados de tempo - usa dependência injetada
+        // 5. Eventos legados de tempo - usa dependência injetada
         _timeEvents.TriggerWeekChanged(run.CurrentWeek);
         _timeEvents.TriggerDayChanged(1);
     }

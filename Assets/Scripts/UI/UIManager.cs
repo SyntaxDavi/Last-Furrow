@@ -119,9 +119,20 @@ public class UIManager : MonoBehaviour
 
     private void HandleShopExitButton()
     {
+        if (AppCore.Instance == null) return;
+
         // Intenção: Jogador quer ir para próxima semana
         var run = AppCore.Instance.SaveManager.Data.CurrentRun;
-        AppCore.Instance.RunManager.StartNextWeek(run);
+        
+        if (run != null)
+        {
+            Debug.Log("[UIManager] Botão 'Trabalhar' clicado. Solicitando avanço de semana...");
+            AppCore.Instance.RunManager.StartNextWeek(run);
+        }
+        else
+        {
+            Debug.LogError("[UIManager] Erro: Tentativa de sair do shop sem RunData ativo!");
+        }
     }
 
     private void HandleBackInput()

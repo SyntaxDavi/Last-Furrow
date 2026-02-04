@@ -3,14 +3,14 @@ using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// Controlador do bot�o "Sleep" V2 - ROBUSTO E DEFENSIVO.
+/// Controlador do botão "Sleep" V2 - ROBUSTO E DEFENSIVO.
 /// 
-/// VERS�O 2: Null checks completos + valida��es + logs verbosos
+/// VERSÃO 2: Null checks completos + validações + logs verbosos
 /// 
-/// INSTALA��O:
+/// INSTALAÇÃO:
 /// 1. Delete SleepButtonController antigo do GameObject
 /// 2. Add Component: SleepButtonControllerV2
-/// 3. Arraste TextMeshPro no campo Button Text
+/// 3. Arraste TextMeshProUGUI no campo Button Text
 /// 4. Play e veja logs detalhados
 /// </summary>
 [RequireComponent(typeof(Button))]
@@ -36,7 +36,7 @@ public class SleepButtonControllerV2 : MonoBehaviour
 
         if (_button == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: Componente Button n�o encontrado!");
+            Debug.LogError("[SleepButtonControllerV2] CRITICAL: Componente Button não encontrado!");
         }
 
         if (_buttonText == null)
@@ -44,7 +44,7 @@ public class SleepButtonControllerV2 : MonoBehaviour
             _buttonText = GetComponentInChildren<TextMeshProUGUI>();
             if (_buttonText == null)
             {
-                Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: TextMeshProUGUI n�o encontrado! Arraste no Inspector!");
+                Debug.LogError("[SleepButtonControllerV2] CRITICAL: TextMeshProUGUI não encontrado! Arraste no Inspector!");
             }
         }
     }
@@ -53,44 +53,44 @@ public class SleepButtonControllerV2 : MonoBehaviour
     {
         if (_isInitialized)
         {
-            Debug.LogWarning("[SleepButtonControllerV2] ? J� foi inicializado!");
+            Debug.LogWarning("[SleepButtonControllerV2] Já foi inicializado!");
             return;
         }
 
-        // === VALIDA��ES CR�TICAS ===
+        // === VALIDAÇÕES CRÍTICAS ===
         if (context == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: UIContext � NULL!");
+            Debug.LogError("[SleepButtonControllerV2] CRITICAL: UIContext é NULL!");
             return;
         }
 
         if (context.RunData == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: context.RunData � NULL!");
+            Debug.LogError("[SleepButtonControllerV2] CRITICAL: context.RunData é NULL!");
             return;
         }
 
         if (context.TimeEvents == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: context.TimeEvents � NULL!");
+            Debug.LogError("[SleepButtonControllerV2] CRITICAL: context.TimeEvents é NULL!");
             return;
         }
 
         if (context.GameStateEvents == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: context.GameStateEvents � NULL!");
+            Debug.LogError("[SleepButtonControllerV2] CRITICAL: context.GameStateEvents é NULL!");
             return;
         }
 
         if (context.TimePolicy == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: context.TimePolicy � NULL!");
+            Debug.LogError("[SleepButtonControllerV2] CRITICAL: context.TimePolicy é NULL!");
             return;
         }
 
         if (_button == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? CRITICAL: Button null! Componente n�o encontrado!");
+            Debug.LogError("[SleepButtonControllerV2] CRITICAL: Button null! Componente não encontrado!");
             return;
         }
 
@@ -105,13 +105,24 @@ public class SleepButtonControllerV2 : MonoBehaviour
         _context.GameStateEvents.OnStateChanged += HandleGameStateChanged;
         _context.TimeEvents.OnDayChanged += HandleDayChanged;
 
+        // FIX: Escuta quando a produção começa (após sair do shop)
+        if (AppCore.Instance?.RunManager != null)
+        {
+            AppCore.Instance.RunManager.OnProductionStarted += HandleProductionStarted;
+            Debug.Log("[SleepButtonControllerV2] Listener OnProductionStarted REGISTRADO");
+        }
+        else
+        {
+            Debug.LogError("[SleepButtonControllerV2] FALHA ao registrar OnProductionStarted - RunManager null!");
+        }
+
         // IMPORTANTE: Marca como inicializado ANTES de UpdateButtonState
         _isInitialized = true;
 
-        // Atualiza estado inicial (agora _isInitialized j� � true)
+        // Atualiza estado inicial (agora _isInitialized já é true)
         UpdateButtonState();
 
-        Debug.Log("[SleepButtonControllerV2] ?? INICIALIZADO COM SUCESSO!");
+        Debug.Log("[SleepButtonControllerV2] INICIALIZADO COM SUCESSO!");
     }
 
     private void OnDestroy()
@@ -131,6 +142,13 @@ public class SleepButtonControllerV2 : MonoBehaviour
             }
         }
 
+        // FIX: Remove listener do RunManager
+        if (AppCore.Instance?.RunManager != null)
+        {
+            AppCore.Instance.RunManager.OnProductionStarted -= HandleProductionStarted;
+            Debug.Log("[SleepButtonControllerV2] Listener OnProductionStarted REMOVIDO");
+        }
+
         if (_button != null)
         {
             _button.onClick.RemoveListener(OnSleepButtonClicked);
@@ -141,27 +159,27 @@ public class SleepButtonControllerV2 : MonoBehaviour
     {
         if (_isProcessing)
         {
-            Debug.LogWarning("[SleepButtonControllerV2] ? J� est� processando!");
+            Debug.LogWarning("[SleepButtonControllerV2] Já está processando!");
             return;
         }
 
         if (!CanActivate())
         {
-            Debug.LogWarning("[SleepButtonControllerV2] ? Bot�o n�o pode ser ativado no estado atual.");
+            Debug.LogWarning("[SleepButtonControllerV2] Botão não pode ser ativado no estado atual.");
             return;
         }
 
-        Debug.Log("[SleepButtonControllerV2] ?? INICIANDO SLEEP SEQUENCE...");
+        Debug.Log("[SleepButtonControllerV2] INICIANDO SLEEP SEQUENCE...");
 
         if (AppCore.Instance == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? AppCore.Instance � NULL!");
+            Debug.LogError("[SleepButtonControllerV2] AppCore.Instance é NULL!");
             return;
         }
 
         if (AppCore.Instance.DailyResolutionSystem == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? DailyResolutionSystem � NULL!");
+            Debug.LogError("[SleepButtonControllerV2] DailyResolutionSystem é NULL!");
             return;
         }
 
@@ -182,27 +200,49 @@ public class SleepButtonControllerV2 : MonoBehaviour
 
     private void HandleResolutionStarted()
     {
-        Debug.Log("[SleepButtonControllerV2] ?? Resolution STARTED - Bloqueando bot�o");
+        Debug.Log("[SleepButtonControllerV2] Resolution STARTED - Bloqueando botão");
         _isProcessing = true;
         UpdateButtonState();
     }
 
     private void HandleResolutionEnded()
     {
-        Debug.Log("[SleepButtonControllerV2] ?? Resolution ENDED - Desbloqueando bot�o");
+        Debug.Log("[SleepButtonControllerV2] Resolution ENDED - Desbloqueando botão");
         _isProcessing = false;
         UpdateButtonState();
     }
 
     private void HandleGameStateChanged(GameState newState)
     {
-        Debug.Log($"[SleepButtonControllerV2] ?? GameState mudou: {newState}");
+        Debug.Log($"[SleepButtonControllerV2] GameState mudou: {newState}");
         UpdateButtonState();
     }
 
     private void HandleDayChanged(int newDay)
     {
-        Debug.Log($"[SleepButtonControllerV2] ?? Dia mudou: {newDay}");
+        Debug.Log($"[SleepButtonControllerV2] Dia mudou: {newDay}");
+        UpdateButtonState();
+    }
+
+    // FIX: Novo handler para quando a produção começa
+    private void HandleProductionStarted(RunData runData)
+    {
+        Debug.Log($"[SleepButtonControllerV2] ===== PRODUCAO INICIADA =====");
+        Debug.Log($"[SleepButtonControllerV2] Semana: {runData.CurrentWeek}, Dia: {runData.CurrentDay}");
+        Debug.Log($"[SleepButtonControllerV2] RunPhase: {AppCore.Instance.RunManager.CurrentPhase}");
+        Debug.Log($"[SleepButtonControllerV2] GameState: {AppCore.Instance.GameStateManager.CurrentState}");
+        Debug.Log($"[SleepButtonControllerV2] Aguardando 0.5s para sincronização...");
+        
+        // IMPORTANTE: Aumentei o delay para garantir sincronização
+        Invoke(nameof(UpdateButtonStateDelayed), 0.5f);
+    }
+
+    // Helper para atualização com delay
+    private void UpdateButtonStateDelayed()
+    {
+        Debug.Log($"[SleepButtonControllerV2] ===== DELAY COMPLETO - ATUALIZANDO BOTÃO =====");
+        Debug.Log($"[SleepButtonControllerV2] RunPhase AGORA: {AppCore.Instance.RunManager.CurrentPhase}");
+        Debug.Log($"[SleepButtonControllerV2] GameState AGORA: {AppCore.Instance.GameStateManager.CurrentState}");
         UpdateButtonState();
     }
 
@@ -210,22 +250,22 @@ public class SleepButtonControllerV2 : MonoBehaviour
     {
         if (!_isInitialized)
         {
-            Debug.LogWarning("[SleepButtonControllerV2] ? UpdateButtonState chamado mas n�o inicializado!");
+            Debug.LogWarning("[SleepButtonControllerV2] UpdateButtonState chamado mas não inicializado!");
             return;
         }
 
         if (_button == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? Button null em UpdateButtonState!");
+            Debug.LogError("[SleepButtonControllerV2] Button null em UpdateButtonState!");
             return;
         }
 
-        Debug.Log("[SleepButtonControllerV2] ?? UpdateButtonState CHAMADO");
+        Debug.Log("[SleepButtonControllerV2] UpdateButtonState CHAMADO");
 
         bool canActivate = CanActivate();
         bool finalState = canActivate && !_isProcessing;
 
-        Debug.Log($"[SleepButtonControllerV2] ?? canActivate={canActivate}, isProcessing={_isProcessing}, FINAL={finalState}");
+        Debug.Log($"[SleepButtonControllerV2] canActivate={canActivate}, isProcessing={_isProcessing}, FINAL={finalState}");
 
         _button.interactable = finalState;
 
@@ -234,65 +274,65 @@ public class SleepButtonControllerV2 : MonoBehaviour
             _buttonText.text = _isProcessing ? _processingText : _normalText;
         }
 
-        Debug.Log($"[SleepButtonControllerV2] ? Bot�o agora: {(_button.interactable ? "ATIVO ?" : "DESABILITADO ?")}");
+        Debug.Log($"[SleepButtonControllerV2] Botão agora: {(_button.interactable ? "ATIVO" : "DESABILITADO")}");
     }
 
     private bool CanActivate()
     {
         if (!_isInitialized)
         {
-            Debug.Log("[SleepButtonControllerV2] ? N�o inicializado");
+            Debug.Log("[SleepButtonControllerV2] Não inicializado");
             return false;
         }
 
         if (_context == null || _context.RunData == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? Context ou RunData null!");
+            Debug.LogError("[SleepButtonControllerV2] Context ou RunData null!");
             return false;
         }
 
         int currentDay = _context.RunData.CurrentDay;
-        Debug.Log($"[SleepButtonControllerV2] ?? CurrentDay: {currentDay}");
+        Debug.Log($"[SleepButtonControllerV2] CurrentDay: {currentDay}");
 
-        // Valida��o AppCore
+        // Validação AppCore
         if (AppCore.Instance == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? AppCore.Instance null!");
+            Debug.LogError("[SleepButtonControllerV2] AppCore.Instance null!");
             return false;
         }
 
         if (AppCore.Instance.GameStateManager == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? GameStateManager null!");
+            Debug.LogError("[SleepButtonControllerV2] GameStateManager null!");
             return false;
         }
 
         var gameState = AppCore.Instance.GameStateManager.CurrentState;
-        Debug.Log($"[SleepButtonControllerV2] ?? GameState: {gameState}");
+        Debug.Log($"[SleepButtonControllerV2] GameState: {gameState}");
 
         if (gameState != GameState.Playing)
         {
-            Debug.Log($"[SleepButtonControllerV2] ? Bloqueado: GameState = {gameState} (precisa Playing)");
+            Debug.Log($"[SleepButtonControllerV2] Bloqueado: GameState = {gameState} (precisa Playing)");
             return false;
         }
 
         if (AppCore.Instance.RunManager == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? RunManager null!");
+            Debug.LogError("[SleepButtonControllerV2] RunManager null!");
             return false;
         }
 
         var runPhase = AppCore.Instance.RunManager.CurrentPhase;
-        Debug.Log($"[SleepButtonControllerV2] ?? RunPhase: {runPhase}");
+        Debug.Log($"[SleepButtonControllerV2] RunPhase: {runPhase}");
 
         if (_context.TimePolicy == null)
         {
-            Debug.LogError("[SleepButtonControllerV2] ? TimePolicy null!");
+            Debug.LogError("[SleepButtonControllerV2] TimePolicy null!");
             return false;
         }
 
         bool canSleep = _context.TimePolicy.CanSleep(currentDay, runPhase);
-        Debug.Log($"[SleepButtonControllerV2] ?? TimePolicy.CanSleep: {canSleep}");
+        Debug.Log($"[SleepButtonControllerV2] TimePolicy.CanSleep: {canSleep}");
 
         return canSleep;
     }
