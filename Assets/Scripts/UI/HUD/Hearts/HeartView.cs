@@ -70,8 +70,9 @@ public class HeartView : MonoBehaviour
 
         // Regra de Visibilidade:
         // Coração Normal (Vermelho): Sempre visível (fica com sprite de quebrado se fill=0)
-        // Coração Extra (Azul): Só visível se tiver vida (fill > 0)
         float targetAlpha = (!_isExtra || _currentFill > 0) ? 1f : 0f;
+        
+        Debug.Log($"[HeartView] {gameObject.name} -> Fill: {fill}, Alpha: {targetAlpha}, Sprite: {(targetSprite ? targetSprite.name : "NULL")}");
 
         if (immediate)
         {

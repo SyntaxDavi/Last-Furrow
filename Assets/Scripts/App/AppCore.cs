@@ -107,6 +107,13 @@ public class AppCore : MonoBehaviour
         var traditionService = new TraditionService();
         Services.SetTraditions(traditionService);
 
+        // Subscrição para re-inicializar caso uma nova run comece (ex: perfil resetado ou fim de jogo)
+        events.Time.OnRunStarted += () => {
+            Debug.Log("[AppCore] New run detected! Re-configuring TraditionService...");
+            traditionService.Configure(SaveManager.Data.CurrentRun, GameLibrary, Events);
+            traditionService.Initialize();
+        };
+
         traditionService.Configure(SaveManager.Data.CurrentRun, GameLibrary, Events);
         traditionService.Initialize();
 

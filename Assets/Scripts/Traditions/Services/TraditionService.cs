@@ -50,6 +50,14 @@ namespace LastFurrow.Traditions
                 Library = library
             };
             
+            // Se não houver runData (perfil novo/resetado), pulamos a atualização por enquanto.
+            // O RunManager chamará Configure/Initialize novamente ao iniciar uma nova partida.
+            if (runData == null)
+            {
+                Debug.Log("[TraditionService] Configured with null RunData. Waiting for a run to start.");
+                return;
+            }
+
             // Atualiza max slots da RunData
             _loadout.SetMaxSlots(runData.MaxTraditionSlots);
         }

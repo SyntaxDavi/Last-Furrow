@@ -43,10 +43,15 @@ public class HeartDisplayManagerV2 : MonoBehaviour
         _context = context;
         _maxLives = _context.RunData.MaxLives;
         _currentLives = _context.RunData.CurrentLives;
+        
+        Debug.Log($"[HeartDisplay] Vidas: {_currentLives}/{_maxLives}");
 
         // Calcula quantos corações precisamos (Ex: 4 vidas = 2 corações)
-        int neededHearts = Mathf.CeilToInt((float)_maxLives / LIVES_PER_HEART);
+        int extraLives = Mathf.Max(0, _maxLives - 3);
+        int neededHearts = 1 + extraLives;
         neededHearts = Mathf.Min(neededHearts, MAX_HEART_COUNT);
+        
+        Debug.Log($"[HeartDisplay] Spawnando {neededHearts} corações.");
 
         CreateHeartPool(neededHearts);
         RefreshAllHearts(true);
@@ -111,6 +116,7 @@ public class HeartDisplayManagerV2 : MonoBehaviour
                 fill = (_currentLives >= extraLifeIndex) ? 3 : 0;
             }
 
+            Debug.Log($"[HeartDisplay] Heart {i}: Fill={fill}, Extra={isExtraTier}");
             _heartPool[i].SetState(fill, isExtraTier, immediate);
         }
     }
