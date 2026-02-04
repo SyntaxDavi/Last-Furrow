@@ -125,6 +125,14 @@ public class SleepButtonControllerV2 : MonoBehaviour
         Debug.Log("[SleepButtonControllerV2] INICIALIZADO COM SUCESSO!");
     }
 
+    private void OnEnable()
+    {
+        if (_isInitialized)
+        {
+            UpdateButtonState();
+        }
+    }
+
     private void OnDestroy()
     {
         if (_context != null)
@@ -233,8 +241,8 @@ public class SleepButtonControllerV2 : MonoBehaviour
         Debug.Log($"[SleepButtonControllerV2] GameState: {AppCore.Instance.GameStateManager.CurrentState}");
         Debug.Log($"[SleepButtonControllerV2] Aguardando 0.5s para sincronização...");
         
-        // IMPORTANTE: Aumentei o delay para garantir sincronização
-        Invoke(nameof(UpdateButtonStateDelayed), 0.5f);
+        // IMPORTANTE: Aumentei o delay para garantir sincronização e evitar race condition de 0.5s do Fade
+        Invoke(nameof(UpdateButtonStateDelayed), 2.0f);
     }
 
     // Helper para atualização com delay
