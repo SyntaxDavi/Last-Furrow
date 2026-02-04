@@ -101,13 +101,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7275ec0c8aecb1b4f8dbd46bca7ca491, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _normalSprites:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  _extraSprites:
-  - {fileID: 0}
+  _spriteBroken: {fileID: 241783051183323317, guid: dbd6b9036469fe54d8c9de0cd47d8877, type: 3}
+  _spriteOneThird: {fileID: 6459837240522970843, guid: 4b8b2c475d9dc1e4792ef4d6a5338548, type: 3}
+  _spriteTwoThirds: {fileID: -7570140577268042204, guid: 3af1e2bc8851e42469d23d8f8ad66025, type: 3}
+  _spriteFull: {fileID: 2686994930025510017, guid: a6947c9b7516606489bcd6bf92a3db2b, type: 3}
+  _spriteExtraFull: {fileID: -1361337493169276238, guid: d9b4d28844752784792fcab07a7b531d, type: 3}
   _animationDuration: 0.25
   _popCurve:
     serializedVersion: 2

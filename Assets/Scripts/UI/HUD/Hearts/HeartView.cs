@@ -48,8 +48,8 @@ public class HeartView : MonoBehaviour
         _canvasGroup = GetComponent<CanvasGroup>();
         _rectTransform = GetComponent<RectTransform>();
         
-        // Inicializa com alpha 0 para o primeiro nascimento
-        if (_currentFill == -1) _canvasGroup.alpha = 0f;
+        // Garante que comece invisível apenas se ainda não foi setado nada
+        // Mas o primeiro SetState(immediate:true) vai resolver isso.
     }
 
     /// <summary>

@@ -90,7 +90,7 @@ public class HeartDisplayManagerV2 : MonoBehaviour
 
     private void RefreshAllHearts(bool immediate)
     {
-        if (!_isInitialized) return;
+        if (_context == null) return;
         
         for (int i = 0; i < _heartPool.Count; i++)
         {
