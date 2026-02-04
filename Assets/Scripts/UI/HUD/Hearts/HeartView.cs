@@ -3,43 +3,43 @@ using UnityEngine.UI;
 using System.Collections;
 
 /// <summary>
-/// Componente visual individual de um coração (View).
+/// Visual de um coraÃ§Ã£o individual que pode representar atÃ© 3 vidas.
+/// Suporta tiers (ex: CoraÃ§Ã£o Normal Vermelho vs CoraÃ§Ã£o Extra Azul).
 /// 
-/// RESPONSABILIDADE:
-/// - Gerenciar aparência (cheio/vazio)
-/// - Executar animações (pop-up, fade, bounce)
-/// - Responder a comandos do Manager
-/// 
-/// SOLID:
-/// - Single Responsibility: Apenas visual/animação
-/// - Open/Closed: Adicionar novas animações não quebra código existente
-/// - Dependency Injection: Não depende de AppCore, apenas recebe comandos
-/// 
-/// NÃO FAZ:
-/// - Acessar RunData
-/// - Decidir quando ganhar/perder vida
-/// - Gerenciar outros corações
+/// ESTADO 0:
+/// CoraÃ§Ã£o Normal (Vermelho) -> Sprite Quebrado (VisÃ­vel).
+/// CoraÃ§Ã£o Extra (Azul)      -> Desaparece (Alpha 0).
 /// </summary>
-[RequireComponent(typeof(Image), typeof(CanvasGroup))]
+[RequireComponent(typeof(Image), typeof(CanvasGroup), typeof(RectTransform))]
 public class HeartView : MonoBehaviour
 {
-    [Header("Visual Settings")]
-    [SerializeField] private Color _fullColor = new Color(1f, 0f, 0f, 1f); // Vermelho
-    [SerializeField] private Color _emptyColor = new Color(0.3f, 0.3f, 0.3f, 1f); // Cinza escuro
+    [Header("Base Heart Sprites (Red)")]
+    [Tooltip("Sprite de vida 0 (Quebrado/Fodido)")]
+    [SerializeField] private Sprite _spriteBroken;
+    
+    [Tooltip("Sprite de vida 1 (1/3)")]
+    [SerializeField] private Sprite _spriteOneThird;
+    
+    [Tooltip("Sprite de vida 2 (2/3)")]
+    [SerializeField] private Sprite _spriteTwoThirds;
+    
+    [Tooltip("Sprite de vida 3 (Full)")]
+    [SerializeField] private Sprite _spriteFull;
+
+    [Header("Extra Heart Sprites (Blue)")]
+    [Tooltip("Sprite do coraÃ§Ã£o extra (Vida 4)")]
+    [SerializeField] private Sprite _spriteExtraFull;
 
     [Header("Animation Settings")]
-    [SerializeField] private float _spawnDuration = 0.3f;
-    [SerializeField] private float _loseDuration = 0.4f;
-    [SerializeField] private float _healDuration = 0.5f;
-    [SerializeField] private AnimationCurve _popCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+    [SerializeField] private float _animationDuration = 0.25f;
+    [SerializeField] private AnimationCurve _popCurve = AnimationCurve.Linear(0, 0, 1, 1);
 
-    // Componentes (cached)
     private Image _image;
     private CanvasGroup _canvasGroup;
     private RectTransform _rectTransform;
 
-    // Estado interno
-    private bool _isFull;
+    private int _currentFill = -1;
+    private bool _isExtra = false;
     private Coroutine _currentAnimation;
 
     private void Awake()
@@ -47,155 +47,96 @@ public class HeartView : MonoBehaviour
         _image = GetComponent<Image>();
         _canvasGroup = GetComponent<CanvasGroup>();
         _rectTransform = GetComponent<RectTransform>();
-
-        // Estado inicial invisível (Manager vai spawnar)
-        _canvasGroup.alpha = 0f;
-        _rectTransform.localScale = Vector3.zero;
+        
+        // Inicializa com alpha 0 para o primeiro nascimento
+        if (_currentFill == -1) _canvasGroup.alpha = 0f;
     }
 
     /// <summary>
-    /// Define estado inicial sem animação (para pooling/reset).
+    /// Define o estado visual do coraÃ§Ã£o.
     /// </summary>
-    public void SetState(bool isFull, bool immediate = false)
+    public void SetState(int fill, bool isExtra, bool immediate = false)
     {
-        _isFull = isFull;
-        _image.color = isFull ? _fullColor : _emptyColor;
+        fill = Mathf.Clamp(fill, 0, 3);
+        
+        // SÃ³ atualiza se algo mudou visualmente
+        if (fill == _currentFill && isExtra == _isExtra && _canvasGroup.alpha > 0) return;
+
+        _currentFill = fill;
+        _isExtra = isExtra;
+
+        Sprite targetSprite = GetTargetSprite();
+        if (targetSprite != null) _image.sprite = targetSprite;
+
+        // Regra de Visibilidade:
+        // CoraÃ§Ã£o Normal (Vermelho): Sempre visÃ­vel (fica com sprite de quebrado se fill=0)
+        // CoraÃ§Ã£o Extra (Azul): SÃ³ visÃ­vel se tiver vida (fill > 0)
+        float targetAlpha = (!_isExtra || _currentFill > 0) ? 1f : 0f;
 
         if (immediate)
         {
-            _canvasGroup.alpha = 1f;
+            StopCurrentAnimation();
+            _canvasGroup.alpha = targetAlpha;
             _rectTransform.localScale = Vector3.one;
+        }
+        else
+        {
+            AnimatePop(targetAlpha);
         }
     }
 
-    /// <summary>
-    /// Animação de spawn inicial (pop-up suave).
-    /// NÃO TEM GUARDA: Sempre executa para garantir visibilidade.
-    /// </summary>
-    public void AnimateSpawn()
+    private Sprite GetTargetSprite()
     {
-        // REMOVIDA GUARDA: AnimateSpawn sempre deve executar
-        // Motivo: Após SetState(true), _isFull=true, mas precisamos animar
+        if (_isExtra)
+        {
+            // Para o coraÃ§Ã£o azul (Extra), sÃ³ usamos o sprite cheio ou vazio
+            return _currentFill > 0 ? _spriteExtraFull : null;
+        }
 
-        StopCurrentAnimation();
-        _currentAnimation = StartCoroutine(SpawnRoutine());
+        // Para o coraÃ§Ã£o vermelho (Base)
+        return _currentFill switch
+        {
+            0 => _spriteBroken,
+            1 => _spriteOneThird,
+            2 => _spriteTwoThirds,
+            3 => _spriteFull,
+            _ => _spriteFull
+        };
     }
 
-    /// <summary>
-    /// Animação de perda de vida (fica cinza, não desaparece).
-    /// GUARDA: Apenas se estiver cheio (previne animação inválida).
-    /// Preparado para adicionar "quebrar" no futuro.
-    /// </summary>
-    public void AnimateLose()
+    private void AnimatePop(float targetAlpha)
     {
-        if (!_isFull) return; // Já está vazio, não anima
-
         StopCurrentAnimation();
-        _currentAnimation = StartCoroutine(LoseRoutine());
+        _currentAnimation = StartCoroutine(PopRoutine(targetAlpha));
     }
 
-    /// <summary>
-    /// Animação de cura (cinza ? vermelho com bounce).
-    /// GUARDA: Apenas se estiver vazio (previne cura em coração cheio).
-    /// </summary>
-    public void AnimateHeal()
+    private IEnumerator PopRoutine(float targetAlpha)
     {
-        if (_isFull) return; // Já está cheio, não anima
+        float elapsed = 0f;
+        float startAlpha = _canvasGroup.alpha;
 
-        StopCurrentAnimation();
-        _currentAnimation = StartCoroutine(HealRoutine());
+        while (elapsed < _animationDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / _animationDuration;
+            
+            float curveValue = _popCurve.Evaluate(t);
+            _rectTransform.localScale = Vector3.one * curveValue;
+            _canvasGroup.alpha = Mathf.Lerp(startAlpha, targetAlpha, t);
+
+            yield return null;
+        }
+
+        _rectTransform.localScale = Vector3.one;
+        _canvasGroup.alpha = targetAlpha;
+        _currentAnimation = null;
     }
 
-    /// <summary>
-    /// Esconde o coração (para reposicionamento/cleanup).
-    /// </summary>
     public void Hide()
     {
         StopCurrentAnimation();
         _canvasGroup.alpha = 0f;
-        _rectTransform.localScale = Vector3.zero;
-    }
-
-    // --- ROTINAS DE ANIMAÇÃO ---
-
-    private IEnumerator SpawnRoutine()
-    {
-        _isFull = true;
-        _image.color = _fullColor;
-        _canvasGroup.alpha = 0f;
-        _rectTransform.localScale = Vector3.zero;
-
-        float elapsed = 0f;
-        while (elapsed < _spawnDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / _spawnDuration;
-            float curveValue = _popCurve.Evaluate(t);
-
-            _canvasGroup.alpha = t;
-            _rectTransform.localScale = Vector3.one * curveValue;
-
-            yield return null;
-        }
-
-        _canvasGroup.alpha = 1f;
-        _rectTransform.localScale = Vector3.one;
-        _currentAnimation = null;
-    }
-
-    private IEnumerator LoseRoutine()
-    {
-        // TODO FUTURO: Adicionar animação de "quebrar" (particles, shake)
-        // Por enquanto: transição suave para cinza
-
-        _isFull = false;
-
-        float elapsed = 0f;
-        Color startColor = _image.color;
-
-        while (elapsed < _loseDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / _loseDuration;
-
-            _image.color = Color.Lerp(startColor, _emptyColor, t);
-
-            // Pequeno "pulse" negativo
-            float scale = 1f - (Mathf.Sin(t * Mathf.PI) * 0.2f);
-            _rectTransform.localScale = Vector3.one * scale;
-
-            yield return null;
-        }
-
-        _image.color = _emptyColor;
-        _rectTransform.localScale = Vector3.one;
-        _currentAnimation = null;
-    }
-
-    private IEnumerator HealRoutine()
-    {
-        _isFull = true;
-
-        float elapsed = 0f;
-        Color startColor = _image.color;
-
-        while (elapsed < _healDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / _healDuration;
-
-            _image.color = Color.Lerp(startColor, _fullColor, t);
-
-            // Bounce effect
-            float bounceScale = 1f + (Mathf.Sin(t * Mathf.PI * 2) * 0.3f * (1f - t));
-            _rectTransform.localScale = Vector3.one * bounceScale;
-
-            yield return null;
-        }
-
-        _image.color = _fullColor;
-        _rectTransform.localScale = Vector3.one;
-        _currentAnimation = null;
+        _currentFill = -1;
     }
 
     private void StopCurrentAnimation()
@@ -207,8 +148,5 @@ public class HeartView : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
-    {
-        StopCurrentAnimation();
-    }
+    private void OnDestroy() => StopCurrentAnimation();
 }

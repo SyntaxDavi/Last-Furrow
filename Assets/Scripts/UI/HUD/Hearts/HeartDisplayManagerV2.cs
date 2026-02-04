@@ -21,12 +21,8 @@ public class HeartDisplayManagerV2 : MonoBehaviour
 
     [Header("Layout Settings")]
     [SerializeField] private float _spacing = 50f;
-    [SerializeField] private float _spawnDelay = 0.5f;
-
-    [Header("Multi-Loss Animation")]
-    [SerializeField] private bool _simultaneousLoss = true;
-    [SerializeField] private float _lossAnimationDelay = 0.1f;
-
+    private const int LIVES_PER_HEART = 3;
+    private const int MAX_HEART_COUNT = 2; // 1 Coração Base (3 vidas) + 1 Coração Extra (1 vida) = 4 total
 
     private List<HeartView> _heartPool = new List<HeartView>();
     private int _currentLives = 0;
@@ -36,238 +32,105 @@ public class HeartDisplayManagerV2 : MonoBehaviour
 
     public void Initialize(UIContext context)
     {
-        if (_isInitialized)
-        {
-            Debug.LogWarning("[HeartDisplayManagerV2] J� foi inicializado!");
-            return;
-        }
+        if (_isInitialized) return;
 
-        // === VALIDA��ES CR�TICAS ===
-        if (context == null)
+        if (context == null || _heartPrefab == null)
         {
-            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: UIContext � NULL!");
+            Debug.LogError("[HeartDisplayManagerV2] Erro na inicialização!");
             return;
-        }
-
-        if (_heartPrefab == null)
-        {
-            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: HeartPrefab n�o atribu�do no Inspector!");
-            return;
-        }
-
-        if (_container == null)
-        {
-            _container = this.transform;
         }
 
         _context = context;
-
-        // === VALIDA��ES DE DADOS ===
-        if (_context.RunData == null)
-        {
-            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: context.RunData � NULL!");
-            return;
-        }
-
-        if (_context.ProgressionEvents == null)
-        {
-            Debug.LogError("[HeartDisplayManagerV2] CRITICAL: context.ProgressionEvents � NULL!");
-            return;
-        }
-
         _maxLives = _context.RunData.MaxLives;
         _currentLives = _context.RunData.CurrentLives;
 
-        // Cria pool
-        CreateHeartPool(_maxLives);
+        // Calcula quantos corações precisamos (Ex: 4 vidas = 2 corações)
+        int neededHearts = Mathf.CeilToInt((float)_maxLives / LIVES_PER_HEART);
+        neededHearts = Mathf.Min(neededHearts, MAX_HEART_COUNT);
 
-        // Spawna com anima��o
-        StartCoroutine(SpawnInitialHearts());
+        CreateHeartPool(neededHearts);
+        RefreshAllHearts(true);
 
-        // Escuta eventos
         _context.ProgressionEvents.OnLivesChanged += HandleLivesChanged;
-
         _isInitialized = true;
-        Debug.Log($"[HeartDisplayManagerV2] ?? INICIALIZADO COM SUCESSO!");
     }
 
     private void OnDestroy()
     {
-        if (_context != null && _context.ProgressionEvents != null)
-        {
+        if (_context?.ProgressionEvents != null)
             _context.ProgressionEvents.OnLivesChanged -= HandleLivesChanged;
-        }
     }
 
     private void CreateHeartPool(int count)
     {
-        Debug.Log($"[HeartDisplayManagerV2] ?? Criando pool de {count} cora��es...");
-
-        if (_heartPrefab == null)
-        {
-            Debug.LogError("[HeartDisplayManagerV2] ? HeartPrefab null durante CreatePool!");
-            return;
-        }
-
-        if (_container == null)
-        {
-            Debug.LogError("[HeartDisplayManagerV2] ? Container null durante CreatePool!");
-            return;
-        }
+        foreach (var heart in _heartPool) if(heart != null) Destroy(heart.gameObject);
+        _heartPool.Clear();
 
         for (int i = 0; i < count; i++)
         {
             GameObject heartObj = Instantiate(_heartPrefab, _container);
-
-            if (heartObj == null)
-            {
-                Debug.LogError($"[HeartDisplayManagerV2] ? Instantiate retornou NULL no �ndice {i}!");
-                continue;
-            }
-
             HeartView heartView = heartObj.GetComponent<HeartView>();
-
-            if (heartView == null)
+            
+            if (heartView != null)
             {
-                Debug.LogError($"[HeartDisplayManagerV2] ? HeartPrefab n�o tem componente HeartView!");
-                Destroy(heartObj);
-                continue;
-            }
-
-            RectTransform rt = heartObj.GetComponent<RectTransform>();
-            if (rt != null)
-            {
+                RectTransform rt = heartObj.GetComponent<RectTransform>();
                 rt.anchoredPosition = new Vector2(i * _spacing, 0);
+                heartView.Hide();
+                _heartPool.Add(heartView);
             }
-
-            heartView.Hide();
-            _heartPool.Add(heartView);
-        }
-    }
-
-    private IEnumerator SpawnInitialHearts()
-    {
-        for (int i = 0; i < _currentLives && i < _heartPool.Count; i++)
-        {
-            if (_heartPool[i] == null)
-            {
-                Debug.LogError($"[HeartDisplayManagerV2] ? HeartPool[{i}] � NULL!");
-                continue;
-            }
-
-            _heartPool[i].SetState(true, immediate: false);
-            _heartPool[i].AnimateSpawn();
-
-            yield return new WaitForSeconds(_spawnDelay);
-        }
-
-        // Cora��es vazios
-        for (int i = _currentLives; i < _maxLives && i < _heartPool.Count; i++)
-        {
-            if (_heartPool[i] == null)
-            {
-                Debug.LogError($"[HeartDisplayManagerV2] ? HeartPool[{i}] � NULL!");
-                continue;
-            }
-            _heartPool[i].SetState(false, immediate: true);
         }
     }
 
     private void HandleLivesChanged(int newLives)
     {
-        if (!_isInitialized)
-        {
-            Debug.LogWarning("[HeartDisplayManagerV2] ? HandleLivesChanged chamado mas n�o inicializado!");
-            return;
-        }
-
-        int oldLives = _currentLives;
-        _currentLives = Mathf.Clamp(newLives, 0, _maxLives);
-
-        if (_currentLives < oldLives)
-        {
-            int livesLost = oldLives - _currentLives;
-            StartCoroutine(AnimateLoseHearts(livesLost));
-        }
-        else if (_currentLives > oldLives)
-        {
-            int livesGained = _currentLives - oldLives;
-            StartCoroutine(AnimateHealHearts(livesGained));
-        }
+        if (!_isInitialized) return;
+        _currentLives = newLives;
+        RefreshAllHearts(false);
     }
 
-    private IEnumerator AnimateLoseHearts(int count)
+    private void RefreshAllHearts(bool immediate)
     {
-        List<int> heartsToLose = new List<int>();
-
-        for (int i = 0; i < count; i++)
+        if (!_isInitialized) return;
+        
+        for (int i = 0; i < _heartPool.Count; i++)
         {
-            int heartIndex = (_currentLives + count - 1) - i;
-            if (heartIndex >= 0 && heartIndex < _heartPool.Count)
-            {
-                heartsToLose.Add(heartIndex);
-            }
-        }
+            int fill = 0;
+            bool isExtraTier = (i > 0);
 
-        if (_simultaneousLoss)
-        {
-            foreach (int index in heartsToLose)
+            if (i == 0)
             {
-                if (_heartPool[index] != null)
-                {
-                    _heartPool[index].AnimateLose();
-                }
+                // Coração Base: consome as primeiras 3 vidas (0, 1, 2, 3)
+                fill = Mathf.Clamp(_currentLives, 0, 3);
             }
-        }
-        else
-        {
-            foreach (int index in heartsToLose)
+            else
             {
-                if (_heartPool[index] != null)
-                {
-                    _heartPool[index].AnimateLose();
-                    yield return new WaitForSeconds(_lossAnimationDelay);
-                }
+                // Corações Extras: cada um é uma vida inteira (após as 3 primeiras)
+                // Vida 4 -> Coração index 1 (fill 3)
+                // Vida 5 -> Coração index 2 (fill 3)
+                int extraLifeIndex = i + 3; 
+                fill = (_currentLives >= extraLifeIndex) ? 3 : 0;
             }
-        }
-    }
 
-    private IEnumerator AnimateHealHearts(int count)
-    {
-        int startIndex = _currentLives - count;
-
-        for (int i = 0; i < count && startIndex + i < _heartPool.Count; i++)
-        {
-            int index = startIndex + i;
-            if (index >= 0 && _heartPool[index] != null)
-            {
-                _heartPool[index].AnimateHeal();
-                yield return new WaitForSeconds(0.15f);
-            }
+            _heartPool[i].SetState(fill, isExtraTier, immediate);
         }
     }
 
     public void ExpandMaxLives(int newMaxLives)
     {
-        if (newMaxLives <= _maxLives) return;
-
-        int difference = newMaxLives - _maxLives;
+        if (!_isInitialized) return;
+        
         _maxLives = newMaxLives;
+        
+        // Cálculo: 1 (base) + (Vidas Extras que passarem de 3)
+        int extraLives = Mathf.Max(0, _maxLives - 3);
+        int neededHearts = 1 + extraLives;
+        
+        neededHearts = Mathf.Min(neededHearts, MAX_HEART_COUNT);
 
-        for (int i = 0; i < difference; i++)
+        if (neededHearts != _heartPool.Count)
         {
-            GameObject heartObj = Instantiate(_heartPrefab, _container);
-            HeartView heartView = heartObj.GetComponent<HeartView>();
-
-            if (heartView != null)
-            {
-                int index = _heartPool.Count;
-                RectTransform rt = heartObj.GetComponent<RectTransform>();
-                rt.anchoredPosition = new Vector2(index * _spacing, 0);
-
-                heartView.SetState(false, immediate: true);
-                _heartPool.Add(heartView);
-            }
+            CreateHeartPool(neededHearts);
+            RefreshAllHearts(true);
         }
     }
 }

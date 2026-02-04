@@ -101,11 +101,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7275ec0c8aecb1b4f8dbd46bca7ca491, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _fullColor: {r: 0.990566, g: 0.4999555, b: 0.4999555, a: 1}
-  _emptyColor: {r: 0.3, g: 0.3, b: 0.3, a: 1}
-  _spawnDuration: 0.3
-  _loseDuration: 0.4
-  _healDuration: 0.5
+  _normalSprites:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  _extraSprites:
+  - {fileID: 0}
+  _animationDuration: 0.25
   _popCurve:
     serializedVersion: 2
     m_Curve:
