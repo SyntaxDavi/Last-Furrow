@@ -29,8 +29,8 @@ MonoBehaviour:
   DragTiltAmount: 18
   ClickSquashAmount: 0.4
   ClickRecoverySpeed: 12
-  HandElevationOffset: 2.3
-  HandElevationSpeed: 3.3
+  HandElevationOffset: 1
+  HandElevationSpeed: 3.1
   HandElevationSequenceDelay: 0.03
   HandElevationStartDelay: 0.3
   HandLoweringStartDelay: 0.4
