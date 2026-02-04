@@ -155,6 +155,10 @@ public class InputManager : MonoBehaviour, ICameraInputProvider
     }
 
     public bool IsInputLocked => AppCore.Instance != null &&
-                                 ((AppCore.Instance.GameStateManager != null && AppCore.Instance.GameStateManager.CurrentState == GameState.Shopping) ||
+                                 ((AppCore.Instance.GameStateManager != null && 
+                                   (AppCore.Instance.GameStateManager.CurrentState == GameState.Shopping || 
+                                    AppCore.Instance.GameStateManager.CurrentState == GameState.MainMenu ||
+                                    AppCore.Instance.GameStateManager.CurrentState == GameState.Analyzing ||
+                                    AppCore.Instance.GameStateManager.CurrentState == GameState.Paused)) ||
                                   (AppCore.Instance.ShopService != null && AppCore.Instance.ShopService.CurrentSession != null));
 }

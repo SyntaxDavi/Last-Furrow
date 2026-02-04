@@ -1,40 +1,48 @@
+using System;
 using UnityEngine;
 using TMPro;
 
-public class GameOverView : UIView
+namespace LastFurrow.UI.GameOver
 {
-    [Header("Referências UI")]
-    [SerializeField] private TextMeshProUGUI _reasonTitle;
-    [SerializeField] private TextMeshProUGUI _detailsText;
-
-    public void Setup(RunEndReason reason)
+    /// <summary>
+    /// Professional Pure View for the Game Over Screen.
+    /// - Reactive: Only handles visual presentation.
+    /// - Communicates intent via events.
+    /// </summary>
+    public class GameOverView : UIView
     {
-        switch (reason)
+        public event Action OnReturnToMenuRequested;
+
+        [Header("UI References")]
+        [SerializeField] private TextMeshProUGUI _reasonTitle;
+        [SerializeField] private TextMeshProUGUI _detailsText;
+
+        public void Setup(RunEndReason reason)
         {
-            case RunEndReason.Abandoned:
-                SetText("DESISTÊNCIA", "A fazenda foi abandonada.");
-                break;
-            case RunEndReason.HarvestFailed:
-                SetText("FALÊNCIA", "Acúmulo de falhas econômicas.");
-                break;
-            case RunEndReason.WitheredOverload:
-                SetText("COLAPSO ECOLÓGICO", "O solo está morto (80%+ de contaminação).");
-                break;
-            case RunEndReason.Victory:
-                SetText("VITÓRIA!", "O ciclo foi completado com sucesso.");
-                break;
+            switch (reason)
+            {
+                case RunEndReason.GameOver:
+                    SetText("GAME OVER", "Sua jornada terminou aqui.");
+                    break;
+                case RunEndReason.Victory:
+                    SetText("VITÃ“RIA!", "O ciclo foi completado com sucesso.");
+                    break;
+                case RunEndReason.Abandoned:
+                    SetText("DESISTÃŠNCIA", "A fazenda foi abandonada (ou contaminaÃ§Ã£o).");
+                    break;
+            }
         }
-    }
 
-    private void SetText(string title, string detail)
-    {
-        _reasonTitle.text = title;
-        _detailsText.text = detail;
-    }
+        private void SetText(string title, string detail)
+        {
+            if (_reasonTitle != null) _reasonTitle.text = title;
+            if (_detailsText != null) _detailsText.text = detail;
+        }
 
-    // Vinculado ao botão "Voltar ao Menu" na Unity
-    public void OnMainMenuClicked()
-    {
-        AppCore.Instance.ReturnToMainMenu();
+        // Linked to the Button in Unity Inspector
+        public void OnMainMenuClicked()
+        {
+            OnReturnToMenuRequested?.Invoke();
+        }
     }
 }

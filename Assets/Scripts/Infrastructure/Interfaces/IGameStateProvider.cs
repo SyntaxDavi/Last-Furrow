@@ -1,3 +1,5 @@
+using System;
+
 /// <summary>
 /// Permite desacoplamento de GameStateManager concreto.
 ///
@@ -17,6 +19,11 @@ public interface IGameStateProvider
     /// Estado anterior do jogo (útil para transições).
     /// </summary>
     GameState PreviousState { get; }
+
+    /// <summary>
+    /// Evento disparado quando o estado muda.
+    /// </summary>
+    event Action<GameState> OnStateChanged;
 
     /// <summary>
     /// Altera o estado do jogo.

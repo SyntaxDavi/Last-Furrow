@@ -37,7 +37,8 @@ public class AppCore : MonoBehaviour
     public WeekendFlowController WeekendFlowController;
 
     [Header("Scene Config")]
-    [SerializeField] private string _firstSceneName = "Game";
+    [SerializeField] private string _mainMenuSceneName = "MainMenu";
+    [SerializeField] private string _gameplaySceneName = "Game";
 
     // --- PROPRIEDADES DE COMPATIBILIDADE ---
     public IGameLibrary GameLibrary { get; private set; } // Agora inicializado no AppCore
@@ -133,9 +134,10 @@ public class AppCore : MonoBehaviour
         if (eventAdapter != null)
         {
             eventAdapter.Initialize(events);
-            Debug.Log("[AppCore] EventInspector initialized. JSON will be saved to: " + @"C:\Users\davi_\OneDrive\Área de Trabalho\json\");
+            Debug.Log("[AppCore] EventInspector initialized.");
         }
-        SceneManager.LoadScene(_firstSceneName);
+
+        LoadMainMenu();
     }
 
     private void HandleAnyInput()
@@ -223,10 +225,28 @@ public class AppCore : MonoBehaviour
 
     public void OnWeeklyReset() => PatternTracking?.OnWeeklyReset();
 
+    public void LoadMainMenu()
+    {
+        Debug.Log("[AppCore] Loading Main Menu...");
+        GameStateManager.SetState(GameState.MainMenu);
+        SceneManager.LoadScene(_mainMenuSceneName);
+    }
+
+    public void LoadGameplay()
+    {
+        Debug.Log("[AppCore] Loading Gameplay...");
+        SceneManager.LoadScene(_gameplaySceneName);
+    }
+
     public void ReturnToMainMenu()
     {
-        GameStateManager.SetState(GameState.MainMenu);
-        SceneManager.LoadScene("MainMenu");
+        Debug.Log("[AppCore] Returning to Main Menu and cleaning up...");
+        
+        // Cleanup gameplay-specific references
+        UnregisterGridService();
+        UnregisterDailyResolutionSystem();
+        
+        LoadMainMenu();
     }
 }
 

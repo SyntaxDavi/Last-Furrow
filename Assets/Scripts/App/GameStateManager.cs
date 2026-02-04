@@ -1,13 +1,21 @@
 using UnityEngine;
+using System;
 
+/// <summary>
+/// Concretiza√ß√£o do IGameStateProvider.
+/// Gerencia o estado global do jogo e sincroniza o Time.timeScale.
+/// </summary>
 public class GameStateManager : MonoBehaviour, IGameStateProvider
 {
     public GameState CurrentState { get; private set; } = GameState.Initialization;
-    public GameState PreviousState { get; private set; } 
+    public GameState PreviousState { get; private set; }
+
+    public event Action<GameState> OnStateChanged;
 
     public void Initialize()
     {
         SetState(GameState.MainMenu);
+        Debug.Log("[GameStateManager] Initialized at MainMenu");
     }
 
     public void SetState(GameState newState)
@@ -17,11 +25,10 @@ public class GameStateManager : MonoBehaviour, IGameStateProvider
         PreviousState = CurrentState;
         CurrentState = newState;
 
-        // Dispara evento global
-        AppCore.Instance.Events.GameState.TriggerStateChanged(newState);
-
-        // LÛgica de controle de tempo autom·tica (Opcional, mas ˙til)
         HandleTimeScale(newState);
+        
+        OnStateChanged?.Invoke(newState);
+        Debug.Log($"[GameState] State changed: {PreviousState} -> {CurrentState}");
     }
 
     private void HandleTimeScale(GameState state)
@@ -33,7 +40,6 @@ public class GameStateManager : MonoBehaviour, IGameStateProvider
             Time.timeScale = 1f;
     }
 
-    // Helper para outros scripts checarem se podem interagir
     public bool IsGameplayActive()
     {
         return CurrentState == GameState.Playing;
