@@ -34,7 +34,7 @@ MonoBehaviour:
   HandElevationSequenceDelay: 0.03
   HandElevationStartDelay: 0.3
   HandLoweringStartDelay: 0.4
-  FanOutOffset: {x: 33, y: -3, z: 0}
+  FanOutOffset: {x: 37, y: -3, z: 0}
   FanInPreDelay: 0.5
   FanOutSequenceDelay: 0.2
   FanInSequenceDelay: 0.14

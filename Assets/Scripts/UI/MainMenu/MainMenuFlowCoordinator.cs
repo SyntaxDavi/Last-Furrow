@@ -56,6 +56,7 @@ namespace LastFurrow.UI.MainMenu
             bool canContinue = runManager != null && runManager.IsRunActive;
 
             _controller.Initialize(versionText, canContinue);
+            _controller.Show();
         }
 
         private void HandleNewGameRequest()

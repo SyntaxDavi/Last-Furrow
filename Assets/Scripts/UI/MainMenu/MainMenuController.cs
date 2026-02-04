@@ -74,5 +74,15 @@ namespace LastFurrow.UI.MainMenu
         /// Allows the Orchestrator to unlock input (e.g., if a quit dialog is cancelled).
         /// </summary>
         public void UnlockInput() => _isProcessing = false;
+
+        public void Show()
+        {
+            if (_view != null) _view.Show();
+        }
+
+        public void Hide()
+        {
+            if (_view != null) _view.Hide();
+        }
     }
 }
