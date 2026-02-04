@@ -42,25 +42,31 @@ public class DomainModule : BaseModule
 
     public override void Initialize()
     {
-        // 1. Inicializa RunManager
+        // 1. Cria calendário com valores do ProgressionSettings
+        int productionDays = _progressionSettings != null ? _progressionSettings.ProductionDays : 5;
+        int weekendDays = _progressionSettings != null ? _progressionSettings.WeekendDays : 2;
+        var calendar = new RunCalendar(productionDays, weekendDays);
+
+        // 2. Inicializa RunManager com calendário injetado
         App.RunManager.Initialize(
             Registry.Save,
             Registry.GridConfig,
             Registry.Events.Time,
             Registry.State,
-            App.OnWeeklyReset
+            calendar,
+            _progressionSettings
         );
 
-        // 2. Cria Serviços Puros
+        // 3. Cria Serviços Puros
         var economy = new EconomyService(Registry.Run, Registry.Save);
         var health = new HealthService(Registry.Save);
         var dailyHand = new DailyHandSystem(Registry.GameLibrary, economy, new SeasonalCardStrategy(), Registry.Events.Player);
         var weeklyGoal = new WeeklyGoalSystem(Registry.GameLibrary, Registry.Events.Progression, _progressionSettings);
 
-        // 3. Registra no Registry
+        // 4. Registra no Registry
         Registry.RegisterDomain(Registry.Run, economy, health, dailyHand, weeklyGoal);
 
-        Debug.Log("[DomainModule] ✓ Inicializado com sucesso.");
+        Debug.Log("[DomainModule] ✓ Inicializado com RunCalendar configurável.");
     }
 }
 

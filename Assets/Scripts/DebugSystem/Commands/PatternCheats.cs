@@ -66,7 +66,8 @@ public class ResetWeeklyCheat : ICheatCommand
 
     public bool Execute(string[] args, out string feedback)
     {
-        AppCore.Instance?.OnWeeklyReset();
+        // REFATORADO: Agora usa o serviço diretamente ao invés de callback no AppCore
+        AppCore.Instance?.PatternTracking?.OnWeeklyReset();
         feedback = "✅ Tracking semanal resetado.";
         return true;
     }

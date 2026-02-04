@@ -1,24 +1,33 @@
 using UnityEngine;
 using System;
 
+/// <summary>
+/// RunManager Refatorado - Responsabilidade Única.
+/// 
+/// APENAS: Move o tempo da Run e anuncia mudanças de fase.
+/// 
+/// NÃO CONHECE:
+/// - Sistemas que precisam de reset semanal (Pattern Tracking)
+/// - Detalhes de UI ou GameState (delega para dependências)
+/// 
+/// Arquitetura:
+/// - Usa IRunCalendar para lógica temporal (configurável)
+/// - Centraliza mudanças de fase em ChangePhase() (nunca muda em silêncio)
+/// - Dispara eventos de domínio que outros sistemas escutam
+/// </summary>
 public class RunManager : MonoBehaviour, IRunManager
 {
-    [Header("Configuração de Jogo")]
-    [SerializeField] private ProgressionSettingsSO _progressionSettings;
-
     // Dependências injetadas
     private ISaveManager _saveManager;
     private GridConfiguration _gridConfiguration;
     private TimeEvents _timeEvents;
     private IGameStateProvider _gameStateProvider;
-    private Action _onWeeklyResetCallback;
+    private IRunCalendar _calendar;
+    private ProgressionSettingsSO _progressionSettings;
 
     // Estado privado, leitura pública
     private RunPhase _currentPhase;
     public RunPhase CurrentPhase => _currentPhase;
-
-    private const int DAYS_IN_PRODUCTION = 5;
-    private const int DAY_WEEKEND_START = 6;
 
     // --- EVENTOS DE FLUXO (O FlowController escuta estes) ---
     public event Action<RunData> OnWeekendStarted;
@@ -27,28 +36,30 @@ public class RunManager : MonoBehaviour, IRunManager
     // --- INICIALIZAÇÃO ---
     /// <summary>
     /// Inicializa o RunManager com todas as dependências necessárias.
-    /// SOLID: Injeção de Dependência Explícita - sem acesso a AppCore.Instance.
+    /// SOLID: Injeção de Dependência Explícita - sem callbacks ocultos.
     /// </summary>
     public void Initialize(
         ISaveManager saveManager,
         GridConfiguration gridConfiguration,
         TimeEvents timeEvents,
         IGameStateProvider gameStateProvider,
-        Action onWeeklyResetCallback)
+        IRunCalendar calendar,
+        ProgressionSettingsSO progressionSettings = null)
     {
         _saveManager = saveManager;
         _gridConfiguration = gridConfiguration;
         _timeEvents = timeEvents;
         _gameStateProvider = gameStateProvider;
-        _onWeeklyResetCallback = onWeeklyResetCallback;
+        _calendar = calendar;
+        _progressionSettings = progressionSettings;
 
         // Restaura o estado correto ao carregar o jogo
         if (IsRunActive)
         {
-            RefreshPhaseState(_saveManager.Data.CurrentRun);
+            RestorePhaseFromSave(_saveManager.Data.CurrentRun);
         }
         
-        Debug.Log("[RunManager] ✓ Inicializado com injeção de dependências");
+        Debug.Log("[RunManager] ✓ Inicializado com calendário injetado");
     }
 
     public bool IsRunActive => _saveManager?.Data?.CurrentRun != null;
@@ -57,7 +68,7 @@ public class RunManager : MonoBehaviour, IRunManager
 
     public void StartNewRun()
     {
-        // 1. Criação Pura de Dados (Domain) - usa dependência injetada
+        // 1. Criação Pura de Dados (Domain)
         RunData newRun = RunData.CreateNewRun(_gridConfiguration);
 
         // Ajusta meta inicial se settings existirem
@@ -70,15 +81,8 @@ public class RunManager : MonoBehaviour, IRunManager
         _saveManager.Data.CurrentRun = newRun;
         _saveManager.SaveGame();
 
-        // 3. Atualiza estado interno
-        RefreshPhaseState(newRun);
-
-        // 4. Notificações - usa dependência injetada
-        _timeEvents.TriggerRunStarted();
-        _timeEvents.TriggerDayChanged(newRun.CurrentDay);
-
-        // Aviso de Fluxo: O jogo começa em modo Produção
-        OnProductionStarted?.Invoke(newRun);
+        // 3. Muda para fase Production (centralizado)
+        ChangePhase(RunPhase.Production, newRun, isNewRun: true);
     }
 
     public void AdvanceDay()
@@ -89,61 +93,47 @@ public class RunManager : MonoBehaviour, IRunManager
         run.CurrentDay++;
 
         // Decide a fase baseada no novo dia
-        ProcessDayPhase(run);
+        ProcessDayTransition(run);
 
         _saveManager.SaveGame();
     }
 
-    // --- LÓGICA DE FASE (PURE DOMAIN) ---
+    // --- TRANSIÇÕES DE FASE (CENTRALIZADAS) ---
 
-    private void ProcessDayPhase(RunData run)
+    private void ProcessDayTransition(RunData run)
     {
-        // Caso 1: Dias de Trabalho (1 a 5)
-        if (run.CurrentDay <= DAYS_IN_PRODUCTION)
+        // Caso 1: Dias de Trabalho (1 a N)
+        if (_calendar.IsProductionDay(run.CurrentDay))
         {
             HandleProductionDay(run);
         }
-        // Caso 2: Chegou o Sábado (Dia 6)
-        else if (run.CurrentDay == DAY_WEEKEND_START)
+        // Caso 2: Chegou o Weekend
+        else if (_calendar.IsWeekendStart(run.CurrentDay))
         {
-            StartWeekendPhase(run);
+            ChangePhase(RunPhase.Weekend, run);
         }
-        // Caso 3: Passou do Fim de Semana (Dia 7 virando Dia 1)
-        else
+        // Caso 3: Passou do Ciclo (não deveria acontecer via AdvanceDay normal)
+        else if (_calendar.IsPastCycle(run.CurrentDay))
         {
+            Debug.LogWarning("[RunManager] Dia passou do ciclo via AdvanceDay. Isso não deveria acontecer.");
             StartNextWeek(run);
         }
     }
 
     private void HandleProductionDay(RunData run)
     {
-        _currentPhase = RunPhase.Production;
-
-        // Avisa sistemas passivos (HUD de relógio) - usa dependência injetada
+        // Não muda fase, apenas notifica mudança de dia
         _timeEvents.TriggerDayChanged(run.CurrentDay);
 
-        if (run.CurrentDay == DAYS_IN_PRODUCTION)
+        if (run.CurrentDay == _calendar.ProductionDays)
         {
             Debug.Log(">>> ALERTA: Último dia de colheita da semana! <<<");
         }
     }
 
-    // Chamado quando o dia vira 6
-    public void StartWeekendPhase(RunData run)
-    {
-        Debug.Log($"[RunManager] Fase mudou para: Weekend (Semana {run.CurrentWeek})");
-
-        // 1. Atualiza Dado
-        _currentPhase = RunPhase.Weekend;
-
-        // 2. Dispara Fato
-        OnWeekendStarted?.Invoke(run);
-
-        // Mantemos o evento legado de tempo - usa dependência injetada
-        _timeEvents.TriggerWeekendStarted();
-    }
-
-    // Chamado quando o dia vira 7 (resetando para 1)
+    /// <summary>
+    /// Chamado pelo StartNextWeekStep no pipeline de exit do Weekend.
+    /// </summary>
     public void StartNextWeek(RunData run)
     {
         if (run == null)
@@ -158,21 +148,11 @@ public class RunManager : MonoBehaviour, IRunManager
 
         Debug.Log($"[RunManager] >>> INICIANDO SEMANA {run.CurrentWeek} <<<");
 
-        // 2. Atualiza Dado
-        _currentPhase = RunPhase.Production;
-
-        // ONDA 4: Reset semanal do Pattern Tracking - usa callback injetado
-        _onWeeklyResetCallback?.Invoke();
-
-        // 3. Persistência (CRÍTICO: Faltava o Save aqui ao ser chamado fora do AdvanceDay)
+        // 2. Persistência
         _saveManager.SaveGame();
 
-        // 4. Dispara Fatos (Fase primeiro para o FlowController reagir)
-        OnProductionStarted?.Invoke(run);
-
-        // 5. Eventos legados de tempo - usa dependência injetada
-        _timeEvents.TriggerWeekChanged(run.CurrentWeek);
-        _timeEvents.TriggerDayChanged(1);
+        // 3. Muda para fase Production (centralizado)
+        ChangePhase(RunPhase.Production, run, isNewWeek: true);
     }
 
     public void EndRun(RunEndReason reason)
@@ -181,23 +161,86 @@ public class RunManager : MonoBehaviour, IRunManager
         _saveManager.Data.CurrentRun = null;
         _saveManager.SaveGame();
 
-        // Usa dependências injetadas
         _gameStateProvider.SetState(GameState.GameOver);
         _timeEvents.TriggerRunEnded(reason);
     }
 
-    // --- HELPERS ---
+    // --- MUDANÇA DE FASE CENTRALIZADA ---
 
-    private void RefreshPhaseState(RunData run)
+    /// <summary>
+    /// Ponto único de mudança de fase.
+    /// NUNCA muda _currentPhase em outro lugar.
+    /// Garante que estado e eventos estejam sempre sincronizados.
+    /// </summary>
+    private void ChangePhase(RunPhase newPhase, RunData run, bool isNewRun = false, bool isNewWeek = false)
+    {
+        RunPhase previousPhase = _currentPhase;
+        _currentPhase = newPhase;
+
+        Debug.Log($"[RunManager] Fase: {previousPhase} → {newPhase} (Semana {run.CurrentWeek}, Dia {run.CurrentDay})");
+
+        switch (newPhase)
+        {
+            case RunPhase.Production:
+                EmitProductionEvents(run, isNewRun, isNewWeek);
+                break;
+
+            case RunPhase.Weekend:
+                EmitWeekendEvents(run);
+                break;
+        }
+    }
+
+    private void EmitProductionEvents(RunData run, bool isNewRun, bool isNewWeek)
+    {
+        // Evento de domínio principal
+        OnProductionStarted?.Invoke(run);
+
+        // Eventos de tempo
+        if (isNewRun)
+        {
+            _timeEvents.TriggerRunStarted();
+        }
+
+        if (isNewWeek)
+        {
+            // ARQUITETURA: PatternTracking e outros sistemas escutam OnWeekStarted
+            // Ao invés de callback oculto, declaramos o fato de domínio
+            _timeEvents.TriggerWeekStarted(run.CurrentWeek);
+            _timeEvents.TriggerWeekChanged(run.CurrentWeek);
+        }
+
+        _timeEvents.TriggerDayChanged(run.CurrentDay);
+    }
+
+    private void EmitWeekendEvents(RunData run)
+    {
+        // Evento de domínio principal
+        OnWeekendStarted?.Invoke(run);
+
+        // Evento legado de tempo
+        _timeEvents.TriggerWeekendStarted();
+    }
+
+    // --- RESTAURAÇÃO DE ESTADO (LOAD) ---
+
+    /// <summary>
+    /// Restaura fase após carregar save.
+    /// Não emite eventos pois o jogo ainda está inicializando.
+    /// Sistemas devem usar seu próprio estado salvo.
+    /// </summary>
+    private void RestorePhaseFromSave(RunData run)
     {
         if (run == null) return;
-        _currentPhase = (run.CurrentDay <= DAYS_IN_PRODUCTION) ? RunPhase.Production : RunPhase.Weekend;
+        _currentPhase = _calendar.GetPhaseForDay(run.CurrentDay);
+        Debug.Log($"[RunManager] Fase restaurada do save: {_currentPhase}");
     }
+
+    // --- HELPERS ---
 
     private bool CanAdvanceDay()
     {
         if (!IsRunActive) return false;
-        // Usa dependência injetada
         var s = _gameStateProvider.CurrentState;
         return s == GameState.Playing || s == GameState.Shopping;
     }

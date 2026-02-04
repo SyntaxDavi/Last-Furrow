@@ -97,11 +97,11 @@ public class AppCore : MonoBehaviour
         
         coreModule.Initialize();
 
-        // 3. MÃ³dulo DomÃ­nio (Regras de NegÃ³cio e ServiÃ§os Puros)
+        // 3. Módulo Domínio (Regras de Negócio e Serviços Puros)
         var domainModule = new DomainModule(Services, this, _progressionSettings);
         domainModule.Initialize();
 
-        // 4. MÃ³dulo Gameplay (Sistemas EspecÃ­ficos)
+        // 4. Módulo Gameplay (Sistemas Específicos)
         var patternModule = new PatternModule(Services, this, _patternLibrary);
         patternModule.Initialize();
 
@@ -118,14 +118,18 @@ public class AppCore : MonoBehaviour
         traditionService.Configure(SaveManager.Data.CurrentRun, GameLibrary, Events);
         traditionService.Initialize();
 
-        // 5. InjeÃ§Ãµes de DependÃªncia Complexas (Cross-Module)
+        // ARQUITETURA: PatternTracking escuta evento de domínio ao invés de callback
+        // Isso remove acoplamento oculto do RunManager
+        SubscribePatternTrackingToWeeklyReset(events);
+
+        // 5. Injeções de Dependência Complexas (Cross-Module)
         InitializeLegacyCrossInjections();
 
-        // 6. FinalizaÃ§Ã£o
+        // 6. Finalização
         InputManager.OnAnyInputDetected += HandleAnyInput;
         SceneManager.sceneLoaded += OnSceneLoaded;
         
-        Debug.Log("[AppCore] âœ… Arquitetura Modular pronta. Carregando cena inicial...");
+        Debug.Log("[AppCore] ✅ Arquitetura Modular pronta. Carregando cena inicial...");
 
         // === EVENT INSPECTOR INTEGRATION ===
         var eventAdapter = FindFirstObjectByType<LastFurrow.EventInspector.GameEventAdapter>();
@@ -224,7 +228,19 @@ public class AppCore : MonoBehaviour
         Services.SetPatternTracking(new PatternTrackingService(runData));
     }
 
-    public void OnWeeklyReset() => PatternTracking?.OnWeeklyReset();
+    /// <summary>
+    /// ARQUITETURA: PatternTracking agora escuta evento de domínio.
+    /// Isso substitui o callback oculto que era injetado no RunManager.
+    /// RunManager não conhece mais o PatternTracking.
+    /// </summary>
+    private void SubscribePatternTrackingToWeeklyReset(GameEvents events)
+    {
+        events.Time.OnWeekStarted += (week) =>
+        {
+            PatternTracking?.OnWeeklyReset();
+            Debug.Log($"[AppCore] PatternTracking reset via evento OnWeekStarted (Semana {week})");
+        };
+    }
 
     public void LoadMainMenu()
     {

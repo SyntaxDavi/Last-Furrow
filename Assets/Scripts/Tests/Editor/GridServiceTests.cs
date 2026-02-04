@@ -129,7 +129,14 @@ public class GridServiceTests
         public void AdvanceDay() {}
         public bool IsRunActive => true;
         public void StartNextWeek(RunData run) {}
+        public void EndRun(RunEndReason reason) {}
         public RunPhase CurrentPhase => RunPhase.Production;
+        
+        public event System.Action<RunData> OnWeekendStarted;
+        public event System.Action<RunData> OnProductionStarted;
+        
+        // Suprime warning de eventos não usados
+        private void SuppressWarnings() { OnWeekendStarted?.Invoke(null); OnProductionStarted?.Invoke(null); }
     }
 
     private class MockSaveManager : ISaveManager {

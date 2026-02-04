@@ -11,17 +11,7 @@ public interface ISaveManager
     void DeleteSave();
 }
 
-/// <summary>
-/// Interface para gerenciamento de runs
-/// </summary>
-public interface IRunManager
-{
-    void StartNewRun();
-    void AdvanceDay();
-    bool IsRunActive { get; }
-    void StartNextWeek(RunData run);
-    RunPhase CurrentPhase { get; }
-}
+// IRunManager movido para Assets\Scripts\Domain\Run\IRunManager.cs
 
 /// <summary>
 /// Interface para gerenciamento de vida do jogador.

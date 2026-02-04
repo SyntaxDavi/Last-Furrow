@@ -100,9 +100,17 @@ public class EconomyServiceTests
     {
         public RunPhase CurrentPhase => RunPhase.Production;
         public bool IsRunActive => true;
+        
+        public event System.Action<RunData> OnWeekendStarted;
+        public event System.Action<RunData> OnProductionStarted;
+        
         public void StartNewRun() { }
         public void AdvanceDay() { }
         public void StartNextWeek(RunData run) { }
+        public void EndRun(RunEndReason reason) { }
+        
+        // Suprime warning de eventos não usados
+        private void SuppressWarnings() { OnWeekendStarted?.Invoke(null); OnProductionStarted?.Invoke(null); }
     }
 
     private class MockSaveManager : ISaveManager
