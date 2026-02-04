@@ -9,6 +9,7 @@ public class DefaultWeekendFlowBuilder : IWeekendFlowBuilder
     private readonly ShopService _shopService;
     private readonly DailyHandSystem _handSystem;
     private readonly CardDrawPolicy _drawPolicy;
+    private readonly RunManager _runManager;
 
     // Injeção via Construtor (Puro C#)
     public DefaultWeekendFlowBuilder(
@@ -16,6 +17,7 @@ public class DefaultWeekendFlowBuilder : IWeekendFlowBuilder
         IWeekendUIFlow uiFlow,
         IWeekendContentResolver contentResolver,
         ShopService shopService,
+        RunManager runManager,
         DailyHandSystem handSystem = null,
         CardDrawPolicy drawPolicy = null)
     {
@@ -23,6 +25,7 @@ public class DefaultWeekendFlowBuilder : IWeekendFlowBuilder
         _uiFlow = uiFlow;
         _contentResolver = contentResolver;
         _shopService = shopService;
+        _runManager = runManager;
         _handSystem = handSystem;
         _drawPolicy = drawPolicy ?? new CardDrawPolicy();
     }
@@ -59,12 +62,18 @@ public class DefaultWeekendFlowBuilder : IWeekendFlowBuilder
             new ScreenFadeStep(true, 0.5f)
         };
 
-        // ? SOLID: Adiciona draw de cartas ap�s shop (semana 2+)
-        // Isso garante que cartas sejam dadas na manh� do dia 1 da semana 2+ ap�s o shop
+        // SOLID: Adiciona draw de cartas após shop (semana 2+)
         if (_handSystem != null)
         {
             pipeline.Add(new WeekendCardDrawStep(_handSystem, runData, _drawPolicy));
         }
+
+        // FIX: StartNextWeek DEVE ser o ÚLTIMO step do pipeline.
+        // Isso garante que OnProductionStarted só seja disparado APÓS:
+        // - Fade completar
+        // - Cards serem distribuídos
+        // Resolve race condition do botão Sleep não reativar corretamente.
+        pipeline.Add(new StartNextWeekStep(_runManager, runData));
 
         return pipeline;
     }

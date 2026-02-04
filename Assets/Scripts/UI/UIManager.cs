@@ -121,18 +121,12 @@ public class UIManager : MonoBehaviour
     {
         if (AppCore.Instance == null) return;
 
-        // Intenção: Jogador quer ir para próxima semana
-        var run = AppCore.Instance.SaveManager.Data.CurrentRun;
-        
-        if (run != null)
-        {
-            Debug.Log("[UIManager] Botão 'Trabalhar' clicado. Solicitando avanço de semana...");
-            AppCore.Instance.RunManager.StartNextWeek(run);
-        }
-        else
-        {
-            Debug.LogError("[UIManager] Erro: Tentativa de sair do shop sem RunData ativo!");
-        }
+        // FIX: Dispara evento de intenção ao invés de chamar diretamente StartNextWeek.
+        // O WeekendFlowController escuta este evento e executa o pipeline de exit,
+        // que inclui o StartNextWeekStep como último passo.
+        // Isso resolve a race condition do botão Sleep não reativar após o draw de cartas.
+        Debug.Log("[UIManager] Botão 'Trabalhar' clicado. Solicitando exit do Weekend via evento...");
+        AppCore.Instance.Events.UI.RequestExitWeekend();
     }
 
     private void HandleBackInput()

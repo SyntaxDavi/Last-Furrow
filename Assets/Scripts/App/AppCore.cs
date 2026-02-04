@@ -164,10 +164,11 @@ public class AppCore : MonoBehaviour
                 new WeekendUIFlow(Events.UI),
                 new WeekendContentResolver(ShopService, _defaultShop, _specialShops),
                 ShopService,
+                RunManager,
                 DailyHandSystem,
                 new CardDrawPolicy()
             );
-            WeekendFlowController.Initialize(RunManager, weekendBuilder);
+            WeekendFlowController.Initialize(RunManager, weekendBuilder, Events.UI);
         }
     }
 

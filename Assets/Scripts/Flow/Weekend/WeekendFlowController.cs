@@ -1,22 +1,35 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks; // <--- Importante
+using Cysharp.Threading.Tasks;
 
+/// <summary>
+/// Orquestra os pipelines de entrada e saída do Weekend.
+/// 
+/// FIX: Agora escuta OnExitWeekendRequested (UI) ao invés de OnProductionStarted.
+/// Isso garante que o pipeline de exit seja executado ANTES de StartNextWeek(),
+/// resolvendo a race condition do botão Sleep.
+/// </summary>
 public class WeekendFlowController : MonoBehaviour
 {
     private RunManager _runManager;
     private IWeekendFlowBuilder _flowBuilder;
+    private UIEvents _uiEvents;
 
     // Controle de cancelamento para segurança
     private System.Threading.CancellationTokenSource _cts;
 
-    public void Initialize(RunManager runManager, IWeekendFlowBuilder flowBuilder)
+    public void Initialize(RunManager runManager, IWeekendFlowBuilder flowBuilder, UIEvents uiEvents)
     {
         _runManager = runManager;
         _flowBuilder = flowBuilder;
+        _uiEvents = uiEvents;
 
+        // Entrada no Weekend: escuta o RunManager
         _runManager.OnWeekendStarted += StartWeekendSequence;
-        _runManager.OnProductionStarted += EndWeekendSequence;
+        
+        // FIX: Saída do Weekend: escuta o evento de UI (não mais OnProductionStarted)
+        // O StartNextWeek agora é chamado DENTRO do pipeline via StartNextWeekStep
+        _uiEvents.OnExitWeekendRequested += HandleExitWeekendRequested;
     }
 
     private void OnDestroy()
@@ -24,10 +37,13 @@ public class WeekendFlowController : MonoBehaviour
         if (_runManager != null)
         {
             _runManager.OnWeekendStarted -= StartWeekendSequence;
-            _runManager.OnProductionStarted -= EndWeekendSequence;
         }
 
-        // Cancela qualquer fluxo pendente se o objeto morrer
+        if (_uiEvents != null)
+        {
+            _uiEvents.OnExitWeekendRequested -= HandleExitWeekendRequested;
+        }
+
         _cts?.Cancel();
         _cts?.Dispose();
     }
@@ -37,21 +53,30 @@ public class WeekendFlowController : MonoBehaviour
     private void StartWeekendSequence(RunData runData)
     {
         var pipeline = _flowBuilder.BuildEnterPipeline(runData);
-        // Fire-and-forget seguro com UniTask
         RunPipeline(pipeline).Forget();
     }
 
-    private void EndWeekendSequence(RunData runData)
+    private void HandleExitWeekendRequested()
     {
+        // Pega RunData atual do SaveManager via AppCore
+        var runData = AppCore.Instance?.SaveManager?.Data?.CurrentRun;
+        
+        if (runData == null)
+        {
+            Debug.LogError("[WeekendFlowController] RunData null ao tentar sair do Weekend!");
+            return;
+        }
+
+        Debug.Log($"[WeekendFlowController] Exit Weekend solicitado (Semana {runData.CurrentWeek})");
+        
         var pipeline = _flowBuilder.BuildExitPipeline(runData);
         RunPipeline(pipeline).Forget();
     }
 
-    // --- EXECUTOR (Atualizado para UniTask) ---
+    // --- EXECUTOR ---
 
     private async UniTaskVoid RunPipeline(List<IFlowStep> steps)
     {
-        // Reinicia o token de cancelamento
         _cts?.Cancel();
         _cts = new System.Threading.CancellationTokenSource();
         var token = _cts.Token;
@@ -60,10 +85,8 @@ public class WeekendFlowController : MonoBehaviour
 
         foreach (var step in steps)
         {
-            // Verifica se o objeto foi destruído antes de continuar
             if (this == null || token.IsCancellationRequested) return;
 
-            // Aguarda o passo (que agora retorna UniTask)
             await step.Execute(flowControl);
 
             if (flowControl.ShouldAbort)
