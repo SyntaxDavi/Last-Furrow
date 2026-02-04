@@ -16,7 +16,7 @@ namespace LastFurrow.UI.GameOver
         public event Action OnMainMenuRequested;
 
         private IGameStateProvider _stateProvider;
-        private RunEndReason _lastReason = RunEndReason.GameOver;
+        private RunEndReason _lastReason = RunEndReason.Abandoned;
 
         public void Initialize(IGameStateProvider stateProvider, TimeEvents timeEvents)
         {

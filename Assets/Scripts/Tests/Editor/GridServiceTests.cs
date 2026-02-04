@@ -170,12 +170,15 @@ public class GridServiceTests
         public GameState CurrentState { get; set; } = GameState.Playing;
         public GameState PreviousState { get; set; } = GameState.Initialization;
 
+        public event Action<GameState> OnStateChanged;
+
         public bool IsGameplayActive() => CurrentState == GameState.Playing;
 
         public void SetState(GameState newState)
         {
             PreviousState = CurrentState;
             CurrentState = newState;
+            OnStateChanged?.Invoke(newState);
         }
     }
 }

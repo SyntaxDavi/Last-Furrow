@@ -9,11 +9,11 @@ EditorBuildSettings:
     path: Assets/Scenes/Boot.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
   - enabled: 1
-    path: Assets/Scenes/Game.unity
-    guid: 347d476ae16b9ab4683ecaa006c43f49
-  - enabled: 1
     path: Assets/Scenes/MainMenu.unity
     guid: cbba111c593219b4eb03ce47c76cf3da
+  - enabled: 1
+    path: Assets/Scenes/Game.unity
+    guid: 347d476ae16b9ab4683ecaa006c43f49
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

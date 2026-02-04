@@ -21,14 +21,15 @@ namespace LastFurrow.UI.GameOver
         {
             switch (reason)
             {
-                case RunEndReason.GameOver:
-                    SetText("GAME OVER", "Sua jornada terminou aqui.");
+                case RunEndReason.HarvestFailed:
+                case RunEndReason.WitheredOverload:
+                    SetText("GAME OVER", "A fazenda não resistiu aos desafios.");
                     break;
                 case RunEndReason.Victory:
                     SetText("VITÓRIA!", "O ciclo foi completado com sucesso.");
                     break;
                 case RunEndReason.Abandoned:
-                    SetText("DESISTÊNCIA", "A fazenda foi abandonada (ou contaminação).");
+                    SetText("DESISTÊNCIA", "A fazenda foi abandonada.");
                     break;
             }
         }
