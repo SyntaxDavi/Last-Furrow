@@ -125,7 +125,7 @@ public class AnalyzingPhaseOrchestrator : MonoBehaviour
             {
                 // Força câmera a voltar se ainda não voltou
                 AppCore.Instance?.Events?.Time.TriggerResolutionEnded();
-                
+
                 // Força cartas a voltarem (se ainda não voltaram)
                 var fanController = _handManager?.GetFanController();
                 if (fanController != null && fanController.IsFannedOut)

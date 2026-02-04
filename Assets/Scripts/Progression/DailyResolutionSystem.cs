@@ -41,20 +41,29 @@ public class DailyResolutionSystem : MonoBehaviour
         Debug.Log($"[DailyResolution] ✓ Construct OK - Builder: {_pipelineBuilder?.GetType().Name}");
     }
 
-    public void StartEndDaySequence()
+    public bool StartEndDaySequence()
     {
         if (!_isInitialized)
         {
             Debug.LogError("[DailyResolution] FATAL: Dependências não injetadas via Construct()!");
-            return;
+            return false;
         }
 
-        if (_isProcessing) return;
+        if (_isProcessing) 
+        {
+            Debug.LogWarning("[DailyResolution] Already processing a day sequence. Ignoring request.");
+            return false;
+        }
 
         var runData = _logicContext.SaveManager.Data.CurrentRun;
-        if (runData == null) return;
+        if (runData == null) 
+        {
+            Debug.LogError("[DailyResolution] No active run found.");
+            return false;
+        }
 
-        ExecuteDayRoutine(runData).Forget();  
+        ExecuteDayRoutine(runData).Forget();
+        return true;
     }
 
     private async UniTaskVoid ExecuteDayRoutine(RunData runData)
@@ -62,21 +71,29 @@ public class DailyResolutionSystem : MonoBehaviour
         _isProcessing = true;
         _logicContext.Events.Time.TriggerResolutionStarted();
 
-        // 1. Constrói o Pipeline
-        var pipeline = _pipelineBuilder.BuildPipeline(_logicContext, _visualContext, runData);
-        
-        // 2. Executa via Executor Gerenciável
-        var executor = new PipelineExecutor("DailyResolution");
+        try
+        {
+            // 1. Constrói o Pipeline
+            var pipeline = _pipelineBuilder.BuildPipeline(_logicContext, _visualContext, runData);
+            
+            // 2. Executa via Executor Gerenciável
+            var executor = new PipelineExecutor("DailyResolution");
 
-        await executor.ExecuteAsync(pipeline, 
-            onStepFinished: (step, duration) => {
-                if (duration > 2f) Debug.LogWarning($"[DailyResolution] ⚠ {step.GetStepName()} está lento! ({duration:F3}s)");
-            });
-
-        // 3. Finaliza
-        // Nota: TriggerResolutionEnded() é chamado pela CameraUnfocusPhase dentro do pipeline
-        Debug.Log("[DailyResolution] ✓ Resolução do Dia Concluída");
-
-        _isProcessing = false;
+            await executor.ExecuteAsync(pipeline, 
+                onStepFinished: (step, duration) => {
+                    if (duration > 2f) Debug.LogWarning($"[DailyResolution] ⚠ {step.GetStepName()} está lento! ({duration:F3}s)");
+                });
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[DailyResolution] ERRO CRÍTICO no pipeline: {ex.Message}\n{ex.StackTrace}");
+        }
+        finally
+        {
+            // 3. Finaliza (Sinaliza o fim ABSOLUTO do ciclo para o botão de Sleep)
+            _logicContext.Events.Time.TriggerResolutionSequenceComplete();
+            Debug.Log("[DailyResolution] Sequence finalized.");
+            _isProcessing = false;
+        }
     }
 }

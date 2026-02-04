@@ -101,7 +101,7 @@ public class SleepButtonControllerV2 : MonoBehaviour
 
         // Escuta eventos
         _context.TimeEvents.OnResolutionStarted += HandleResolutionStarted;
-        _context.TimeEvents.OnResolutionEnded += HandleResolutionEnded;
+        _context.TimeEvents.OnResolutionSequenceComplete += HandleResolutionEnded;
         _context.GameStateEvents.OnStateChanged += HandleGameStateChanged;
         _context.TimeEvents.OnDayChanged += HandleDayChanged;
 
@@ -121,7 +121,7 @@ public class SleepButtonControllerV2 : MonoBehaviour
             if (_context.TimeEvents != null)
             {
                 _context.TimeEvents.OnResolutionStarted -= HandleResolutionStarted;
-                _context.TimeEvents.OnResolutionEnded -= HandleResolutionEnded;
+                _context.TimeEvents.OnResolutionSequenceComplete -= HandleResolutionEnded;
                 _context.TimeEvents.OnDayChanged -= HandleDayChanged;
             }
 
@@ -169,7 +169,15 @@ public class SleepButtonControllerV2 : MonoBehaviour
         _isProcessing = true;
         UpdateButtonState();
         
-        AppCore.Instance.DailyResolutionSystem.StartEndDaySequence();
+        bool started = AppCore.Instance.DailyResolutionSystem.StartEndDaySequence();
+        
+        // Se por algum motivo o sistema recusar (ex: já estava processando em outro lugar),
+        // limpamos o estado do botão para não ficar travado.
+        if (!started)
+        {
+            _isProcessing = false;
+            UpdateButtonState();
+        }
     }
 
     private void HandleResolutionStarted()
