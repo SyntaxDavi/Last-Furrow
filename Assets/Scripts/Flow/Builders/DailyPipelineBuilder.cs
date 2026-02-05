@@ -37,6 +37,8 @@ public class DailyPipelineBuilder : IDailyFlowBuilder
             Debug.LogWarning("[DailyPipelineBuilder] VisualContext invlido! Pipeline headless.");
         }
 
+        context.AnalysisResult?.Clear();
+
         // CONSTRUO DO PIPELINE (Single Source of Truth)
         var pipeline = new List<IFlowStep>();
         

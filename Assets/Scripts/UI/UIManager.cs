@@ -144,8 +144,9 @@ public class UIManager : MonoBehaviour
         }
         else if (_shopView != null && _shopView.IsVisible)
         {
-            // Opcional: ESC também tenta fechar loja via intenção
-            AppCore.Instance.Events.UI.RequestToggleShop();
+            // MUDANÇA: ESC agora abre o pause menu em cima da loja,
+            // permitindo retornar para ela depois.
+            AppCore.Instance.GameStateManager.SetState(GameState.Paused);
         }
         else
         {

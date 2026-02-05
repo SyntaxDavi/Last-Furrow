@@ -34,13 +34,16 @@ public class WeekendCardDrawStep : IFlowStep
         // Verifica se deve dar cartas após o shop (semana 2+)
         if (!_drawPolicy.ShouldDrawCardsAfterShop(_runData))
         {
-            Debug.Log($"[WeekendCardDrawStep] Não é necessário dar cartas após shop (Semana {_runData.CurrentWeek}, Dia {_runData.CurrentDay}).");
+            Debug.Log($"[WeekendCardDrawStep] Não é necessário dar cartas após shop.");
             return;
         }
 
-        Debug.Log($"[WeekendCardDrawStep] Iniciando Draw após Shop (Dia {_runData.CurrentDay}, Semana {_runData.CurrentWeek})...");
+        Debug.Log($"[WeekendCardDrawStep] Iniciando Draw após Shop...");
         
         _handSystem.ProcessDailyDraw(_runData);
+        
+        // FIX: Salvar imediatamente após draw para garantir persistência
+        AppCore.Instance?.SaveManager?.SaveGame();
 
         // Tempo para animação "Fan Out" (0.8s = 800ms)
         await UniTask.Delay(800);

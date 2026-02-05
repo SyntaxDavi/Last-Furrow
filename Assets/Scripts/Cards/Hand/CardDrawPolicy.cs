@@ -28,19 +28,12 @@ public class CardDrawPolicy
         }
 
         // REGRA 2: Dias 1-5 sempre ganham cartas (Production phase)
+        // FIX: Inclui Dia 1 de qualquer semana SE ainda não deu draw hoje
         if (runData.CurrentDay >= 1 && runData.CurrentDay <= DAYS_IN_PRODUCTION)
         {
+            // A idempotência do DailyHandSystem.ProcessDailyDraw já previne double draw
+            // via HasDrawnDailyHand, então não precisamos bloquear aqui.
             return true;
-        }
-
-        // REGRA 3: Dia 1 da semana 2+ ganha cartas (mas isso é tratado no pipeline de saída do weekend)
-        // Esta função é chamada apenas durante o pipeline diário normal
-        if (runData.CurrentDay == 1 && runData.CurrentWeek > 1)
-        {
-            // Se chegou aqui, significa que já passou pelo weekend e está no pipeline diário
-            // Mas na verdade, o draw deve acontecer no pipeline de saída do weekend
-            // Então retornamos false aqui e deixamos o WeekendCardDrawStep lidar com isso
-            return false;
         }
 
         return false;

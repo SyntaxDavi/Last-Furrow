@@ -51,7 +51,7 @@ public class DailyDrawStep : IFlowStep
             Debug.Log($"[DailyDrawStep] Iniciando Draw Diário...");
             
             _handSystem.ProcessDailyDraw(_runData);
-            AppCore.Instance.SaveManager.SaveGame();
+            AppCore.Instance.SaveManager.SaveGame(); 
             
             // Tempo para animação "Fan Out" (0.8s = 800ms)
             await UniTask.Delay(800);

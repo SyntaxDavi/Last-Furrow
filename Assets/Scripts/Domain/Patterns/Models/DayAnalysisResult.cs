@@ -13,6 +13,18 @@ public class DayAnalysisResult
     public int TotalPatternPoints { get; private set; }
     public int TotalDayPoints => TotalPassivePoints + TotalPatternPoints;
 
+    /// <summary>
+    /// Limpa todos os resultados para reutilização em um novo dia.
+    /// DEVE ser chamado no início de cada ciclo de resolução diária.
+    /// </summary>
+    public void Clear()
+    {
+        PassiveScores.Clear();
+        PatternMatches.Clear();
+        TotalPassivePoints = 0;
+        TotalPatternPoints = 0;
+    }
+
     public void AddPassiveScore(int slotIndex, int points)
     {
         PassiveScores.Add(new PassiveScoreResult { SlotIndex = slotIndex, Points = points });
@@ -21,7 +33,7 @@ public class DayAnalysisResult
 
     public void SetPatterns(List<PatternMatch> matches, int points)
     {
-        PatternMatches = matches;
+        PatternMatches = matches ?? new List<PatternMatch>();
         TotalPatternPoints = points;
     }
 }

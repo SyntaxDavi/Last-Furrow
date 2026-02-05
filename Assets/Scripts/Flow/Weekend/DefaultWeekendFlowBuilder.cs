@@ -59,21 +59,21 @@ public class DefaultWeekendFlowBuilder : IWeekendFlowBuilder
             new ClearShopSessionStep(_shopService),
             new ChangeStateStep(_stateFlow, false),
             new UpdateHUDModeStep(_uiFlow, false),
-            new ScreenFadeStep(true, 0.5f)
+            new ScreenFadeStep(true, 0.5f),
+            
+            // FIX: StartNextWeek DEVE vir ANTES do WeekendCardDrawStep!
+            // Isso garante que CurrentWeek e CurrentDay já estão atualizados
+            // quando o draw policy verifica as condições.
+            new StartNextWeekStep(_runManager, runData)
         };
 
         // SOLID: Adiciona draw de cartas após shop (semana 2+)
+        // IMPORTANTE: Agora vem DEPOIS do StartNextWeekStep para que
+        // CurrentWeek já seja >= 2 e CurrentDay == 1
         if (_handSystem != null)
         {
             pipeline.Add(new WeekendCardDrawStep(_handSystem, runData, _drawPolicy));
         }
-
-        // FIX: StartNextWeek DEVE ser o ÚLTIMO step do pipeline.
-        // Isso garante que OnProductionStarted só seja disparado APÓS:
-        // - Fade completar
-        // - Cards serem distribuídos
-        // Resolve race condition do botão Sleep não reativar corretamente.
-        pipeline.Add(new StartNextWeekStep(_runManager, runData));
 
         return pipeline;
     }
