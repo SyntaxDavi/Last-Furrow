@@ -1,6 +1,10 @@
 using UnityEngine;
 using LastFurrow.Visual.Camera;
 
+/// <summary>
+/// Bootstrapper da cena de gameplay.
+/// Inicializa sistemas específicos da cena e notifica o RunManager.
+/// </summary>
 public class GameplayBootstrapper : MonoBehaviour
 {
     [Header("Controllers da Cena")]
@@ -13,12 +17,16 @@ public class GameplayBootstrapper : MonoBehaviour
 
     private void Awake()
     {
-        if (AppCore.Instance == null) return;
+        if (AppCore.Instance == null)
+        {
+            Debug.LogError("[Bootstrapper] AppCore.Instance é null!");
+            return;
+        }
 
         var runData = AppCore.Instance.SaveManager.Data.CurrentRun;
         if (runData == null)
         {
-            Debug.LogWarning("[Bootstrapper] Sem RunData ativo. Criando Run de Teste.");
+            Debug.LogWarning("[Bootstrapper] Sem RunData ativo. Criando nova Run.");
             AppCore.Instance.RunManager.StartNewRun();       
             runData = AppCore.Instance.SaveManager.Data.CurrentRun;
         }
@@ -28,69 +36,69 @@ public class GameplayBootstrapper : MonoBehaviour
 
     private void InitializeGameplaySystems(RunData runData)  
     {
-        Debug.Log("[Bootstrapper] Inicializando sistemas de gameplay...");
+        Debug.Log($"[Bootstrapper] Inicializando... Dia: {runData.CurrentDay}, Semana: {runData.CurrentWeek}");
 
-        var library = AppCore.Instance.GameLibrary;
-        _playerInteraction.Initialize(AppCore.Instance.InputManager);
+        var core = AppCore.Instance;
+        
+        // 1. Input
+        _playerInteraction.Initialize(core.InputManager);
 
-        // --- ALEATORIEDADE DETERMINÍSTICA ---
-        // Configura o contexto da run (e o Random provider)
+        // 2. Aleatoriedade Determinística
         CardInteractionBootstrapper.ConfigureForRun(runData);
 
-        // --- CRIAÇÃO CENTRALIZADA ---
-        // 1. Cria a instância
+        // 3. Grid Service
         _gridService = new GridService(
            runData,
-           library,
-           AppCore.Instance.GameStateManager, // Este tipo concreto implementa IGameStateProvider
-           AppCore.Instance.GridConfiguration,
-           AppCore.Instance.PatternWeightConfig
+           core.GameLibrary,
+           core.GameStateManager,
+           core.GridConfiguration,
+           core.PatternWeightConfig
        );
 
-        // 2. Registra no Global (para DailyResolution, CheatManager, etc)
-        AppCore.Instance.RegisterGridService(_gridService);  
+        core.RegisterGridService(_gridService);  
+        core.InitializePatternTracking(runData); 
 
-        // 2.5 ONDA 4: Inicializa Pattern Tracking com RunData
-        AppCore.Instance.InitializePatternTracking(runData); 
+        // 4. Eventos do Grid
+        _gridService.OnGridChanged += HandleGridChanged;
 
-        // 3. Configura eventos locais
-        _gridService.OnGridChanged += (evt) => 
-        {
-            AppCore.Instance.Events.Grid.TriggerGridChanged(evt);
-            
-            // Bridge para Save System
-            if (evt.Impact.RequiresSave)
-            {
-                AppCore.Instance.SaveManager.SaveGame();
-            }
-        };
-
-        // 4. Injeta nos consumidores da cena
-        // GridManager agora é inicializado por GridVisualBootstrapper
-
+        // 5. Hand Manager
         if (_handManager != null)
         {
-            _handManager.Configure(runData, library);        
+            _handManager.Configure(runData, core.GameLibrary);        
         }
 
-        // 5. Configura Câmera Dinâmica
+        // 6. Câmera
         if (_gameCamera != null && _gridManager != null)     
         {
-            _gameCamera.ConfigureFromGrid(
-                AppCore.Instance.GridConfiguration,
-                _gridManager.Spacing
-            );
-            AppCore.Instance.InputManager.SetCamera(_gameCamera.GetComponent<Camera>());
+            _gameCamera.ConfigureFromGrid(core.GridConfiguration, _gridManager.Spacing);
+            core.InputManager.SetCamera(_gameCamera.GetComponent<Camera>());
         }
 
-        AppCore.Instance.GameStateManager.SetState(GameState.Playing);
+        // 7. Estado base (ANTES de notificar RunManager)
+        core.GameStateManager.SetState(GameState.Playing);
+        
+        // 8. CRÍTICO: Notifica RunManager para emitir eventos de fase.
+        // Isso abre a loja se estivermos no Weekend.
+        core.RunManager.NotifyGameplaySceneLoaded();
+        
+        Debug.Log($"[Bootstrapper] ✓ Fase: {core.RunManager.CurrentPhase}");
+    }
+
+    private void HandleGridChanged(GridChangeEvent evt)
+    {
+        AppCore.Instance?.Events.Grid.TriggerGridChanged(evt);
+        
+        if (evt.Impact.RequiresSave)
+        {
+            AppCore.Instance?.SaveManager.SaveGame();
+        }
     }
 
     private void OnDestroy()
     {
-        // REMOVIDO: AppCore.Instance.UnregisterGridService() 
-        // Isso causava race condition em trocas de cena
-        
+        if (_gridService != null)
+        {
+            _gridService.OnGridChanged -= HandleGridChanged;
+        }
     }
-
-    }
+}

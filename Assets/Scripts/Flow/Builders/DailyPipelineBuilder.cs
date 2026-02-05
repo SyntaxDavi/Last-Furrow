@@ -17,41 +17,36 @@ using UnityEngine;
 /// </summary>
 public class DailyPipelineBuilder : IDailyFlowBuilder
 {
-    /// <summary>
-    /// Constr�i pipeline padr�o do dia (produ��o).
-    /// </summary>
     public List<IFlowStep> BuildPipeline(
         DailyResolutionContext context,
         DailyVisualContext visualContext,
         RunData runData)
     {
-        // Valida��es de seguran�a
         if (context == null)
         {
-            Debug.LogError("[DailyPipelineBuilder] LogicContext � NULL!");
+            Debug.LogError("[DailyPipelineBuilder] LogicContext é NULL!");
             return new List<IFlowStep>();
         }
-        
+
         if (visualContext == null || !visualContext.IsValid())
         {
-            Debug.LogWarning("[DailyPipelineBuilder] VisualContext invlido! Pipeline headless.");
+            Debug.LogWarning("[DailyPipelineBuilder] VisualContext inválido! Pipeline headless.");
         }
 
         context.AnalysisResult?.Clear();
 
-        // CONSTRUO DO PIPELINE (Single Source of Truth)
         var pipeline = new List<IFlowStep>();
-        
-        // STEP 1: Crescimento do Grid + Animao Visual
+
+        // STEP 1: Crescimento do Grid + Animação Visual
         pipeline.Add(new GrowGridStep(
             context.GridService,
             context.Events,
             context.InputManager,
             runData,
-            visualContext?.Analyzer,  // Null-safe: funciona sem visual
-            context.AnalysisResult 
+            visualContext?.Analyzer,
+            context.AnalysisResult
         ));
-        
+
         // STEP 2: Detecção de Padrões + Animações
         pipeline.Add(new DetectPatternsStep(
             context.GridService,
@@ -60,31 +55,32 @@ public class DailyPipelineBuilder : IDailyFlowBuilder
             context.PatternTracking,
             runData,
             context.Events,
-            visualContext?.Scanner,  // Null-safe: funciona sem visual
+            visualContext?.Scanner,
             context.AnalysisResult,
-            visualContext?.Analyzer, // ⭐ INJETADO
-            AppCore.Instance?.GameStateManager,  // Para bloquear input durante análise
-            context.SaveManager,                  // Para salvar score preventivamente
-            visualContext?.HandManager            // Para liberar cartas em drag
+            visualContext?.Analyzer,
+            AppCore.Instance?.GameStateManager,
+            context.SaveManager,
+            visualContext?.HandManager
         ));
-        
-        // STEP 3: Clculo de Score + Meta Semanal
+
+        // STEP 3: Cálculo de Score + Meta Semanal
+        // FIX: Passa GameStateProvider para bloquear input durante resultado
         pipeline.Add(new CalculateScoreStep(
             context.GoalSystem,
             context.RunManager,
             runData,
-            context.Events.Progression
+            context.Events.Progression,
+            AppCore.Instance?.GameStateManager
         ));
-        
-        // STEP 4: Avan�ar Tempo (Dia -> Pr�ximo Dia) + Reset Draw Flag
+
+        // STEP 4: Avançar Tempo
         pipeline.Add(new AdvanceTimeStep(
             context.RunManager,
             context.SaveManager,
             runData
         ));
-        
+
         // STEP 5: Draw de Novas Cartas
-        // SOLID: Usa CardDrawPolicy para centralizar regras de neg�cio
         var drawPolicy = new CardDrawPolicy();
         pipeline.Add(new DailyDrawStep(
             context.HandSystem,
@@ -92,8 +88,8 @@ public class DailyPipelineBuilder : IDailyFlowBuilder
             runData,
             drawPolicy
         ));
-        
-        Debug.Log($"[DailyPipelineBuilder] ? Pipeline constru�do: {pipeline.Count} steps");
+
+        Debug.Log($"[DailyPipelineBuilder] Pipeline construído: {pipeline.Count} steps");
         return pipeline;
     }
 }

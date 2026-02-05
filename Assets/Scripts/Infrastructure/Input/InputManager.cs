@@ -160,6 +160,7 @@ public class InputManager : MonoBehaviour, ICameraInputProvider
                                     AppCore.Instance.GameStateManager.CurrentState == GameState.MainMenu ||
                                     AppCore.Instance.GameStateManager.CurrentState == GameState.Analyzing ||
                                     AppCore.Instance.GameStateManager.CurrentState == GameState.GameOver ||
-                                    AppCore.Instance.GameStateManager.CurrentState == GameState.Paused)) ||
+                                    AppCore.Instance.GameStateManager.CurrentState == GameState.Paused ||
+                                    AppCore.Instance.GameStateManager.CurrentState == GameState.ShowingResult)) ||
                                   (AppCore.Instance.ShopService != null && AppCore.Instance.ShopService.CurrentSession != null));
 }

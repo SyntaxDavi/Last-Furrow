@@ -119,7 +119,6 @@ public class AppCore : MonoBehaviour
         traditionService.Initialize();
 
         // ARQUITETURA: PatternTracking escuta evento de domínio ao invés de callback
-        // Isso remove acoplamento oculto do RunManager
         SubscribePatternTrackingToWeeklyReset(events);
 
         // 5. Injeções de Dependência Complexas (Cross-Module)
@@ -134,11 +133,9 @@ public class AppCore : MonoBehaviour
         // === EVENT INSPECTOR INTEGRATION ===
         var eventAdapter = FindFirstObjectByType<LastFurrow.EventInspector.GameEventAdapter>();
         var eventLogger = FindFirstObjectByType<LastFurrow.EventInspector.EventLogger>();
-        Debug.Log("[AppCore] EventLogger found: " + (eventLogger != null) + ", GameEventAdapter found: " + (eventAdapter != null));
         if (eventAdapter != null)
         {
             eventAdapter.Initialize(events);
-            Debug.Log("[AppCore] EventInspector initialized.");
         }
 
         LoadMainMenu();
@@ -266,5 +263,8 @@ public class AppCore : MonoBehaviour
         LoadMainMenu();
     }
 }
+
+
+
 
 

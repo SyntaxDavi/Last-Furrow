@@ -11,6 +11,9 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameOverView _gameOverView;
     [SerializeField] private ShopView _shopView;
 
+    // Guarda se estávamos na loja ao pausar
+    private bool _wasInShopBeforePause = false;
+
     private void Start()
     {
         if (AppCore.Instance != null && _shopView != null)
@@ -32,15 +35,10 @@ public class UIManager : MonoBehaviour
     {
         if (AppCore.Instance != null)
         {
-            // Eventos de Sistema
             AppCore.Instance.Events.GameState.OnStateChanged += HandleGameStateChanged;
             AppCore.Instance.Events.Time.OnRunEnded += HandleRunEnded;
-
-            // Eventos de Input
             AppCore.Instance.InputManager.OnBackInput += HandleBackInput;
             AppCore.Instance.InputManager.OnShopToggleInput += HandleShopToggleInput;
-
-            // Flow Visual (A Fonte da Verdade)
             AppCore.Instance.Events.UI.OnHUDModeChanged += HandleHUDModeChanged;
         }
     }
@@ -59,8 +57,6 @@ public class UIManager : MonoBehaviour
         if (_shopView != null) _shopView.OnExitRequested -= HandleShopExitButton;
     }
 
-    // --- 1. VISUAL (Reage ao Modo) ---
-
     private void HandleHUDModeChanged(HUDMode mode)
     {
         if (_gameOverView.IsVisible) return;
@@ -69,7 +65,6 @@ public class UIManager : MonoBehaviour
 
     private void UpdateHUDMode(HUDMode mode)
     {
-        // PONTO ÚNICO DE MUDANÇA VISUAL
         switch (mode)
         {
             case HUDMode.Hidden:
@@ -83,13 +78,11 @@ public class UIManager : MonoBehaviour
                 break;
 
             case HUDMode.Shopping:
-                if (_handContainer) _handContainer.Hide(); // Esconde mão na loja
+                if (_handContainer) _handContainer.Hide();
                 if (_shopView) _shopView.Show();
                 break;
         }
     }
-
-    // --- 2. SISTEMA (Pause) ---
 
     private void HandleGameStateChanged(GameState newState)
     {
@@ -102,18 +95,18 @@ public class UIManager : MonoBehaviour
         else
         {
             if (_pauseView) _pauseView.Hide();
+            
+            // FIX: Se saiu do pause e estava no Weekend com shop aberta, reabre
+            if (_wasInShopBeforePause && newState == GameState.Shopping)
+            {
+                ReopenShopIfInWeekend();
+            }
+            _wasInShopBeforePause = false;
         }
     }
 
-    // --- 3. INPUT (Dispara Intenções) ---
-
     private void HandleShopToggleInput()
     {
-        // MUDANÇA SÊNIOR:
-        // Não perguntamos "Que dia é hoje?".
-        // Apenas dizemos: "O jogador quer alternar a loja".
-        // Quem decide se pode (e o que acontece) é o WeekendFlowController.
-
         AppCore.Instance.Events.UI.RequestToggleShop();
     }
 
@@ -121,10 +114,6 @@ public class UIManager : MonoBehaviour
     {
         if (AppCore.Instance == null) return;
 
-        // FIX: Dispara evento de intenção ao invés de chamar diretamente StartNextWeek.
-        // O WeekendFlowController escuta este evento e executa o pipeline de exit,
-        // que inclui o StartNextWeekStep como último passo.
-        // Isso resolve a race condition do botão Sleep não reativar após o draw de cartas.
         Debug.Log("[UIManager] Botão 'Trabalhar' clicado. Solicitando exit do Weekend via evento...");
         AppCore.Instance.Events.UI.RequestExitWeekend();
     }
@@ -135,22 +124,58 @@ public class UIManager : MonoBehaviour
 
         if (_pauseView != null && _pauseView.IsVisible)
         {
-            // Restaura estado anterior (pode ser Analyzing, Playing, etc)
+            // Restaura estado anterior
             var previousState = AppCore.Instance.GameStateManager.PreviousState;
-            // Fallback para Playing se o estado anterior era MainMenu ou Paused
+            
+            // FIX: Se estava na loja (Weekend), lembra disso
+            if (previousState == GameState.Shopping)
+            {
+                _wasInShopBeforePause = true;
+            }
+            
             if (previousState == GameState.MainMenu || previousState == GameState.Paused)
                 previousState = GameState.Playing;
+                
             AppCore.Instance.GameStateManager.SetState(previousState);
         }
         else if (_shopView != null && _shopView.IsVisible)
         {
-            // MUDANÇA: ESC agora abre o pause menu em cima da loja,
-            // permitindo retornar para ela depois.
+            // FIX: ESC na loja agora abre pause, guardando que estava na loja
+            _wasInShopBeforePause = true;
             AppCore.Instance.GameStateManager.SetState(GameState.Paused);
         }
         else
         {
             AppCore.Instance.GameStateManager.SetState(GameState.Paused);
+        }
+    }
+    
+    /// <summary>
+    /// Reabre a loja se ainda estiver no Weekend e a sessão ainda existir.
+    /// </summary>
+    private void ReopenShopIfInWeekend()
+    {
+        var runManager = AppCore.Instance?.RunManager;
+        var shopService = AppCore.Instance?.ShopService;
+        
+        if (runManager == null || shopService == null) return;
+        
+        // Verifica se ainda está no Weekend
+        if (runManager.CurrentPhase == RunPhase.Weekend)
+        {
+            // Se a sessão da loja ainda existe, mostra a loja
+            if (shopService.CurrentSession != null)
+            {
+                Debug.Log("[UIManager] Reabrindo loja após pause no Weekend");
+                if (_shopView) _shopView.Show();
+                AppCore.Instance.Events.UI.RequestHUDMode(HUDMode.Shopping);
+            }
+            else
+            {
+                // Sessão foi limpa, precisa reabrir a loja completamente
+                Debug.Log("[UIManager] Sessão da loja expirou, reabrindo shop no Weekend");
+                AppCore.Instance.Events.UI.RequestToggleShop();
+            }
         }
     }
 

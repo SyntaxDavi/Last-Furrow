@@ -16,4 +16,4 @@ MonoBehaviour:
   WeekendDays: 2
   BaseWeeklyGoal: 500
   GoalIncreasePerWeek: 200
-  MaxLives: 3
+  MaxLives: 1

@@ -9,7 +9,8 @@ public enum GameState
     Shopping,
     Paused,
     GameOver,
-    Analyzing  // Bloqueia interações de cartas durante análise de grid
+    Analyzing,   // Bloqueia interações de cartas durante análise de grid
+    ShowingResult // NOVO: Bloqueia tudo durante exibição de resultado semanal
 }
 
 /// <summary>

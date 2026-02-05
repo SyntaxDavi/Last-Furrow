@@ -320,8 +320,6 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     public void OnDragEnd()
     {
         if (CurrentState == CardVisualState.Dragging) SetState(CardVisualState.Idle);
-        
-        // Reset ghost transparency imediatamente
         _ghostModifier?.ForceReset();
     }
     public void OnClick() => PerformClick();
@@ -363,8 +361,11 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     {
         var gameState = AppCore.Instance?.GameStateManager?.CurrentState ?? GameState.MainMenu;
         
-        // Bloqueia durante Analyzing (resolução de dia)
-        if (gameState == GameState.Analyzing) return false;
+        // Bloqueia durante Analyzing, ShowingResult e GameOver
+        if (gameState == GameState.Analyzing || 
+            gameState == GameState.ShowingResult ||
+            gameState == GameState.GameOver) 
+            return false;
         
         bool isAllowed = (gameState == GameState.Playing || gameState == GameState.Shopping);
         bool isFree = (CurrentState != CardVisualState.Dragging && CurrentState != CardVisualState.Consuming);

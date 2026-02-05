@@ -1,9 +1,10 @@
-using UnityEngine;
 using System;
+using UnityEngine;
 
 /// <summary>
-/// Concretização do IGameStateProvider.
 /// Gerencia o estado global do jogo e sincroniza o Time.timeScale.
+/// 
+/// SOLID (SRP): Apenas gerencia estado, não sabe sobre UI ou gameplay.
 /// </summary>
 public class GameStateManager : MonoBehaviour, IGameStateProvider
 {
@@ -27,17 +28,24 @@ public class GameStateManager : MonoBehaviour, IGameStateProvider
 
         HandleTimeScale(newState);
         
-        OnStateChanged?.Invoke(newState);
         Debug.Log($"[GameState] State changed: {PreviousState} -> {CurrentState}");
+        OnStateChanged?.Invoke(newState);
     }
 
     private void HandleTimeScale(GameState state)
     {
-        // Se estiver pausado ou no menu, para o tempo da engine
-        if (state == GameState.Paused || state == GameState.MainMenu)
-            Time.timeScale = 0f;
-        else
-            Time.timeScale = 1f;
+        // IMPORTANTE: GameOver e ShowingResult NÃO pausam para permitir delays/animações
+        switch (state)
+        {
+            case GameState.Paused:
+            case GameState.MainMenu:
+                Time.timeScale = 0f;
+                break;
+                
+            default:
+                Time.timeScale = 1f;
+                break;
+        }
     }
 
     public bool IsGameplayActive()

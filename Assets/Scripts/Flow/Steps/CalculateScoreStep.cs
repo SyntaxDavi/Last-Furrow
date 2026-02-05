@@ -7,15 +7,23 @@ public class CalculateScoreStep : IFlowStep
     private readonly RunManager _runManager;
     private readonly RunData _runData;
     private readonly ProgressionEvents _events;
+    private readonly IGameStateProvider _gameStateProvider;
 
     private const float CARRY_OVER_PERCENTAGE = 0.15f;
+    private const int RESULT_DISPLAY_DURATION_MS = 3000;
 
-    public CalculateScoreStep(WeeklyGoalSystem goalSystem, RunManager runManager, RunData runData, ProgressionEvents events)
+    public CalculateScoreStep(
+        WeeklyGoalSystem goalSystem,
+        RunManager runManager,
+        RunData runData,
+        ProgressionEvents events,
+        IGameStateProvider gameStateProvider = null)
     {
         _goalSystem = goalSystem;
         _runManager = runManager;
         _runData = runData;
         _events = events;
+        _gameStateProvider = gameStateProvider ?? AppCore.Instance?.GameStateManager;
     }
 
     public async UniTask Execute(FlowControl control)
@@ -25,12 +33,22 @@ public class CalculateScoreStep : IFlowStep
 
         if (result.IsWeekEnd)
         {
+            // BLOQUEIO: Muda para estado ShowingResult antes de mostrar mensagem
+            var previousState = _gameStateProvider?.CurrentState ?? GameState.Playing;
+            _gameStateProvider?.SetState(GameState.ShowingResult);
+
             ApplyWeekResult(result, control);
 
-            // Espera para ler o relatório (3 segundos = 3000ms)
+            // Espera para ler o relatório (3 segundos)
             if (!control.ShouldAbort)
             {
-                await UniTask.Delay(3000);
+                await UniTask.Delay(RESULT_DISPLAY_DURATION_MS);
+            }
+
+            // DESBLOQUEIO: Restaura estado (se não for Game Over)
+            if (!control.ShouldAbort && _runData.CurrentLives > 0)
+            {
+                _gameStateProvider?.SetState(previousState);
             }
         }
     }
@@ -60,13 +78,8 @@ public class CalculateScoreStep : IFlowStep
     {
         Debug.Log("<color=green>SUCESSO TOTAL! Semana Avançada.</color>");
 
-        // 1. Zera score
         _runData.CurrentWeeklyScore = 0;
-
-        // 2. Define nova meta (mais difícil)
         _runData.WeeklyGoalTarget = result.NextGoal;
-
-        // 3. Feedback Visual (Vitória)
         _events.TriggerWeeklyGoalEvaluated(true, _runData.CurrentLives);
     }
 
@@ -74,20 +87,14 @@ public class CalculateScoreStep : IFlowStep
     {
         Debug.Log("<color=yellow>FALHA PARCIAL! Mantendo 15% do score.</color>");
 
-        // 1. Perde vida
         _runData.CurrentLives--;
         _events.TriggerLivesChanged(_runData.CurrentLives);
 
         if (CheckGameOver(control)) return;
 
-        // 2. Carry Over (Bônus de "Quase lá")
         int carryOver = Mathf.RoundToInt(_runData.CurrentWeeklyScore * CARRY_OVER_PERCENTAGE);
         _runData.CurrentWeeklyScore = carryOver;
-
-        // 3. Mantém a mesma meta (Retry)
         _runData.WeeklyGoalTarget = result.NextGoal;
-
-        // 4. Feedback Visual (Derrota)
         _events.TriggerWeeklyGoalEvaluated(false, _runData.CurrentLives);
     }
 
@@ -95,17 +102,13 @@ public class CalculateScoreStep : IFlowStep
     {
         Debug.Log("<color=red>FALHA CRÍTICA! Score zerado.</color>");
 
-        // 1. Perde vida
         _runData.CurrentLives--;
         _events.TriggerLivesChanged(_runData.CurrentLives);
 
         if (CheckGameOver(control)) return;
 
-        // 2. Zera tudo (Punição)
         _runData.CurrentWeeklyScore = 0;
         _runData.WeeklyGoalTarget = result.NextGoal;
-
-        // 3. Feedback Visual (Derrota)
         _events.TriggerWeeklyGoalEvaluated(false, _runData.CurrentLives);
     }
 
@@ -119,4 +122,6 @@ public class CalculateScoreStep : IFlowStep
         }
         return false;
     }
+
+    public string GetStepName() => "CalculateScoreStep";
 }
