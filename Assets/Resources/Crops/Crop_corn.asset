@@ -19,9 +19,17 @@ MonoBehaviour:
   DaysToMature: 7
   FreshnessWindow: 5
   BasePassiveScore: 20
-  MatureScoreMultiplier: 1.5
+  MatureScoreMultiplier: 1
   BaseSellValue: 7
   SeedSprite: {fileID: 0}
-  GrowthStages: []
+  GrowthStages:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   MatureSprite: {fileID: 0}
+  NearlyOverripeSprite: {fileID: 0}
+  OverripeSprite: {fileID: 0}
   WitheredSprite: {fileID: 0}

@@ -77,7 +77,7 @@ public class AnalyzingPhaseOrchestrator : MonoBehaviour
                 RunData = runData,
                 Events = events,
                 PreCalculatedResult = preCalculatedResult,
-                RunningScore = runData.CurrentWeeklyScore,
+                RunningScore = runData.CurrentWeeklyScore - (preCalculatedResult?.TotalDayPoints ?? 0),
                 SlotViews = _gridManager.GetComponentsInChildren<GridSlotView>()
             };
 

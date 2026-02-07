@@ -41,7 +41,16 @@ public class GrowGridStep : IFlowStep
             // 2. Pré-calcula pontos passivos para a fase visual posterior
             if (_analysisResult != null)
             {
-                int points = ScoringCalculator.CalculatePassiveScore(_runData.GridSlots[i], AppCore.Instance.GameLibrary);
+                var slot = _runData.GridSlots[i];
+                
+                // NOVO: Registra slots que morreram para refresh visual
+                // Plantas mortas não geram pontos mas precisam atualizar sprite
+                if (slot.IsWithered && !slot.IsEmpty)
+                {
+                    _analysisResult.WitheredSlots.Add(i);
+                }
+
+                int points = ScoringCalculator.CalculatePassiveScore(slot, AppCore.Instance.GameLibrary);
                 if (points > 0)
                 {
                     _analysisResult.AddPassiveScore(i, points);

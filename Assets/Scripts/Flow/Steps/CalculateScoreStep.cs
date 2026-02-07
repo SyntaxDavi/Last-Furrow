@@ -1,4 +1,4 @@
-using Cysharp.Threading.Tasks;
+Ôªøusing Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public class CalculateScoreStep : IFlowStep
@@ -28,7 +28,8 @@ public class CalculateScoreStep : IFlowStep
 
     public async UniTask Execute(FlowControl control)
     {
-        _goalSystem.ProcessNightlyScoring(_runData);
+        // REMOVIDO: ProcessNightlyScoring duplicava a contagem de pontos
+        // Score agora √© aplicado exclusivamente em DetectPatternsStep
         var result = _goalSystem.CheckEndOfProduction(_runData);
 
         if (result.IsWeekEnd)
@@ -39,13 +40,13 @@ public class CalculateScoreStep : IFlowStep
 
             ApplyWeekResult(result, control);
 
-            // Espera para ler o relatÛrio (3 segundos)
+            // Espera para ler o relat√≥rio (3 segundos)
             if (!control.ShouldAbort)
             {
                 await UniTask.Delay(RESULT_DISPLAY_DURATION_MS);
             }
 
-            // DESBLOQUEIO: Restaura estado (se n„o for Game Over)
+            // DESBLOQUEIO: Restaura estado (se n√£o for Game Over)
             if (!control.ShouldAbort && _runData.CurrentLives > 0)
             {
                 _gameStateProvider?.SetState(previousState);
@@ -76,7 +77,7 @@ public class CalculateScoreStep : IFlowStep
 
     private void HandleSuccess(WeekEvaluationResult result)
     {
-        Debug.Log("<color=green>SUCESSO TOTAL! Semana AvanÁada.</color>");
+        Debug.Log("<color=green>SUCESSO TOTAL! Semana Avan√ßada.</color>");
 
         _runData.CurrentWeeklyScore = 0;
         _runData.WeeklyGoalTarget = result.NextGoal;
@@ -100,7 +101,7 @@ public class CalculateScoreStep : IFlowStep
 
     private void HandleCriticalFail(WeekEvaluationResult result, FlowControl control)
     {
-        Debug.Log("<color=red>FALHA CRÕTICA! Score zerado.</color>");
+        Debug.Log("<color=red>FALHA CR√çTICA! Score zerado.</color>");
 
         _runData.CurrentLives--;
         _events.TriggerLivesChanged(_runData.CurrentLives);

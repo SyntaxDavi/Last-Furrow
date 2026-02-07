@@ -26,6 +26,16 @@ namespace LastFurrow.Domain.Patterns.Visual.Pipeline.Phases
             IProgress<PhaseProgress> progress, 
             CancellationToken ct)
         {
+            // NOVO: Primeiro, atualiza visuais de slots WITHERED (não geram pontos mas precisam de refresh)
+            if (context.PreCalculatedResult?.WitheredSlots != null && context.PreCalculatedResult.WitheredSlots.Count > 0)
+            {
+                foreach (var slotIndex in context.PreCalculatedResult.WitheredSlots)
+                {
+                    context.GridService.ForceVisualRefresh(slotIndex);
+                }
+                await UniTask.Delay(TimeSpan.FromSeconds(0.1f), cancellationToken: ct);
+            }
+
             if (context.PreCalculatedResult?.PassiveScores == null || context.PreCalculatedResult.PassiveScores.Count == 0)
             {
                 return new PhaseResult { Success = true, Message = "No passive scores to process." };
@@ -56,9 +66,10 @@ namespace LastFurrow.Domain.Patterns.Visual.Pipeline.Phases
                         context.RunData.WeeklyGoalTarget
                     );
 
-                    // Atualiza o score acumulado no contexto
-                    scoreDelta += passive.Points;
+                    // VISUAL ONLY: Score já foi aplicado em DetectPatternsStep
+                    // Apenas atualiza o contador visual para animação
                     context.RunningScore += passive.Points;
+                    scoreDelta += passive.Points;
 
                     // --- Lógica de Aceleração Dinâmica ---
                     // Começa no delay total da config (ou 0.5s) e reduz gradualmente

@@ -19,7 +19,7 @@ MonoBehaviour:
   DaysToMature: 2
   FreshnessWindow: 2
   BasePassiveScore: 10
-  MatureScoreMultiplier: 1.5
+  MatureScoreMultiplier: 1
   BaseSellValue: 2
   SeedSprite: {fileID: 5346928031986697999, guid: d471b7617d6db3f42bb0121155e91a05, type: 3}
   GrowthStages:

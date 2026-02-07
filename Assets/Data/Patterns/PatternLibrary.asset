@@ -23,4 +23,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 1f6a3953231c8454ab9d02ce9dce6b40, type: 2}
   - {fileID: 11400000, guid: b2020bf6feb7259408a6d12c5dd8292f, type: 2}
   - {fileID: 11400000, guid: c64d3033841d7114fb5a92bcf44c551a, type: 2}
-  _enableValidationLogs: 1
+  _enableValidationLogs: 0

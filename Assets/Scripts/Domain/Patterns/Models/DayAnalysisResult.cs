@@ -8,6 +8,7 @@ public class DayAnalysisResult
 {
     public List<PassiveScoreResult> PassiveScores { get; private set; } = new List<PassiveScoreResult>();
     public List<PatternMatch> PatternMatches { get; private set; } = new List<PatternMatch>();
+    public List<int> WitheredSlots { get; private set; } = new List<int>(); // NOVO
     
     public int TotalPassivePoints { get; private set; }
     public int TotalPatternPoints { get; private set; }
@@ -21,6 +22,7 @@ public class DayAnalysisResult
     {
         PassiveScores.Clear();
         PatternMatches.Clear();
+        WitheredSlots.Clear(); // NOVO
         TotalPassivePoints = 0;
         TotalPatternPoints = 0;
     }
@@ -35,6 +37,12 @@ public class DayAnalysisResult
     {
         PatternMatches = matches ?? new List<PatternMatch>();
         TotalPatternPoints = points;
+    }
+
+    // NOVO
+    public void SetWitheredSlots(List<int> slots)
+    {
+        WitheredSlots = slots ?? new List<int>();
     }
 }
 

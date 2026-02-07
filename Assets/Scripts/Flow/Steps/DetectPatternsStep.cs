@@ -98,18 +98,22 @@ public class DetectPatternsStep : IFlowStep
 
             if (_analysisResult != null)
             {
+                // Patterns são registrados com seus pontos
                 _analysisResult.SetPatterns(matches, totalDayPoints);
             }
 
             // 1.5. DATA INTEGRITY: Aplica score ANTES das animações e salva
+            // NOTA: TotalDayPoints já inclui Passive (do GrowGridStep) + Patterns (daqui)
             if (_analysisResult != null)
             {
                 int totalPoints = _analysisResult.TotalDayPoints;
                 if (totalPoints > 0)
                 {
+                    Debug.Log($"[DetectPatternsStep] ANTES: CurrentWeeklyScore = {_runData.CurrentWeeklyScore}");
                     _runData.CurrentWeeklyScore += totalPoints;
-                    _saveManager?.SaveGame(); // Persiste imediatamente
-                    Debug.Log($"[DetectPatternsStep] Score salvo preventivamente: +{totalPoints} pontos.");
+                    Debug.Log($"[DetectPatternsStep] DEPOIS: CurrentWeeklyScore = {_runData.CurrentWeeklyScore} (+{totalPoints})");
+                    _saveManager?.SaveGame();
+                    Debug.Log($"[DetectPatternsStep] Score salvo: +{totalPoints} (Passive: {_analysisResult.TotalPassivePoints}, Patterns: {_analysisResult.TotalPatternPoints})");
                 }
             }
             
@@ -137,6 +141,14 @@ public class DetectPatternsStep : IFlowStep
             // 3. Restaura estado (garantido mesmo se houver exceção)
             _gameStateManager?.SetState(GameState.Playing);
             Debug.Log("[DetectPatternsStep] Estado restaurado para Playing.");
+        }
+
+        // Os pontos serão aplicados durante as animações (PassiveScoresPhase e PatternAnalysisPhase)
+        // para manter o display visual sincronizado com os dados reais.
+        // Aqui apenas logamos para debug.
+        if (_analysisResult != null)
+        {
+            Debug.Log($"[DetectPatternsStep] Pontos pendentes: Passive={_analysisResult.TotalPassivePoints}, Patterns={_analysisResult.TotalPatternPoints}");
         }
     }
 }
