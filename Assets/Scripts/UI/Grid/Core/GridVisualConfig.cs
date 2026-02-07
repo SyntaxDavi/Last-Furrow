@@ -54,6 +54,20 @@ public class GridVisualConfig : ScriptableObject
     [Tooltip("Delay antes do punch ao receber uma carta (segundos). Sincroniza com animação da carta.")]
     public float slotReceivePunchDelay = 0.3f;
 
+    [Header("Score Popup")]
+    [Tooltip("Altura que o texto sobe.")]
+    public float scorePopupHeight = 0.7f;
+    [Tooltip("Duração do fade in inicial.")]
+    public float scorePopupFadeInDuration = 0.2f;
+    [Tooltip("Duração do movimento de subida.")]
+    public float scorePopupMoveDuration = 0.4f;
+    [Tooltip("Quanto tempo o texto fica parado no topo antes de sumir.")]
+    public float scorePopupWaitDuration = 0.3f;
+    [Tooltip("Duração do fade out final.")]
+    public float scorePopupFadeOutDuration = 0.3f;
+    [Tooltip("Distância extra que o texto 'deriva' para cima enquanto some.")]
+    public float scorePopupDriftHeight = 0.2f;
+
     [Header("Render Layers (Priority System)")]
     [Tooltip("Sorting order offset para overlay de estado (+1 sobre base)")]      
     public int stateOverlayOffset = 1;

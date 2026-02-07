@@ -1,11 +1,25 @@
-﻿using UnityEngine;
-using TMPro;
+﻿using System;
+using UnityEngine;
 using DG.Tweening;
 using Cysharp.Threading.Tasks;
-using System;
+using TMPro;
 using LastFurrow.Infrastructure.Visual;
 
-
+/// <summary>
+/// View passiva para slots do grid.
+/// 
+/// RESPONSABILIDADES:
+/// - Receber estado visual e renderizar
+/// - Disparar eventos de interação
+/// - NÃO toma decisões de lógica
+/// 
+/// REFATORAÇÕES APLICADAS:
+/// - Fase 1: Injeção de IDragStateProvider (sem FindFirstObjectByType)
+/// - Fase 2: CanReceive é puro (sem side-effects)
+/// - Fase 3: Update sob demanda (flag _isElevationActive)
+/// - Fase 4: SetVisualState decomposição com SlotVisualState
+/// - Fase 5: SetLockedState com ILockVisualStrategy
+/// </summary>
 [RequireComponent(typeof(SpriteRenderer), typeof(BoxCollider2D))]
 public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 {
@@ -27,28 +41,43 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     private SlotHighlightController _highlightController;
     private Tween _scoreTween;
     private Tween _pulseTween;
-    private PlayerInteraction _cachedInteraction;
 
     private Animator _cursorAnimator;
     private VisualElevationProcessor _elevationProcessor = new();
     private Vector3 _originalLocalPos;
     private Transform _visualsRoot;
 
+    // Fase 3: Flag para Update sob demanda
+    private bool _isElevationActive = false;
+
     public int SlotIndex => _index;
     public int InteractionPriority => 0;
     public event Action<int, CardView> OnDropInteraction;
+
+    // Fase 1: Propriedade para acesso ao DragStateProvider
+    private IDragStateProvider DragProvider => _context?.DragStateProvider;
 
     private void Awake()
     {
         // CRÍTICO: Garante que todos os renderers existem ANTES de qualquer uso
         ConfigureRenderers();
 
-        // Configuração inicial do passive score
-        if (_passiveScoreGroup != null) _passiveScoreGroup.alpha = 0f;
+        // FORÇA estado inicial invisível do score popup
+        if (_passiveScoreGroup != null) 
+        {
+            _passiveScoreGroup.alpha = 0f;
+        }
+        if (_passiveScoreText != null)
+        {
+            _passiveScoreText.alpha = 0f; // TMP tem alpha próprio além do CanvasGroup
+        }
     }
 
     private void Update()
     {
+        // Fase 3: Early exit se elevação não está ativa
+        if (!_isElevationActive) return;
+        
         if (_context?.VisualConfig == null) return;
 
         float maxOffset = _context.VisualConfig.patternElevationOffset;
@@ -61,6 +90,12 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 
         if (_visualsRoot != null)
             _visualsRoot.localPosition = _elevationProcessor.Apply(_originalLocalPos);
+
+        // Fase 3: Auto-desativa quando estabiliza
+        if (_elevationProcessor.IsStable)
+        {
+            _isElevationActive = false;
+        }
     }
 
     public void Initialize(GridVisualContext context, int index)
@@ -94,11 +129,10 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
             _cursorRenderer,
             _cursorAnimator, 
             _context.VisualConfig
-        );
-
-        _cachedInteraction = FindFirstObjectByType<PlayerInteraction>();
+        );  
 
         ResetVisualState();
+        ResetPassiveScore();
     }
 
     private void OnDestroy()
@@ -114,9 +148,10 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _highlightController?.SetHover(true);
 
         // Grid Juice: Pulse if holding a valid card
-        if (_cachedInteraction != null && _cachedInteraction.DragSystem.IsDragging)
+        // Fase 1: Usa DragProvider injetado ao invés de cache
+        if (DragProvider != null && DragProvider.IsDragging)
         {
-            if (CanReceive(_cachedInteraction.DragSystem.ActiveDrag))
+            if (CanReceive(DragProvider.ActiveDrag))
             {
                 StartPulse();
             }
@@ -128,33 +163,44 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _highlightController?.SetHover(false);
         StopPulse();
     }
+    
     public void OnClick() { }
 
     public void SetPatternHighlight(Color color, bool enable = true)
     {
         _highlightController?.SetPattern(color, enable);
     }
+    
     public void ClearPatternHighlight()
     {
-        // Define pattern como branco/falso, efetivamente limpando
         _highlightController?.SetPattern(Color.white, false);
+        ResetPassiveScore();
+        SetElevationFactor(0f);
     }
+    
     public void TriggerAnalyzingPulse(Color pulseColor, float duration)
     {
-        // Usa o método PlayScannerPulse que já gerencia o estado analyzing internamente
+        ResetPassiveScore();
         _highlightController?.PlayScannerPulse(duration, this.GetCancellationTokenOnDestroy()).Forget();
     }
+    
     public void TriggerWhiteFlash()
     {
         _highlightController?.PlayWhiteFlash(this.GetCancellationTokenOnDestroy()).Forget();
     }
+    
     public void SetElevationFactor(float factor)
     {
         _elevationProcessor.SetElevationFactor(factor);
+        // Fase 3: Ativa Update apenas quando há movimento
+        _isElevationActive = factor > 0.01f || !_elevationProcessor.IsStable;
     }
+    
     public void ShowPassiveScore(int points)
     {
-        if (_passiveScoreText == null || _passiveScoreGroup == null) return;
+        if (_passiveScoreText == null || _passiveScoreGroup == null || _context?.VisualConfig == null) return;
+
+        var cfg = _context.VisualConfig;
 
         // Trigger Levitation
         SetElevationFactor(1f);
@@ -165,37 +211,58 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _scoreTween?.Kill();
 
         _passiveScoreText.text = $"+{points}";
+        _passiveScoreText.alpha = 1f; 
         _passiveScoreGroup.alpha = 0f;
 
         Vector3 startPos = Vector3.zero;
-        Vector3 targetPos = startPos + Vector3.up * 0.7f;
+        Vector3 targetPos = startPos + Vector3.up * cfg.scorePopupHeight;
         _passiveScoreText.transform.localPosition = startPos;
 
         Sequence seq = DOTween.Sequence();
-        seq.Append(_passiveScoreGroup.DOFade(1f, 0.2f));
-        seq.Join(_passiveScoreText.transform.DOLocalMove(targetPos, 0.4f).SetEase(Ease.OutBack));
-        seq.AppendInterval(0.3f);
-        seq.Append(_passiveScoreGroup.DOFade(0f, 0.3f));
-        seq.Join(_passiveScoreText.transform.DOLocalMove(targetPos + Vector3.up * 0.2f, 0.3f));
-        seq.OnComplete(() => _passiveScoreText.transform.localPosition = startPos);
+        seq.Append(_passiveScoreGroup.DOFade(1f, cfg.scorePopupFadeInDuration));
+        seq.Join(_passiveScoreText.transform.DOLocalMove(targetPos, cfg.scorePopupMoveDuration).SetEase(Ease.OutBack));
+        seq.AppendInterval(cfg.scorePopupWaitDuration);
+        seq.Append(_passiveScoreGroup.DOFade(0f, cfg.scorePopupFadeOutDuration));
+        seq.Join(_passiveScoreText.transform.DOLocalMove(targetPos + Vector3.up * cfg.scorePopupDriftHeight, cfg.scorePopupFadeOutDuration));
+        seq.OnComplete(() => {
+            _passiveScoreText.transform.localPosition = startPos;
+            _passiveScoreText.alpha = 0f; 
+            SetElevationFactor(0f);
+        });
 
         _scoreTween = seq;
     }
 
+    private void ResetPassiveScore()
+    {
+        _scoreTween?.Kill();
+        if (_passiveScoreGroup != null) _passiveScoreGroup.alpha = 0f;
+        if (_passiveScoreText != null) 
+        {
+            _passiveScoreText.transform.localPosition = Vector3.zero;
+            _passiveScoreText.alpha = 0f; // Garante que TMP está invisível
+        }
+    }
+
     // --- LÓGICA DE DROP ---
 
+    /// <summary>
+    /// Fase 2: Query pura - retorna bool sem side-effects.
+    /// Feedback visual deve ser chamado separadamente via PlayInvalidDropFeedback().
+    /// </summary>
     public bool CanReceive(IDraggable draggable)
     {
         if (draggable is not CardView cardView) return false;
-        bool canDrop = _context.DropValidator.CanDrop(_index, cardView.Data);
+        return _context.DropValidator.CanDrop(_index, cardView.Data);
+    }
 
-        if (!canDrop)
-        {
-            // Passamos o token do View para garantir link
-            _highlightController?.PlayErrorFlash(this.GetCancellationTokenOnDestroy()).Forget();
-        }
-
-        return canDrop;
+    /// <summary>
+    /// Fase 2: Command separado - dispara feedback visual de drop inválido.
+    /// Chamado pelo sistema de drag quando drop falha.
+    /// </summary>
+    public void PlayInvalidDropFeedback()
+    {
+        _highlightController?.PlayErrorFlash(this.GetCancellationTokenOnDestroy()).Forget();
     }
 
     public void OnReceive(IDraggable draggable)
@@ -216,7 +283,6 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     {
         if (_context?.VisualConfig == null) return;
 
-        // Delay o punch para sincronizar com o slam da carta
         float punchDelay = _context.VisualConfig.slotReceivePunchDelay;
         DOVirtual.DelayedCall(punchDelay, () => TriggerReceivePop());
     }
@@ -247,82 +313,103 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _visualsRoot.DOPunchScale(Vector3.one * _context.VisualConfig.slotReceivePunchAmount, 0.3f, 10, 1f);
     }
 
-    // --- VISUALIZAÇÃO DE DADOS (Mantida simples) ---
+    // --- VISUALIZAÇÃO DE DADOS ---
 
+    /// <summary>
+    /// Fase 4: Overload legado mantido para compatibilidade.
+    /// Delega para o novo método com SlotVisualState.
+    /// </summary>
     public void SetVisualState(Sprite plantSprite, bool isWatered, bool isMature = false, bool isWithered = false)
+    {
+        var state = SlotVisualState.FromLegacy(plantSprite, isWatered, isMature, isWithered);
+        SetVisualState(state);
+    }
+
+    /// <summary>
+    /// Fase 4: Novo método com Value Object.
+    /// Decomposto em métodos menores e focados.
+    /// </summary>
+    public void SetVisualState(SlotVisualState state)
     {
         if (_isLocked) return;
 
-        // Atualiza sprite base (solo seco/molhado)
-        Sprite soilSprite = isWatered ? _context.VisualConfig.wetSoilSprite : _context.VisualConfig.drySoilSprite;
+        UpdateSoilVisual(state.IsWatered);
+        UpdatePlantVisual(state.PlantSprite, state.Maturity);
+    }
+
+    private void UpdateSoilVisual(bool isWatered)
+    {
+        var sprite = isWatered ? _context.VisualConfig.wetSoilSprite : _context.VisualConfig.drySoilSprite;
         
         if (_baseRenderer != null)
         {
-            _baseRenderer.sprite = soilSprite;
+            _baseRenderer.sprite = sprite;
             _baseRenderer.color = Color.white;
-            
-            // Se o renderer estiver na raiz, ele não move. 
-            // Sincronizamos o sprite com o Visuals_Root se tivermos um substituto.
             UpdateBaseRendererShadow();
         }
 
-        // CRÍTICO: Sincroniza overlays com sprite da base para evitar problemas visuais
         SyncOverlaySprites();
-
-        // Lógica da planta
-        bool hasPlant = plantSprite != null;
-        _plantRenderer.enabled = hasPlant;
-        _plantRenderer.sprite = hasPlant ? plantSprite : null;
-
-        // Overlay de estado (mature/withered/planted)
-        if (_stateOverlayRenderer != null)
-        {
-            _stateOverlayRenderer.enabled = hasPlant;
-            if (hasPlant)
-            {
-                if (isMature) 
-                    _stateOverlayRenderer.color = _context.VisualConfig.matureOverlay;
-                else if (isWithered) 
-                    _stateOverlayRenderer.color = _context.VisualConfig.witheredOverlay;
-                else 
-                    _stateOverlayRenderer.color = _context.VisualConfig.plantedOverlay;
-            }
-        }
     }
 
+    private void UpdatePlantVisual(Sprite sprite, PlantMaturity maturity)
+    {
+        bool hasPlant = sprite != null;
+        _plantRenderer.enabled = hasPlant;
+        _plantRenderer.sprite = sprite;
+
+        UpdateMaturityOverlay(hasPlant, maturity);
+    }
+
+    private void UpdateMaturityOverlay(bool hasPlant, PlantMaturity maturity)
+    {
+        if (_stateOverlayRenderer == null) return;
+
+        _stateOverlayRenderer.enabled = hasPlant;
+        if (!hasPlant) return;
+
+        _stateOverlayRenderer.color = maturity switch
+        {
+            PlantMaturity.Mature => _context.VisualConfig.matureOverlay,
+            PlantMaturity.Withered => _context.VisualConfig.witheredOverlay,
+            _ => _context.VisualConfig.plantedOverlay
+        };
+    }
+
+    /// <summary>
+    /// Fase 5: Overload legado mantido para compatibilidade.
+    /// Usa DefaultLockVisualStrategy.
+    /// </summary>
     public void SetLockedState(bool isLocked)
+    {
+        SetLockedState(isLocked, new DefaultLockVisualStrategy());
+    }
+
+    /// <summary>
+    /// Fase 5: Novo método com estratégia injetável.
+    /// View apenas aplica a "skin", regra vem da estratégia.
+    /// </summary>
+    public void SetLockedState(bool isLocked, ILockVisualStrategy strategy)
     {
         _isLocked = isLocked;
 
-        // Proteção caso Config não esteja carregada ainda
         if (_context?.VisualConfig == null) return;
 
         if (_isLocked)
         {
-            // LÓGICA RESTAURADA: Usa o sprite da config se existir, senão usa tint cinza
-            if (_context.VisualConfig.lockedSoilSprite != null)
-            {
-                _baseRenderer.sprite = _context.VisualConfig.lockedSoilSprite;
-                _baseRenderer.color = Color.white; // Reseta cor para não misturar tint com sprite
-            }
-            else
-            {
-                _baseRenderer.color = Color.gray; // Fallback
-            }
+            _baseRenderer.sprite = strategy.GetLockedSprite(_context.VisualConfig);
+            _baseRenderer.color = strategy.GetLockedTint(_context.VisualConfig);
+            
+            if (strategy.ShouldHidePlant) 
+                _plantRenderer.enabled = false;
 
-            _plantRenderer.enabled = false;
-
-            // Importante: Bloqueado não deve ter highlight de hover
             _highlightController?.SetHover(false);
         }
         else
         {
-            // Ao desbloquear, volta para terra seca (padrão)
             _baseRenderer.sprite = _context.VisualConfig.drySoilSprite;
             _baseRenderer.color = Color.white;
         }
     }
-
 
     // --- SETUP VISUAL ---
 
@@ -336,37 +423,30 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     private void ConfigureRenderers()
     {
         if (_baseRenderer == null) _baseRenderer = GetComponent<SpriteRenderer>();
-        // Note: Outros renderers serão resolvidos/criados no SetupVisualHierarchy durante Initialize
     }
 
     private void SetupVisualHierarchy()
     {
         if (_visualsRoot != null) return;
 
-        // Cria container para visuais (Root das animações)
         GameObject root = new GameObject("Visuals_Root");
         root.transform.SetParent(this.transform, false);
         _visualsRoot = root.transform;
 
-        // Reparenta renderers existentes para o novo root
-        // Isso garante que eles sigam as animações de escala/posição do root
         ReparentIfNotNull(_plantRenderer);
         ReparentIfNotNull(_stateOverlayRenderer);
         ReparentIfNotNull(_highlightOverlayRenderer);
         ReparentIfNotNull(_cursorRenderer);
 
-        // Especial: Se a base estiver no objeto principal, precisamos de um proxy nela
-        // para que o solo também levite/pulse.
         if (_baseRenderer != null && _baseRenderer.gameObject == this.gameObject)
         {
             var originalSprite = _baseRenderer.sprite;
-            _baseRenderer.enabled = false; // Desliga a versão estática
+            _baseRenderer.enabled = false;
             _baseRenderer = CreateChildSprite("BaseSoil_Proxy", 0);
             _baseRenderer.sprite = originalSprite;
             _baseRenderer.enabled = true;
         }
 
-        // Se algum não existia, cria agora dentro do root
         if (_plantRenderer == null) _plantRenderer = CreateChildSprite("PlantSprite", 1);
         if (_stateOverlayRenderer == null) _stateOverlayRenderer = CreateChildSprite("StateOverlay", 2);
         if (_highlightOverlayRenderer == null) _highlightOverlayRenderer = CreateChildSprite("OverlayFill", 3);
@@ -375,8 +455,7 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 
     private void UpdateBaseRendererShadow()
     {
-        // Se a base foi substituída por um proxy no Visuals_Root, garantimos que ela tenha o sprite certo
-        // Esse método é redundante se _baseRenderer já aponta para o proxy, mas mantemos por segurança
+        // Placeholder para sincronização de proxy se necessário
     }
 
     private void ReparentIfNotNull(Component comp)
@@ -389,11 +468,9 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 
     private SpriteRenderer CreateChildSprite(string name, int orderOffset)
     {
-        // Tenta encontrar por nome sob o root
         var child = _visualsRoot.Find(name);
         if (child != null) return child.GetComponent<SpriteRenderer>();
 
-        // Cria novo
         GameObject obj = new GameObject(name);
         obj.transform.SetParent(_visualsRoot, false);
         var sr = obj.AddComponent<SpriteRenderer>();
@@ -408,20 +485,13 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         return sr;
     }
 
-    /// <summary>
-    /// Sincroniza o sprite dos overlays com o sprite da base.
-    /// Isso garante que overlays de cor funcionem corretamente.
-    /// </summary>
     private void SyncOverlaySprites()
     {
         if (_baseRenderer == null || _baseRenderer.sprite == null) return;
 
-        // State overlay usa o mesmo sprite da base para aplicar cor (ex: mature/planted)
         if (_stateOverlayRenderer != null)
             _stateOverlayRenderer.sprite = _baseRenderer.sprite;
 
-        // SENIOR FIX: O Highlight Overlay PRECISA do sprite para mostrar as cores de Glow/Pattern/Analysis.
-        // Se ele não tiver um sprite específico (borda), usamos o sprite da base.
         if (_highlightOverlayRenderer != null && _highlightOverlayRenderer.sprite == null)
             _highlightOverlayRenderer.sprite = _baseRenderer.sprite;
     }

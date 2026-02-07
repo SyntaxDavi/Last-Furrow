@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
 
 /// <summary>
 /// Bootstrapper de Grid Visual - Injeta dependências em GridManager.
@@ -138,6 +138,9 @@ public class GridVisualBootstrapper : MonoBehaviour
         // Cria DropValidator
         var dropValidator = new DefaultDropValidator(gridService, gameStateManager);
 
+        // NOVO (Fase 1): Cria DragStateProvider
+        IDragStateProvider dragStateProvider = CreateDragStateProvider();
+
         // Cria contexto
         try
         {
@@ -148,7 +151,8 @@ public class GridVisualBootstrapper : MonoBehaviour
                 gridEvents: events.Grid,
                 gameStateEvents: events.GameState,
                 gameStateManager: gameStateManager,
-                visualConfig: _visualConfig
+                visualConfig: _visualConfig,
+                dragStateProvider: dragStateProvider
             );
         }
         catch (System.Exception ex)
@@ -156,5 +160,22 @@ public class GridVisualBootstrapper : MonoBehaviour
             Debug.LogError($"[GridVisualBootstrapper] Erro ao criar contexto: {ex.Message}");
             return null;
         }
+    }
+
+    /// <summary>
+    /// NOVO (Fase 1): Cria o provider de estado de drag.
+    /// </summary>
+    private IDragStateProvider CreateDragStateProvider()
+    {
+        var playerInteraction = FindFirstObjectByType<PlayerInteraction>();
+        
+        if (playerInteraction == null)
+        {
+            if (_showDebugLogs)
+                Debug.LogWarning("[GridVisualBootstrapper] PlayerInteraction não encontrado. DragStateProvider será null.");
+            return null;
+        }
+
+        return new PlayerInteractionDragAdapter(playerInteraction);
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using Cysharp.Threading.Tasks; // <--- Importante
-using System.Threading; // Para CancellationToken
+using Cysharp.Threading.Tasks; 
+using System.Threading; 
 
 /// <summary>
 /// Escuta eventos de padrões e aplica highlights visuais nos slots.
@@ -123,62 +123,64 @@ public class PatternHighlightController : MonoBehaviour
 
     private async UniTaskVoid HighlightSlotAsync(GridSlotView slot, Color color, int slotIndex, CancellationToken token)
     {
-        // Nota: O token já é linkado com destroy.
-        
         if (slot == null) return;
 
-        float elapsed = 0f;
-        float duration = _config.highlightDuration;
-
-        // FASE 1: Loop de Animação (PingPong)
-        while (elapsed < duration)
+        try
         {
-            // Verifica se o slot ainda existe (segurança extra)
-            if (slot == null) return;
+            float elapsed = 0f;
+            float duration = _config.highlightDuration;
 
-            elapsed += Time.deltaTime;
+            // FASE 1: Loop de Animação (PingPong)
+            while (elapsed < duration)
+            {
+                if (slot == null) return;
 
-            float t = Mathf.PingPong(elapsed * _config.highlightPulseSpeed, 1f);
-            Color pulsedColor = color;
-            pulsedColor.a = Mathf.Lerp(0.3f, 0.8f, t);
+                elapsed += Time.deltaTime;
 
-            slot.SetPatternHighlight(pulsedColor, true);
-            slot.SetElevationFactor(1f);
+                float t = Mathf.PingPong(elapsed * _config.highlightPulseSpeed, 1f);
+                Color pulsedColor = color;
+                pulsedColor.a = Mathf.Lerp(0.3f, 0.8f, t);
 
-            // Espera 1 frame, mas cancela se o objeto morrer
-            await UniTask.Yield(PlayerLoopTiming.Update, token);
+                slot.SetPatternHighlight(pulsedColor, true);
+                slot.SetElevationFactor(1f);
+
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
+
+            // FASE 2: Fade out
+            float fadeElapsed = 0f;
+            float fadeDuration = _config.highlightFadeOutDuration;
+
+            while (fadeElapsed < fadeDuration)
+            {
+                if (slot == null) return;
+
+                fadeElapsed += Time.deltaTime;
+                float t = fadeElapsed / fadeDuration;
+                slot.SetElevationFactor(1f - t);
+
+                Color fadedColor = color;
+                fadedColor.a = Mathf.Lerp(0.8f, 0f, t);
+
+                slot.SetPatternHighlight(fadedColor, true);
+
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
         }
-
-        // FASE 2: Fade out
-        float fadeElapsed = 0f;
-        float fadeDuration = _config.highlightFadeOutDuration;
-
-        while (fadeElapsed < fadeDuration)
+        catch (System.OperationCanceledException)
         {
-            if (slot == null) return;
-
-            fadeElapsed += Time.deltaTime;
-            float t = fadeElapsed / fadeDuration;
-            slot.SetElevationFactor(1f - t);
-
-            Color fadedColor = color;
-            fadedColor.a = Mathf.Lerp(0.8f, 0f, t);
-
-            slot.SetPatternHighlight(fadedColor, true);
-
-            await UniTask.Yield(PlayerLoopTiming.Update, token);
+            // Esperado quando o token é cancelado - não propaga o erro
         }
-
-        // Limpeza final
-        // Limpeza final (SÓ se não foi cancelado por outro efeito chegando)
-        // Se o token foi cancelado, significa que outro efeito assumiu, então NÃO resetamos o slot.
-        if (!token.IsCancellationRequested && slot != null)
+        finally
         {
-            slot.ClearPatternHighlight();
-            slot.SetElevationFactor(0f);
+            // GARANTIA: Sempre reseta o slot, independente de cancelamento
+            if (slot != null)
+            {
+                slot.ClearPatternHighlight(); // Isso já chama SetElevationFactor(0f)
+            }
             
-             // Remove do dicionário se terminamos naturalmente
-            if (_activeEffects.ContainsKey(slotIndex) && _activeEffects[slotIndex].Token == token)
+            // Remove do dicionário
+            if (_activeEffects.ContainsKey(slotIndex))
             {
                 _activeEffects.Remove(slotIndex);
             }

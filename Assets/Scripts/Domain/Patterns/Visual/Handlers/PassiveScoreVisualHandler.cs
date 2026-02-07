@@ -51,21 +51,9 @@ namespace LastFurrow.Domain.Patterns.Visual.Handlers
         {
             if (slot == null) return;
 
-            // Trigger Levitation
-            slot.SetElevationFactor(1f);
-            
-            // Trigger White Flash FX
-            slot.TriggerWhiteFlash();
-
-            // Show Local Popup
+            // REFATORADO: ShowPassiveScore agora é a única fonte de verdade
+            // para elevação, flash e timing. O handler apenas delega.
             slot.ShowPassiveScore(points);
-
-            // Wait based on config or default
-            float duration = _config != null ? _config.pulseDuration : 0.5f;
-            await UniTask.Delay(TimeSpan.FromSeconds(duration));
-
-            // Return to base
-            slot.SetElevationFactor(0f);
         }
     }
 }

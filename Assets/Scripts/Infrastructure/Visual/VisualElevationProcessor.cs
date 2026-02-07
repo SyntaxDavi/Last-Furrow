@@ -19,6 +19,19 @@ namespace LastFurrow.Infrastructure.Visual
         public bool IsRaised => _currentOffset > SNAP_THRESHOLD;
 
         /// <summary>
+        /// Indica se a elevação está estável E em repouso (não precisa de Update).
+        /// True apenas quando offset atual E target são ambos ~zero.
+        /// </summary>
+        public bool IsStable => _elevationFactor < SNAP_THRESHOLD 
+                                && Mathf.Abs(_currentOffset) < SNAP_THRESHOLD 
+                                && Mathf.Abs(_targetOffset) < SNAP_THRESHOLD;
+
+        /// <summary>
+        /// Indica se a animação de elevação está em andamento.
+        /// </summary>
+        public bool IsAnimating => Mathf.Abs(_currentOffset - _targetOffset) > SNAP_THRESHOLD;
+
+        /// <summary>
         /// Atualiza o fator de elevação (0.0 a 1.0).
         /// </summary>
         public void SetElevationFactor(float factor)
@@ -29,9 +42,6 @@ namespace LastFurrow.Infrastructure.Visual
         /// <summary>
         /// Processa a interpolação suave do offset.
         /// </summary>
-        /// <param name="maxOffset">O offset máximo em unidades do Unity quando factor = 1.</param>
-        /// <param name="speed">Velocidade da suavização.</param>
-        /// <param name="deltaTime">Tempo decorrido.</param>
         public void Update(float maxOffset, float speed, float deltaTime)
         {
             _targetOffset = maxOffset * _elevationFactor;

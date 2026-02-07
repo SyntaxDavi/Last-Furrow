@@ -42,6 +42,9 @@ public class GridVisualContext
     // Configuração visual
     public readonly GridVisualConfig VisualConfig;
 
+    // NOVO: Provider para estado de drag (Fase 1)
+    public readonly IDragStateProvider DragStateProvider;
+
     /// <summary>
     /// Construtor valida que todas as dependências são não-nulas.
     /// Falha rápido se algo estiver faltando (fail-fast).
@@ -53,7 +56,8 @@ public class GridVisualContext
         GridEvents gridEvents,
         GameStateEvents gameStateEvents,
         GameStateManager gameStateManager,
-        GridVisualConfig visualConfig)
+        GridVisualConfig visualConfig,
+        IDragStateProvider dragStateProvider = null) // Opcional para compatibilidade
     {
         GridService = gridService ?? throw new ArgumentNullException(nameof(gridService));
         Library = library ?? throw new ArgumentNullException(nameof(library));
@@ -62,5 +66,6 @@ public class GridVisualContext
         GameStateEvents = gameStateEvents ?? throw new ArgumentNullException(nameof(gameStateEvents));
         GameStateManager = gameStateManager ?? throw new ArgumentNullException(nameof(gameStateManager));
         VisualConfig = visualConfig ?? throw new ArgumentNullException(nameof(visualConfig));
+        DragStateProvider = dragStateProvider; // Pode ser null (fallback no View)
     }
 }

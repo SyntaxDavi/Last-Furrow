@@ -10,6 +10,9 @@ using UnityEngine;
 /// - Finalizar drop (sucesso ou cancelamento)
 ///
 /// NÃO decide se pode ou não arrastar - isso é do InteractionPolicy.
+/// 
+/// REFATORAÇÃO (Fase 2):
+/// - Agora chama PlayInvalidDropFeedback() quando drop falha
 /// </summary>
 public class DragDropSystem
 {
@@ -94,6 +97,7 @@ public class DragDropSystem
 
     /// <summary>
     /// Finaliza o drag, tentando fazer drop.
+    /// Fase 2: Chama PlayInvalidDropFeedback() quando drop falha.
     /// </summary>
     public DragResult FinishDrag(Vector2 worldPos)
     {
@@ -106,10 +110,22 @@ public class DragDropSystem
 
         bool success = false;
 
-        if (target != null && target.CanReceive(_activeDrag))
+        if (target != null)
         {
-            target.OnReceive(_activeDrag);
-            success = true;
+            if (target.CanReceive(_activeDrag))
+            {
+                target.OnReceive(_activeDrag);
+                success = true;
+            }
+            else
+            {
+                // Fase 2: Feedback visual de drop inválido
+                // Verifica se o target suporta o método de feedback
+                if (target is GridSlotView slotView)
+                {
+                    slotView.PlayInvalidDropFeedback();
+                }
+            }
         }
 
         _activeDrag.OnDragEnd();
