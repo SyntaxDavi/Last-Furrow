@@ -41,13 +41,13 @@ namespace LastFurrow.Domain.Patterns.Visual.Handlers
             {
                 if (slot.SlotIndex == slotIndex)
                 {
-                    AnimatePassiveScore(slot, points).Forget();
+                    AnimatePassiveScore(slot, points);
                     break;
                 }
             }
         }
 
-        private async UniTaskVoid AnimatePassiveScore(GridSlotView slot, int points)
+        private void AnimatePassiveScore(GridSlotView slot, int points)
         {
             if (slot == null) return;
 

@@ -56,6 +56,9 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     private List<ICardVisualModifier> _activeModifiers = new List<ICardVisualModifier>();
     private HandElevationModifier _elevationModifier;
 
+    // Transition Mode (desativa efeitos visuais durante Fan Out/In)
+    private bool _isInTransitionMode;
+
     // ==============================================================================================
     // 4. EVENTOS
     // ==============================================================================================
@@ -216,6 +219,13 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     
     private void ApplyIdleVisuals(ref CardVisualTarget target, ref int sortOrder, Vector3 interactionPoint, float time, ref CardMovementProfile profile)
     {
+        // SENIOR FIX: Pula efeitos visuais durante transição para garantir convergência
+        if (_isInTransitionMode)
+        {
+            target.Position.z = _config.IdleZ;
+            return;
+        }
+        
         // A. Flutuação (Senoide)
         float floatY = Mathf.Sin(time * _config.IdleFloatSpeed) * _config.IdleFloatAmount;
         float floatRot = Mathf.Cos(time * (_config.IdleFloatSpeed * 0.5f)) * _config.IdleRotationAmount;
@@ -422,6 +432,22 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
     /// 1.0 = Totalmente levantada, 0.0 = Abaixada.
     /// </summary>
     public void SetElevationFactor(float factor) => _elevationModifier?.SetElevationFactor(factor);
+
+    /// <summary>
+    /// Ativa/desativa modo de transição (Fan Out/In).
+    /// Quando ativo, desabilita flutuação e outros efeitos visuais que interferem na convergência.
+    /// </summary>
+    public void SetTransitionMode(bool enabled)
+    {
+        _isInTransitionMode = enabled;
+        
+        if (enabled)
+        {
+            // Força hover off durante transição
+            IsHovered = false;
+            _hoverExitTimer = -1f;
+        }
+    }
 
     /// <summary>
     /// Executa a animação de "Slam" quando a carta é usada e depois se destrói.

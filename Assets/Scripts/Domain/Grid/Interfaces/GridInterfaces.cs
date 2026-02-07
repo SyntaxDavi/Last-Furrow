@@ -53,7 +53,7 @@ public readonly struct InteractionResult
     public bool IsSuccess { get; }
     public string Message { get; }
     public bool ShouldConsumeCard { get; }
-    public GridEventType EventType { get; } 
+    public GridEventType EventType { get; }
 
     private InteractionResult(bool success, string message, GridEventType type, bool consume)
     {
@@ -62,6 +62,7 @@ public readonly struct InteractionResult
         EventType = type;
         ShouldConsumeCard = consume;
     }
+
 
     public static InteractionResult Fail(string message)
         => new InteractionResult(false, message, GridEventType.GenericUpdate, false);
@@ -72,4 +73,3 @@ public readonly struct InteractionResult
     public static InteractionResult Ok()
         => new InteractionResult(true, "", GridEventType.GenericUpdate, true);
 }
-

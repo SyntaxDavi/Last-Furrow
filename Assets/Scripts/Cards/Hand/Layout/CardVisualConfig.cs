@@ -64,7 +64,13 @@ public class CardVisualConfig : ScriptableObject
     public float FanInSequenceDelay = 0.08f;
     
     [Tooltip("Distância mínima para considerar que a carta 'chegou' no target")]
-    public float ConvergenceThreshold = 0.1f;
+    public float ConvergenceThreshold = 0.15f;  // AUMENTADO de 0.1f para 0.15f
+
+    [Tooltip("Tempo máximo de espera por convergência (segundos)")]
+    public float MaxConvergenceTime = 1.5f;  // NOVO
+
+    [Tooltip("Tempo mínimo antes de checar convergência (segundos)")]
+    public float MinConvergenceTime = 0.3f;  // NOVO
 
     [Header("10. Audio")]
     public SoundEffect[] CardDrawSounds;

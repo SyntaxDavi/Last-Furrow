@@ -91,10 +91,13 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         if (_visualsRoot != null)
             _visualsRoot.localPosition = _elevationProcessor.Apply(_originalLocalPos);
 
-        // Fase 3: Auto-desativa quando estabiliza
+        // Fase 3: Auto-desativa apenas quando COMPLETAMENTE estável (no chão e parado)
         if (_elevationProcessor.IsStable)
         {
             _isElevationActive = false;
+            // Garante posição exata no final
+            if (_visualsRoot != null)
+                _visualsRoot.localPosition = _originalLocalPos;
         }
     }
 
@@ -145,17 +148,17 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
 
     public void OnHoverEnter() 
     {
+        if (_isLocked) return;
+        
         _highlightController?.SetHover(true);
 
-        // Grid Juice: Pulse if holding a valid card
-        // Fase 1: Usa DragProvider injetado ao invés de cache
-        if (DragProvider != null && DragProvider.IsDragging)
-        {
-            if (CanReceive(DragProvider.ActiveDrag))
-            {
-                StartPulse();
-            }
-        }
+        // Verifica se está arrastando carta válida para decidir intensidade do pulse
+        bool isDraggingValidCard = DragProvider != null 
+                                   && DragProvider.IsDragging 
+                                   && CanReceive(DragProvider.ActiveDrag);
+
+        // Pulse mais intenso se está com carta, mais sutil se é só hover
+        StartPulse(isDraggingValidCard ? 1f : 0.5f);
     }
 
     public void OnHoverExit() 
@@ -192,15 +195,19 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     public void SetElevationFactor(float factor)
     {
         _elevationProcessor.SetElevationFactor(factor);
-        // Fase 3: Ativa Update apenas quando há movimento
-        _isElevationActive = factor > 0.01f || !_elevationProcessor.IsStable;
+        
+        // Ativa Update se:
+        // 1. Queremos elevar (factor > 0), OU
+        // 2. Ainda está animando (não chegou no target), OU
+        // 3. Ainda está elevado e precisa descer
+        _isElevationActive = factor > 0.01f 
+                             || _elevationProcessor.IsAnimating 
+                             || _elevationProcessor.IsRaised;
     }
     
     public void ShowPassiveScore(int points)
     {
-        if (_passiveScoreText == null || _passiveScoreGroup == null || _context?.VisualConfig == null) return;
-
-        var cfg = _context.VisualConfig;
+        if (_passiveScoreText == null || _passiveScoreGroup == null) return;
 
         // Trigger Levitation
         SetElevationFactor(1f);
@@ -211,22 +218,22 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         _scoreTween?.Kill();
 
         _passiveScoreText.text = $"+{points}";
-        _passiveScoreText.alpha = 1f; 
+        _passiveScoreText.alpha = 1f; // TMP visível, CanvasGroup controla fade
         _passiveScoreGroup.alpha = 0f;
 
         Vector3 startPos = Vector3.zero;
-        Vector3 targetPos = startPos + Vector3.up * cfg.scorePopupHeight;
+        Vector3 targetPos = startPos + Vector3.up * 0.7f;
         _passiveScoreText.transform.localPosition = startPos;
 
         Sequence seq = DOTween.Sequence();
-        seq.Append(_passiveScoreGroup.DOFade(1f, cfg.scorePopupFadeInDuration));
-        seq.Join(_passiveScoreText.transform.DOLocalMove(targetPos, cfg.scorePopupMoveDuration).SetEase(Ease.OutBack));
-        seq.AppendInterval(cfg.scorePopupWaitDuration);
-        seq.Append(_passiveScoreGroup.DOFade(0f, cfg.scorePopupFadeOutDuration));
-        seq.Join(_passiveScoreText.transform.DOLocalMove(targetPos + Vector3.up * cfg.scorePopupDriftHeight, cfg.scorePopupFadeOutDuration));
+        seq.Append(_passiveScoreGroup.DOFade(1f, 0.2f));
+        seq.Join(_passiveScoreText.transform.DOLocalMove(targetPos, 0.4f).SetEase(Ease.OutBack));
+        seq.AppendInterval(0.3f);
+        seq.Append(_passiveScoreGroup.DOFade(0f, 0.3f));
+        seq.Join(_passiveScoreText.transform.DOLocalMove(targetPos + Vector3.up * 0.2f, 0.3f));
         seq.OnComplete(() => {
             _passiveScoreText.transform.localPosition = startPos;
-            _passiveScoreText.alpha = 0f; 
+            _passiveScoreText.alpha = 0f; // Esconde TMP também
             SetElevationFactor(0f);
         });
 
@@ -263,6 +270,15 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
     public void PlayInvalidDropFeedback()
     {
         _highlightController?.PlayErrorFlash(this.GetCancellationTokenOnDestroy()).Forget();
+
+        // Juice: Shake de erro se tivermos as referências (RESTAURADO)
+        if (_visualsRoot != null && _context?.VisualConfig != null)
+        {
+            var cfg = _context.VisualConfig;
+            // Interrompe shakes anteriores para evitar acúmulo de offset
+            _visualsRoot.DOKill(true); 
+            _visualsRoot.DOShakePosition(cfg.flashDuration, cfg.errorShakeStrength, cfg.errorShakeVibrato);
+        }
     }
 
     public void OnReceive(IDraggable draggable)
@@ -287,12 +303,25 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         DOVirtual.DelayedCall(punchDelay, () => TriggerReceivePop());
     }
 
-    private void StartPulse()
+    /// <summary>
+    /// Inicia o efeito de pulse (escala) no slot.
+    /// </summary>
+    /// <param name="intensity">Intensidade do pulse: 1.0 = full, 0.5 = sutil</param>
+    private void StartPulse(float intensity = 1f)
     {
         if (_pulseTween != null || _visualsRoot == null) return;
+        if (_context?.VisualConfig == null) return;
 
-        float targetScale = 1.0f * _context.VisualConfig.slotHoverPulseScale;
-        _pulseTween = _visualsRoot.DOScale(targetScale, _context.VisualConfig.slotHoverPulseDuration)
+        // Escala base + (escala extra * intensidade)
+        float baseScale = 1.0f;
+        float extraScale = _context.VisualConfig.slotHoverPulseScale - 1f; // Ex: 1.05 - 1 = 0.05
+        float targetScale = baseScale + (extraScale * intensity);
+        
+        // Duração mais longa para pulse sutil
+        float duration = _context.VisualConfig.slotHoverPulseDuration;
+        if (intensity < 1f) duration *= 1.5f; // 50% mais lento no hover normal
+
+        _pulseTween = _visualsRoot.DOScale(targetScale, duration)
             .SetLoops(-1, LoopType.Yoyo)
             .SetEase(Ease.InOutSine);
     }
@@ -303,7 +332,7 @@ public class GridSlotView : MonoBehaviour, IInteractable, IDropTarget
         {
             _pulseTween.Kill();
             _pulseTween = null;
-            _visualsRoot.DOScale(1.0f, 0.2f).SetEase(Ease.OutBack);
+            _visualsRoot?.DOScale(1.0f, 0.2f).SetEase(Ease.OutBack);
         }
     }
 

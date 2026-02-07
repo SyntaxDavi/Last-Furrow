@@ -38,7 +38,9 @@ MonoBehaviour:
   FanInPreDelay: 0.5
   FanOutSequenceDelay: 0.2
   FanInSequenceDelay: 0.14
-  ConvergenceThreshold: 0.1
+  ConvergenceThreshold: 0.15
+  MaxConvergenceTime: 1.5
+  MinConvergenceTime: 0.3
   CardDrawSounds:
   - Clip: {fileID: 8300000, guid: a09bbc36f93f0d847b16979158709983, type: 3}
     Volume: 1

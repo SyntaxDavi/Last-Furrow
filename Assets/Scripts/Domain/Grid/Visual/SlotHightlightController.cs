@@ -5,8 +5,16 @@ using System.Threading;
 using UnityEngine;
 
 /// <summary>
-/// Controlador DEDICADO ao highlight.
-/// Evolução: Separação clara entre FX Transitórios (Error) e Estados Contínuos (Analyzing, Hover, Pattern).
+/// Controlador DEDICADO ao highlight visual (overlay/cor).
+/// 
+/// RESPONSABILIDADES:
+/// - Flash de erro (cor vermelha)
+/// - Pulse de análise (cor amarela)
+/// - Hover (cor verde)
+/// - Pattern highlight (cor variável)
+/// 
+/// NÃO RESPONSÁVEL POR:
+/// - Shake/Punch de transform (isso é da View que controla posição)
 /// </summary>
 [System.Serializable]
 public class SlotHighlightController
@@ -34,7 +42,6 @@ public class SlotHighlightController
         _overlay.enabled = false;
         _cursorRenderer.enabled = false;
 
-        // Garante que o animator comece desligado
         if (_cursorAnimator != null) _cursorAnimator.enabled = false;
     }
 
@@ -43,12 +50,13 @@ public class SlotHighlightController
     // =================================================================================
 
     /// <summary>
-    /// Toca um flash de erro. Bloqueia visualmente outros estados enquanto roda.
+    /// Toca um flash de erro (apenas cor/alpha). 
+    /// O shake de transform é responsabilidade externa (GridSlotView).
     /// </summary>
     public async UniTask PlayErrorFlash(CancellationToken externalToken)
     {
         // 1. Tomada de Controle
-        KillTransientTween(); // Mata apenas FX anteriores, não o estado base
+        KillTransientTween();
         _isLockedByTransient = true;
 
         // Setup visual imediato
@@ -57,16 +65,18 @@ public class SlotHighlightController
         SetOverlayAlpha(0f);
         _cursorRenderer.enabled = false;
 
-        // 2. Link de Cancelamento (Robustez Sênior)
-        // Cria um token que cancela se o objeto for destruído OU se quem chamou cancelar
+        // 2. Link de Cancelamento
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             externalToken, _overlay.GetCancellationTokenOnDestroy());
 
         try
         {
+            // Flash vermelho (apenas cor - sem shake)
             _transientTween = _overlay.DOFade(0.8f, 0.1f).SetLink(_overlay.gameObject);
             await _transientTween.ToUniTask(cancellationToken: linkedCts.Token);
-            await UniTask.Delay(TimeSpan.FromSeconds(0.2f), cancellationToken: linkedCts.Token);
+            
+            await UniTask.Delay(TimeSpan.FromSeconds(0.15f), cancellationToken: linkedCts.Token);
+            
             _transientTween = _overlay.DOFade(0f, 0.2f).SetLink(_overlay.gameObject);
             await _transientTween.ToUniTask(cancellationToken: linkedCts.Token);
         }
@@ -88,16 +98,11 @@ public class SlotHighlightController
         if (_isAnalyzing || _isLockedByTransient) return;
 
         _isAnalyzing = true;
-
-        // Limpa estado visual anterior
         KillStateTween();
 
-        // 1. Configura Overlay (AMARELO)
         _overlay.enabled = true;
-        _overlay.color = _config.analyzingPulse; // <--- Certifique-se que essa cor é AMARELA no Inspector!
+        _overlay.color = _config.analyzingPulse;
         SetOverlayAlpha(0f);
-
-        // 2. Configura Cursor (Opcional: quer setas durante o analyze? Vou deixar false por padrão)
         _cursorRenderer.enabled = false;
 
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
@@ -105,7 +110,6 @@ public class SlotHighlightController
 
         try
         {
-            // O Pulse amarelo
             _stateTween = _overlay.DOFade(0.7f, duration / 2f)
                 .SetLoops(2, LoopType.Yoyo)
                 .SetLink(_overlay.gameObject);
@@ -142,57 +146,44 @@ public class SlotHighlightController
     // NÚCLEO DE RESOLUÇÃO (PRIORIDADE)
     // =================================================================================
 
-    /// <summary>
-    /// A Única Fonte da Verdade™ para a cor final.
-    /// Chamado sempre que qualquer estado muda.
-    /// </summary>
     private void RefreshVisuals()
     {
         if (_isLockedByTransient) return;
 
-        // --- ESTADO 1: ANALYZING (Prioridade sobre Hover) ---
         if (_isAnalyzing)
         {
             _overlay.enabled = true;
-            // Mantém cor atual do tween ou reseta
             Color c = _config.analyzingPulse;
             c.a = _overlay.color.a;
             _overlay.color = c;
-
             ToggleCursor(false);
             return;
         }
 
-        KillStateTween(); // Limpa pulse se sobrou
+        KillStateTween();
 
-        // --- HOVER (Verde + Setas) ---
         if (_isHovered)
         {
-            // Camada 1: Overlay (Fundo)
             _overlay.enabled = true;
             _overlay.color = _config.validHover;
             SetOverlayAlpha(_config.validHover.a);
-
-            // Camada 2: Cursor Animado
             ToggleCursor(true);
             return;
         }
 
-        // --- ESTADO 3: PATTERN ---
         if (_hasPattern)
         {
             _overlay.enabled = true;
             _overlay.color = _patternColor;
             SetOverlayAlpha(_patternColor.a);
-
             ToggleCursor(false);
             return;
         }
 
-        // --- IDLE ---
         _overlay.enabled = false;
         ToggleCursor(false);
     }
+
     private void ToggleCursor(bool enable)
     {
         if (_cursorRenderer == null) return;
@@ -205,12 +196,8 @@ public class SlotHighlightController
 
             if (enable)
             {
-                // APLICA O AJUSTE DE POSIÇÃO (OFFSET) AQUI
-                // Como _cursorRenderer é filho do slot, usamos localPosition
                 _cursorRenderer.transform.localPosition = _config.cursorLocalOffset;
                 _cursorRenderer.transform.localScale = _config.cursorLocalScale;
-
-                // Se a animação tiver travado num frame estranho, isso reseta para o começo
                 _cursorAnimator.Rebind();
                 _cursorAnimator.Update(0f);
             }
@@ -227,23 +214,37 @@ public class SlotHighlightController
         KillStateTween();
     }
 
-    private void KillTransientTween() { if (_transientTween != null && _transientTween.IsActive()) _transientTween.Kill(); _transientTween = null; }
-    private void KillStateTween() { if (_stateTween != null && _stateTween.IsActive()) _stateTween.Kill(); _stateTween = null; }
-    private void SetOverlayAlpha(float alpha) { Color c = _overlay.color; c.a = alpha; _overlay.color = c; }
+    private void KillTransientTween() 
+    { 
+        if (_transientTween != null && _transientTween.IsActive()) 
+            _transientTween.Kill(); 
+        _transientTween = null; 
+    }
+    
+    private void KillStateTween() 
+    { 
+        if (_stateTween != null && _stateTween.IsActive()) 
+            _stateTween.Kill(); 
+        _stateTween = null; 
+    }
+    
+    private void SetOverlayAlpha(float alpha) 
+    { 
+        Color c = _overlay.color; 
+        c.a = alpha; 
+        _overlay.color = c; 
+    }
 
     /// <summary>
-    /// Toca um flash branco rápido. Usado durante a análise do grid para dar "impacto".
+    /// Flash branco rápido para impacto visual.
     /// </summary>
     public async UniTask PlayWhiteFlash(CancellationToken externalToken)
     {
-        // 1. Guard Clause: Se já está piscando (Erro ou Branco anterior), ignora para evitar strobe.
         if (_isLockedByTransient) return;
 
-        // 2. Tomada de Controle
         KillTransientTween();
-        _isLockedByTransient = true; // LOCK
+        _isLockedByTransient = true;
         
-        // Setup visual imediato: Branco Puro
         _overlay.enabled = true;
         _overlay.color = Color.white;
         SetOverlayAlpha(0f);
@@ -253,7 +254,6 @@ public class SlotHighlightController
 
         try
         {
-            // Flash muito rápido e intenso (0.8 alpha -> 0)
             _transientTween = _overlay.DOFade(0.8f, 0.05f).SetLink(_overlay.gameObject);
             await _transientTween.ToUniTask(cancellationToken: linkedCts.Token);
             

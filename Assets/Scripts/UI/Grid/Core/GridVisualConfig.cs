@@ -36,9 +36,15 @@ public class GridVisualConfig : ScriptableObject
     [Tooltip("Cor do pulse durante análise (rosa claro)")]
     public Color analyzingPulse = new Color(1f, 0.7f, 0.7f, 1f);
 
-    [Tooltip("Duração do flash de erro (segundos)")]
+    [Tooltip("Duração do flash e shake de erro (segundos)")]
     [Range(0.1f, 1f)]
     public float flashDuration = 0.2f;
+
+    [Header("Error Shake")]
+    [Tooltip("Força do tremor quando uma ação é inválida.")]
+    public float errorShakeStrength = 0.15f;
+    [Tooltip("Quantidade de vibrações no shake.")]
+    public int errorShakeVibrato = 10;
 
     [Tooltip("Duração do pulse de análise (segundos)")]
     [Range(0.1f, 2f)]
@@ -67,6 +73,12 @@ public class GridVisualConfig : ScriptableObject
     public float scorePopupFadeOutDuration = 0.3f;
     [Tooltip("Distância extra que o texto 'deriva' para cima enquanto some.")]
     public float scorePopupDriftHeight = 0.2f;
+
+    [Header("Watering Juice")]
+    [Tooltip("Duração da transição visual de solo seco para molhado.")]
+    public float wateringTransitionDuration = 0.5f;
+    [Tooltip("Força do punch de escala quando o solo recebe água.")]
+    public float wateringScalePunch = 0.1f;
 
     [Header("Render Layers (Priority System)")]
     [Tooltip("Sorting order offset para overlay de estado (+1 sobre base)")]      
