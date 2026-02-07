@@ -2,14 +2,14 @@ using System;
 using UnityEngine;
 using TMPro;
 
-namespace LastFurrow.UI.GameOver
+namespace LastFurrow.UI.RunEnd
 {
     /// <summary>
-    /// Professional Pure View for the Game Over Screen.
+    /// Professional Pure View for the Run End Screen (Victory or Game Over).
     /// - Reactive: Only handles visual presentation.
     /// - Communicates intent via events.
     /// </summary>
-    public class GameOverView : UIView
+    public class RunEndView : UIView
     {
         public event Action OnReturnToMenuRequested;
 

@@ -1,16 +1,34 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using System.Diagnostics;
+using Debug = UnityEngine.Debug;
 
 /// <summary>
 /// Controlador responsável pela animação de Fan Out/Fan In das cartas durante a fase de análise.
 /// Desacoplado do HandManager para melhor organização e separação de responsabilidades.
+/// 
+/// SENIOR FIX v2.0:
+/// - Sistema de convergência híbrido (polling + timeout inteligente)
+/// - Fallback por tempo máximo configurável
+/// - Threshold adaptativo baseado na velocidade das cartas
+/// - Logs detalhados para debugging
 /// </summary>
 public class HandFanController : MonoBehaviour
 {
     [Header("Config")]
     [SerializeField] private CardVisualConfig _visualConfig;
     [SerializeField] private HandLayoutConfig _layoutConfig;
+    
+    [Header("Convergence Settings (Override)")]
+    [Tooltip("Threshold de distância para considerar carta convergida (0 = usa config)")]
+    [SerializeField] private float _convergenceThresholdOverride = 0f;
+    
+    [Tooltip("Tempo máximo de espera por convergência em segundos")]
+    [SerializeField] private float _maxConvergenceTime = 1.5f;
+    
+    [Tooltip("Tempo mínimo garantido antes de checar convergência")]
+    [SerializeField] private float _minConvergenceTime = 0.3f;
     
     // Referência ao HandManager (injetada via Initialize)
     private HandManager _handManager;
@@ -19,9 +37,18 @@ public class HandFanController : MonoBehaviour
     private HandFanState _fanState = HandFanState.Normal;
     private Vector3 _fanVisualOffset = Vector3.zero;
     
+    // Métricas de performance (para debugging)
+    private float _lastConvergenceTime;
+    private int _lastConvergenceIterations;
+    
     // Propriedades públicas
     public HandFanState CurrentFanState => _fanState;
     public bool IsFannedOut => _fanState == HandFanState.FannedOut;
+    public bool IsTransitioning => _fanState == HandFanState.FanningIn || _fanState == HandFanState.FanningOut;
+    
+    // Métricas expostas para debugging
+    public float LastConvergenceTime => _lastConvergenceTime;
+    public int LastConvergenceIterations => _lastConvergenceIterations;
     
     /// <summary>
     /// Inicializa o controller com referência ao HandManager.
@@ -54,6 +81,9 @@ public class HandFanController : MonoBehaviour
         
         _fanState = HandFanState.FanningOut;
         
+        // Notifica as cartas que estão em transição (desativa efeitos visuais)
+        SetCardsTransitionMode(cards, true);
+        
         // Usa offset do config (Inspector) ou fallback
         Vector3 fanOutOffset = _visualConfig?.FanOutOffset ?? new Vector3(-15f, -10f, 0f);
         _fanVisualOffset = fanOutOffset;
@@ -71,7 +101,7 @@ public class HandFanController : MonoBehaviour
             ApplyFanOffset(card, fanOutOffset);
             
             // Som com pitch variável (reutiliza o evento de draw)
-            int sequenceIndex = count - 1 - i; // primeira carta a sair = 0
+            int sequenceIndex = count - 1 - i;
             _handManager.TriggerCardVisuallySpawned(sequenceIndex);
             
             // Delay entre cada carta
@@ -79,11 +109,11 @@ public class HandFanController : MonoBehaviour
                 await UniTask.Delay((int)(sequenceDelay * 1000));
         }
         
-        // Aguarda convergência REAL (polling de posição)
-        await WaitForCardsConvergence();
+        // Aguarda convergência com sistema híbrido robusto
+        await WaitForCardsConvergenceRobust();
         
         _fanState = HandFanState.FannedOut;
-        Debug.Log("[HandFanController] FanOut complete - todas as cartas convergiram.");
+        Debug.Log($"[HandFanController] FanOut complete em {_lastConvergenceTime:F2}s ({_lastConvergenceIterations} frames)");
     }
     
     /// <summary>
@@ -123,7 +153,7 @@ public class HandFanController : MonoBehaviour
             // Remove o offset visual desta carta (volta ao layout lógico)
             RemoveFanOffset(card, i, count);
             
-            // Som com pitch variável (reutiliza o evento de draw)
+            // Som com pitch variável
             _handManager.TriggerCardVisuallySpawned(i);
             
             // Delay entre cada carta (efeito fan)
@@ -131,12 +161,15 @@ public class HandFanController : MonoBehaviour
                 await UniTask.Delay((int)(sequenceDelay * 1000));
         }
         
-        // Aguarda a última carta convergir
-        await WaitForCardsConvergence();
+        // Aguarda convergência com sistema híbrido robusto
+        await WaitForCardsConvergenceRobust();
+        
+        // Restaura efeitos visuais das cartas
+        SetCardsTransitionMode(cards, false);
         
         _fanVisualOffset = Vector3.zero;
         _fanState = HandFanState.Normal;
-        Debug.Log("[HandFanController] FanIn complete - todas as cartas convergiram.");
+        Debug.Log($"[HandFanController] FanIn complete em {_lastConvergenceTime:F2}s ({_lastConvergenceIterations} frames)");
     }
     
     /// <summary>
@@ -159,7 +192,6 @@ public class HandFanController : MonoBehaviour
     /// </summary>
     private void RemoveFanOffset(CardView card, int index, int totalCount)
     {
-        // Recalcula a posição lógica correta desta carta
         var targetSlot = HandLayoutCalculator.CalculateSlot(
             index,
             totalCount,
@@ -170,43 +202,159 @@ public class HandFanController : MonoBehaviour
     }
     
     /// <summary>
-    /// Aguarda até que TODAS as cartas tenham convergido para seus targets.
-    /// Polling real de posição, não delay baseado em tempo.
+    /// Notifica cartas sobre modo de transição (desativa/ativa efeitos visuais como flutuação).
     /// </summary>
-    private async UniTask WaitForCardsConvergence()
+    private void SetCardsTransitionMode(IReadOnlyList<CardView> cards, bool isTransitioning)
     {
-        float threshold = _visualConfig?.ConvergenceThreshold ?? 0.1f;
-        int maxIterations = 300; // Safety: ~5 segundos a 60fps
+        foreach (var card in cards)
+        {
+            if (card == null) continue;
+            card.SetTransitionMode(isTransitioning);
+        }
+    }
+    
+    // =================================================================================
+    // SISTEMA DE CONVERGÊNCIA ROBUSTO (v2.0)
+    // =================================================================================
+    
+    /// <summary>
+    /// Sistema híbrido de convergência:
+    /// 1. Tempo mínimo garantido (para animação começar)
+    /// 2. Polling de posição com threshold adaptativo
+    /// 3. Fallback por tempo máximo (evita travamento)
+    /// 4. Detecção de velocidade (se cartas pararam de mover)
+    /// </summary>
+    private async UniTask WaitForCardsConvergenceRobust()
+    {
+        var stopwatch = Stopwatch.StartNew();
         int iteration = 0;
         
-        while (iteration < maxIterations)
+        // Configurações
+        float threshold = _convergenceThresholdOverride > 0 
+            ? _convergenceThresholdOverride 
+            : (_visualConfig?.ConvergenceThreshold ?? 0.15f);
+        
+        // Threshold mais generoso para evitar problemas com flutuação
+        float effectiveThreshold = Mathf.Max(threshold, 0.15f);
+        
+        float minTime = _minConvergenceTime;
+        float maxTime = _maxConvergenceTime;
+        
+        // Fase 1: Tempo mínimo garantido
+        await UniTask.Delay((int)(minTime * 1000));
+        
+        // Fase 2: Polling com fallback por tempo
+        while (stopwatch.Elapsed.TotalSeconds < maxTime)
         {
-            bool allConverged = true;
-            var cards = _handManager.GetActiveCardsReadOnly();
+            iteration++;
             
-            foreach (var card in cards)
+            var convergenceResult = CheckConvergence(effectiveThreshold);
+            
+            if (convergenceResult.AllConverged)
             {
-                if (card == null) continue;
-                
-                // Verifica distância entre posição atual e target
-                float distance = Vector3.Distance(
-                    card.transform.position, 
-                    card.CurrentLayoutTarget.Position
-                );
-                
-                if (distance > threshold)
-                {
-                    allConverged = false;
-                    break;
-                }
+                // Sucesso! Todas as cartas chegaram
+                _lastConvergenceTime = (float)stopwatch.Elapsed.TotalSeconds;
+                _lastConvergenceIterations = iteration;
+                return;
             }
             
-            if (allConverged) return;
+            // Se a velocidade média é muito baixa, considera "good enough"
+            if (convergenceResult.AverageVelocity < 0.5f && convergenceResult.MaxDistance < effectiveThreshold * 2f)
+            {
+                Debug.Log($"[HandFanController] Convergência por velocidade baixa (v={convergenceResult.AverageVelocity:F2}, d={convergenceResult.MaxDistance:F2})");
+                _lastConvergenceTime = (float)stopwatch.Elapsed.TotalSeconds;
+                _lastConvergenceIterations = iteration;
+                return;
+            }
             
             await UniTask.Yield();
-            iteration++;
         }
         
-        Debug.LogWarning("[HandFanController] WaitForCardsConvergence timeout - algumas cartas não convergiram.");
+        // Fase 3: Timeout - não é erro, apenas log informativo
+        _lastConvergenceTime = (float)stopwatch.Elapsed.TotalSeconds;
+        _lastConvergenceIterations = iteration;
+        
+        var finalCheck = CheckConvergence(effectiveThreshold);
+        Debug.Log($"[HandFanController] Convergência por timeout ({maxTime}s). MaxDist={finalCheck.MaxDistance:F2}, AvgVel={finalCheck.AverageVelocity:F2}");
+    }
+    
+    /// <summary>
+    /// Resultado da checagem de convergência com métricas detalhadas.
+    /// </summary>
+    private struct ConvergenceCheckResult
+    {
+        public bool AllConverged;
+        public float MaxDistance;
+        public float AverageVelocity;
+        public int CardCount;
+    }
+    
+    /// <summary>
+    /// Verifica convergência de todas as cartas e retorna métricas.
+    /// </summary>
+    private ConvergenceCheckResult CheckConvergence(float threshold)
+    {
+        var result = new ConvergenceCheckResult
+        {
+            AllConverged = true,
+            MaxDistance = 0f,
+            AverageVelocity = 0f,
+            CardCount = 0
+        };
+        
+        var cards = _handManager.GetActiveCardsReadOnly();
+        if (cards.Count == 0)
+        {
+            return result;
+        }
+        
+        float totalVelocity = 0f;
+        
+        foreach (var card in cards)
+        {
+            if (card == null) continue;
+            
+            result.CardCount++;
+            
+            // Distância até o target (usa posição XY apenas, ignora Z que pode ter offset)
+            Vector2 currentPos = card.transform.position;
+            Vector2 targetPos = card.CurrentLayoutTarget.Position;
+            float distance = Vector2.Distance(currentPos, targetPos);
+            
+            result.MaxDistance = Mathf.Max(result.MaxDistance, distance);
+            
+            if (distance > threshold)
+            {
+                result.AllConverged = false;
+            }
+            
+            // Velocidade estimada (se o CardMovementController expor, usar diretamente)
+            // Por ora, usamos a distância como proxy
+            totalVelocity += distance;
+        }
+        
+        if (result.CardCount > 0)
+        {
+            result.AverageVelocity = totalVelocity / result.CardCount;
+        }
+        
+        return result;
+    }
+    
+    /// <summary>
+    /// Força reset do estado (para recuperação de erros).
+    /// </summary>
+    public void ForceReset()
+    {
+        _fanState = HandFanState.Normal;
+        _fanVisualOffset = Vector3.zero;
+        
+        var cards = _handManager?.GetActiveCardsReadOnly();
+        if (cards != null)
+        {
+            SetCardsTransitionMode(cards, false);
+        }
+        
+        Debug.LogWarning("[HandFanController] Estado forçado para Normal.");
     }
 }

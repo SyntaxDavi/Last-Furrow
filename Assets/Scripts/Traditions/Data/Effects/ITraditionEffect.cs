@@ -169,7 +169,10 @@ namespace LastFurrow.Traditions
         HarvestMoneyBonus,
         
         /// <summary>Modificador de vidas máximas</summary>
-        MaxLives
+        MaxLives,
+
+        /// <summary>Modificador de meta semanal (positivo = mais difícil, negativo = mais fácil)</summary>
+        WeeklyGoalModifier
     }
     
     /// <summary>

@@ -1,6 +1,6 @@
 using UnityEngine;
 using LastFurrow.UI.Pause;
-using LastFurrow.UI.GameOver;
+using LastFurrow.UI.RunEnd;
 using LastFurrow.UI.MainMenu;
 
 public class UIManager : MonoBehaviour
@@ -8,7 +8,7 @@ public class UIManager : MonoBehaviour
     [Header("Views Principais")]
     [SerializeField] private MainHudView _handContainer;
     [SerializeField] private PauseMenuView _pauseView;
-    [SerializeField] private GameOverView _gameOverView;
+    [SerializeField] private RunEndView _runEndView;
     [SerializeField] private ShopView _shopView;
 
     // Guarda se estávamos na loja ao pausar
@@ -23,7 +23,7 @@ public class UIManager : MonoBehaviour
         }
 
         if (_pauseView) _pauseView.HideImmediate();
-        if (_gameOverView) _gameOverView.HideImmediate();
+        if (_runEndView) _runEndView.HideImmediate();
 
         if (AppCore.Instance != null)
         {
@@ -59,7 +59,7 @@ public class UIManager : MonoBehaviour
 
     private void HandleHUDModeChanged(HUDMode mode)
     {
-        if (_gameOverView.IsVisible) return;
+        if (_runEndView.IsVisible) return;
         UpdateHUDMode(mode);
     }
 
@@ -86,7 +86,7 @@ public class UIManager : MonoBehaviour
 
     private void HandleGameStateChanged(GameState newState)
     {
-        if (_gameOverView.IsVisible) return;
+        if (_runEndView.IsVisible) return;
 
         if (newState == GameState.Paused)
         {
@@ -120,7 +120,7 @@ public class UIManager : MonoBehaviour
 
     private void HandleBackInput()
     {
-        if (_gameOverView.IsVisible) return;
+        if (_runEndView.IsVisible) return;
 
         if (_pauseView != null && _pauseView.IsVisible)
         {
@@ -180,13 +180,13 @@ public class UIManager : MonoBehaviour
     }
 
     private void HandleRunEnded(RunEndReason reason)
-    {
-        UpdateHUDMode(HUDMode.Hidden);
-        if (_pauseView) _pauseView.Hide();
-        if (_gameOverView)
         {
-            _gameOverView.Setup(reason);
-            _gameOverView.Show();
+            UpdateHUDMode(HUDMode.Hidden);
+            if (_pauseView) _pauseView.Hide();
+            if (_runEndView)
+            {
+                _runEndView.Setup(reason);
+                _runEndView.Show();
+            }
         }
     }
-}

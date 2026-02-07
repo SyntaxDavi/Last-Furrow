@@ -4552,7 +4552,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.Flow.GameplayFlowCoordinator
   _pauseController: {fileID: 291664529}
-  _gameOverController: {fileID: 1337705400}
+  _runEndController: {fileID: 1337705400}
 --- !u!1 &1184381072
 GameObject:
   m_ObjectHideFlags: 0
@@ -5660,10 +5660,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1337705398}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06ce2d8699d54894c9a4e067744bb863, type: 3}
+  m_Script: {fileID: 11500000, guid: 29159e00539a2634bb72a3a2f705dcd0, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.UI.GameOver.GameOverController
-  _view: {fileID: 1630510866}
+  m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.UI.RunEnd.RunEndController
+  _view: {fileID: 1630510868}
   _autoReturnDelaySeconds: 7
 --- !u!1 &1345890249
 GameObject:
@@ -5843,6 +5843,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HandFanController
   _visualConfig: {fileID: 11400000, guid: e3cf8478dfad57044b0a6fdd75881fe4, type: 2}
   _layoutConfig: {fileID: 11400000, guid: 8a3da3928d50c514dbc63bea31cd3b17, type: 2}
+  _convergenceThresholdOverride: 0
+  _maxConvergenceTime: 1.5
+  _minConvergenceTime: 0.3
 --- !u!1 &1362975647
 GameObject:
   m_ObjectHideFlags: 0
@@ -6593,7 +6596,7 @@ GameObject:
   - component: {fileID: 1630510865}
   - component: {fileID: 1630510864}
   - component: {fileID: 1630510867}
-  - component: {fileID: 1630510866}
+  - component: {fileID: 1630510868}
   m_Layer: 5
   m_Name: GameOverPanel
   m_TagString: Untagged
@@ -6660,22 +6663,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1630510862}
   m_CullTransparentMesh: 1
---- !u!114 &1630510866
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1630510862}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3089417809d314a4eab09138c0aad87a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _startHidden: 1
-  _fadeDuration: 0.3
-  _reasonTitle: {fileID: 1258119541}
-  _detailsText: {fileID: 521356421}
 --- !u!225 &1630510867
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -6688,6 +6675,22 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &1630510868
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1630510862}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1233b5b8556c3647bb420227fb2e6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.UI.RunEnd.RunEndView
+  _startHidden: 1
+  _fadeDuration: 0.3
+  _reasonTitle: {fileID: 1258119541}
+  _detailsText: {fileID: 521356421}
 --- !u!1 &1647597768
 GameObject:
   m_ObjectHideFlags: 0
@@ -7732,7 +7735,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _handContainer: {fileID: 888648034}
   _pauseView: {fileID: 1976279580}
-  _gameOverView: {fileID: 1630510866}
+  _runEndView: {fileID: 1630510868}
   _shopView: {fileID: 1958656042}
 --- !u!1 &1898231839
 GameObject:

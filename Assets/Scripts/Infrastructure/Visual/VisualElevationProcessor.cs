@@ -19,7 +19,7 @@ namespace LastFurrow.Infrastructure.Visual
         public bool IsRaised => _currentOffset > SNAP_THRESHOLD;
 
         /// <summary>
-        /// Indica se a elevação está estável E em repouso (não precisa de Update).
+        /// Indica se a elevação está estável E em repouso (não precisa de   Update).
         /// True apenas quando offset atual E target são ambos ~zero.
         /// </summary>
         public bool IsStable => _elevationFactor < SNAP_THRESHOLD 

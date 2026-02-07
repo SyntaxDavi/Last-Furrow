@@ -11,7 +11,11 @@ public class ProgressionEvents
     // Mudança de Vidas (Dano ou Cura)
     public event Action<int> OnLivesChanged;
 
+    // Vitória: Todas as semanas completadas
+    public event Action OnVictory;
+
     public void TriggerScoreUpdated(int current, int target) => OnScoreUpdated?.Invoke(current, target);
     public void TriggerWeeklyGoalEvaluated(bool success, int lives) => OnWeeklyGoalEvaluated?.Invoke(success, lives);
     public void TriggerLivesChanged(int lives) => OnLivesChanged?.Invoke(lives);
+    public void TriggerVictory() => OnVictory?.Invoke();
 }

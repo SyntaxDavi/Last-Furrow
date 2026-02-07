@@ -79,7 +79,9 @@ public class PatternDetectionTests
         public MockGridService(RunData data) => _data = data;
 
         // Events required by IGridService
+#pragma warning disable CS0067 // Evento nunca é usado (Mock de teste)
         public event Action<GridChangeEvent> OnGridChanged;
+#pragma warning restore CS0067
 
         // Properties
         public int SlotCount => _data.GridSlots.Length;

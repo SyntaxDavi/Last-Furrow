@@ -1,19 +1,26 @@
 using UnityEngine;
+using LastFurrow.Traditions;
 
 public class WeeklyGoalSystem
 {
     private readonly IGameLibrary _library;
     private readonly ProgressionEvents _events;
     private readonly ProgressionSettingsSO _settings;
+    private readonly ITraditionService _traditionService;
 
     // Configuração de Game Design
     private const float PARTIAL_FAIL_THRESHOLD = 0.6f; // 60%
 
-    public WeeklyGoalSystem(IGameLibrary library, ProgressionEvents events, ProgressionSettingsSO settings)
+    public WeeklyGoalSystem(
+    IGameLibrary library, 
+    ProgressionEvents events, 
+    ProgressionSettingsSO settings,
+    ITraditionService traditionService = null)
     {
         _library = library;
         _events = events;
         _settings = settings;
+        _traditionService = traditionService;
     }
 
     public void ProcessNightlyScoring(RunData runData)
@@ -56,10 +63,17 @@ public class WeeklyGoalSystem
 
         if (ratio >= 1.0f) // SUCESSO TOTAL
         {
-            type = WeekResultType.Success;
-
-            // Se venceu, a próxima meta será baseada na Próxima Semana
-            nextGoal = _settings.GetGoalForWeek(runData.CurrentWeek + 1);
+            // Verifica se é a última semana (VITÓRIA!)
+            if (runData.CurrentWeek >= _settings.TotalWeeksToWin)
+            {
+                type = WeekResultType.Victory;
+                nextGoal = 0; // Não há próxima meta
+            }
+            else
+            {
+                type = WeekResultType.Success;
+                nextGoal = GetEffectiveGoal(runData.CurrentWeek + 1);
+            }
         }
         else // FALHA
         {
@@ -74,6 +88,22 @@ public class WeeklyGoalSystem
         }
 
         return WeekEvaluationResult.Finished(type, nextGoal);
+    }
+
+    /// <summary>
+    /// Retorna a meta efetiva considerando modificadores de Traditions.
+    /// </summary>
+    public int GetEffectiveGoal(int weekNumber)
+    {
+        int baseGoal = _settings.GetGoalForWeek(weekNumber);
+        
+        if (_traditionService != null)
+        {
+            int modifier = _traditionService.GetPersistentModifier(PersistentModifierType.WeeklyGoalModifier);
+            baseGoal = Mathf.Max(1, baseGoal + modifier); // Nunca menor que 1
+        }
+        
+        return baseGoal;
     }
 
     private bool IsWeekend(RunData runData)

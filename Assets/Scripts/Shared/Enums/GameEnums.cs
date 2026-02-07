@@ -8,9 +8,9 @@ public enum GameState
     Playing,
     Shopping,
     Paused,
-    GameOver,
+    RunEnded,    // Fim de run (vitória ou derrota)
     Analyzing,   // Bloqueia interações de cartas durante análise de grid
-    ShowingResult // NOVO: Bloqueia tudo durante exibição de resultado semanal
+    ShowingResult // Bloqueia tudo durante exibição de resultado semanal
 }
 
 /// <summary>

@@ -69,6 +69,10 @@ public class CalculateScoreStep : IFlowStep
             case WeekResultType.CriticalFail:
                 HandleCriticalFail(result, control);
                 break;
+
+            case WeekResultType.Victory:
+                HandleVictory(control);
+                break;
         }
 
         // CRUCIAL: Atualiza a UI imediatamente com a nova meta e o novo score
@@ -111,6 +115,14 @@ public class CalculateScoreStep : IFlowStep
         _runData.CurrentWeeklyScore = 0;
         _runData.WeeklyGoalTarget = result.NextGoal;
         _events.TriggerWeeklyGoalEvaluated(false, _runData.CurrentLives);
+    }
+
+    private void HandleVictory(FlowControl control)
+    {
+        Debug.Log("<color=cyan>VITÓRIA! Todas as 7 semanas completadas!</color>");
+        _events.TriggerVictory();
+        _runManager.EndRun(RunEndReason.Victory);
+        control.AbortPipeline("Victory - Run Completed");
     }
 
     private bool CheckGameOver(FlowControl control)

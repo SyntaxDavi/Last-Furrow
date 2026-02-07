@@ -34,7 +34,7 @@ public class GameStateManager : MonoBehaviour, IGameStateProvider
 
     private void HandleTimeScale(GameState state)
     {
-        // IMPORTANTE: GameOver e ShowingResult NÃO pausam para permitir delays/animações
+        // IMPORTANTE: RunEnded e ShowingResult NÃO pausam para permitir delays/animações
         switch (state)
         {
             case GameState.Paused:

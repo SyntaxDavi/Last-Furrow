@@ -374,7 +374,7 @@ public class CardView : MonoBehaviour, IInteractable, IDraggable, IPointerClickH
         // Bloqueia durante Analyzing, ShowingResult e GameOver
         if (gameState == GameState.Analyzing || 
             gameState == GameState.ShowingResult ||
-            gameState == GameState.GameOver) 
+            gameState == GameState.RunEnded) 
             return false;
         
         bool isAllowed = (gameState == GameState.Playing || gameState == GameState.Shopping);

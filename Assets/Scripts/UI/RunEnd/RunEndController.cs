@@ -2,12 +2,12 @@
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 
-namespace LastFurrow.UI.GameOver
+namespace LastFurrow.UI.RunEnd
 {
     /// <summary>
-    /// Professional Presenter for the Game Over Screen.
+    /// Professional Presenter for the Run End Screen (Victory or Game Over).
     /// 
-    /// SOLID (SRP): Apenas apresenta o Game Over e dispara intenção de retorno.
+    /// SOLID (SRP): Apenas apresenta o fim de run e dispara intenção de retorno.
     /// SOLID (DIP): Depende de abstrações (IGameStateProvider) não implementações.
     /// 
     /// ROBUSTEZ:
@@ -15,10 +15,10 @@ namespace LastFurrow.UI.GameOver
     /// - Múltiplas tentativas de retorno se necessário.
     /// - Logs detalhados para debug.
     /// </summary>
-    public class GameOverController : MonoBehaviour
+    public class RunEndController : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private GameOverView _view;
+        [SerializeField] private RunEndView _view;
 
         [Header("Auto Return Settings")]
         [SerializeField] private float _autoReturnDelaySeconds = 7f;
@@ -38,7 +38,7 @@ namespace LastFurrow.UI.GameOver
 
             if (_view == null)
             {
-                Debug.LogError($"[GameOverController] View is missing on {gameObject.name}");
+                Debug.LogError($"[RunEndController] View is missing on {gameObject.name}");
                 enabled = false;
                 return;
             }
@@ -56,7 +56,7 @@ namespace LastFurrow.UI.GameOver
                 _stateProvider.OnStateChanged += HandleStateChanged;
             }
 
-            Debug.Log("[GameOverController] ✓ Inicializado");
+            Debug.Log("[RunEndController] ✓ Inicializado");
         }
 
         private void OnEnable()
@@ -93,15 +93,15 @@ namespace LastFurrow.UI.GameOver
 
         private void HandleRunEnded(RunEndReason reason)
         {
-            Debug.Log($"[GameOverController] Run ended: {reason}");
+            Debug.Log($"[RunEndController] Run ended: {reason}");
             _lastReason = reason;
         }
 
         private void HandleStateChanged(GameState newState)
         {
-            Debug.Log($"[GameOverController] State changed to: {newState}");
+            Debug.Log($"[RunEndController] State changed to: {newState}");
             
-            if (newState == GameState.GameOver)
+            if (newState == GameState.RunEnded)
             {
                 _isReturning = false;
                 _view.Setup(_lastReason);
@@ -127,7 +127,7 @@ namespace LastFurrow.UI.GameOver
             
             try
             {
-                Debug.Log($"[GameOverController] Auto-retorno ao menu em {_autoReturnDelaySeconds}s...");
+                Debug.Log($"[RunEndController] Auto-retorno ao menu em {_autoReturnDelaySeconds}s...");
                 
                 // Usa realtime para funcionar mesmo com Time.timeScale = 0
                 await UniTask.Delay(
@@ -137,16 +137,16 @@ namespace LastFurrow.UI.GameOver
                 );
                 
                 // Tempo esgotou, força retorno ao menu
-                Debug.Log("[GameOverController] Tempo esgotado - Executando retorno ao menu");
+                Debug.Log("[RunEndController] Tempo esgotado - Executando retorno ao menu");
                 ExecuteReturnToMenu();
             }
             catch (OperationCanceledException)
             {
-                Debug.Log("[GameOverController] Auto-retorno cancelado (usuário interagiu ou cena mudou)");
+                Debug.Log("[RunEndController] Auto-retorno cancelado (usuário interagiu ou cena mudou)");
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[GameOverController] Erro no auto-retorno: {ex.Message}");
+                Debug.LogError($"[RunEndController] Erro no auto-retorno: {ex.Message}");
                 // Fallback: tenta retornar mesmo assim
                 ExecuteReturnToMenu();
             }
@@ -161,7 +161,7 @@ namespace LastFurrow.UI.GameOver
 
         private void HandleReturnRequested()
         {
-            Debug.Log("[GameOverController] Retorno ao menu solicitado pelo usuário");
+            Debug.Log("[RunEndController] Retorno ao menu solicitado pelo usuário");
             CancelAutoReturn();
             ExecuteReturnToMenu();
         }
@@ -174,7 +174,7 @@ namespace LastFurrow.UI.GameOver
         {
             if (_isReturning)
             {
-                Debug.LogWarning("[GameOverController] Já está retornando ao menu, ignorando chamada duplicada");
+                Debug.LogWarning("[RunEndController] Já está retornando ao menu, ignorando chamada duplicada");
                 return;
             }
             
@@ -186,13 +186,13 @@ namespace LastFurrow.UI.GameOver
             
             if (hasListeners)
             {
-                Debug.Log("[GameOverController] Disparando evento OnMainMenuRequested");
+                Debug.Log("[RunEndController] Disparando evento OnMainMenuRequested");
                 OnMainMenuRequested.Invoke();
             }
             else
             {
                 // FALLBACK DIRETO: Se ninguém está escutando, faz diretamente
-                Debug.LogWarning("[GameOverController] Nenhum listener para OnMainMenuRequested - Usando fallback direto");
+                Debug.LogWarning("[RunEndController] Nenhum listener para OnMainMenuRequested - Usando fallback direto");
                 ExecuteDirectReturn();
             }
         }
@@ -205,12 +205,12 @@ namespace LastFurrow.UI.GameOver
         {
             if (AppCore.Instance != null)
             {
-                Debug.Log("[GameOverController] Executando ReturnToMainMenu via AppCore");
+                Debug.Log("[RunEndController] Executando ReturnToMainMenu via AppCore");
                 AppCore.Instance.ReturnToMainMenu();
             }
             else
             {
-                Debug.LogError("[GameOverController] AppCore.Instance é null! Não foi possível retornar ao menu.");
+                Debug.LogError("[RunEndController] AppCore.Instance é null! Não foi possível retornar ao menu.");
                 // Último fallback: tenta carregar cena diretamente
                 try
                 {
@@ -218,7 +218,7 @@ namespace LastFurrow.UI.GameOver
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"[GameOverController] Fallback final falhou: {ex.Message}");
+                    Debug.LogError($"[RunEndController] Fallback final falhou: {ex.Message}");
                 }
             }
         }

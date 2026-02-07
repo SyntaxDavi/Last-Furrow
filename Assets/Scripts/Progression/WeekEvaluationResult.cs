@@ -2,7 +2,8 @@ public enum WeekResultType
 {
     Success,      // >= 100%
     PartialFail,  // 60% - 99%
-    CriticalFail  // < 60%
+    CriticalFail,  // < 60%
+    Victory
 }
 public struct WeekEvaluationResult
 {

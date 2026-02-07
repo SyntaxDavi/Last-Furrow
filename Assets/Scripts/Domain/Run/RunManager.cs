@@ -163,7 +163,7 @@ public class RunManager : MonoBehaviour, IRunManager
         _saveManager.Data.CurrentRun = null;
         _saveManager.SaveGame();
 
-        _gameStateProvider.SetState(GameState.GameOver);
+        _gameStateProvider.SetState(GameState.RunEnded);
         _timeEvents.TriggerRunEnded(reason);
     }
 

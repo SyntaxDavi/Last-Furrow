@@ -20,8 +20,31 @@ public class ProgressionSettingsSO : ScriptableObject
     [Header("Sobrevivência")]
     public int MaxLives = 3;
 
+    [Header("Metas Manuais (7 Semanas)")]
+    [Tooltip("Define as 7 metas semanais manualmente. Permite curvas de dificuldade não-lineares.")]
+    public int[] ManualWeeklyGoals = new int[] { 100, 150, 200, 220, 280, 350, 450 };
+
+    [Tooltip("Se true, usa ManualWeeklyGoals. Se false, usa fórmula linear.")]
+    public bool UseManualGoals = true;
+
+    /// <summary>
+    /// Retorna a meta base para uma semana específica.
+    /// Traditions podem modificar este valor via GoalModifier.
+    /// </summary>
     public int GetGoalForWeek(int weekNumber)
     {
+        if (UseManualGoals && ManualWeeklyGoals != null && ManualWeeklyGoals.Length > 0)
+        {
+            int index = Mathf.Clamp(weekNumber - 1, 0, ManualWeeklyGoals.Length - 1);
+            return ManualWeeklyGoals[index];
+        }
+
+        // Fallback para fórmula linear
         return BaseWeeklyGoal + ((weekNumber - 1) * GoalIncreasePerWeek);
     }
+
+    /// <summary>
+    /// Número total de semanas para vitória.
+    /// </summary>
+    public int TotalWeeksToWin => UseManualGoals ? ManualWeeklyGoals.Length : 7;
 }

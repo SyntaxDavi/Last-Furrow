@@ -1,6 +1,6 @@
 using UnityEngine;
 using LastFurrow.UI.Pause;
-using LastFurrow.UI.GameOver;
+using LastFurrow.UI.RunEnd;
 
 namespace LastFurrow.Flow
 {
@@ -14,7 +14,7 @@ namespace LastFurrow.Flow
     {
         [Header("Controllers")]
         [SerializeField] private PauseMenuController _pauseController;
-        [SerializeField] private GameOverController _gameOverController;
+        [SerializeField] private RunEndController _runEndController;
 
         private bool _isBusy = false;
 
@@ -32,8 +32,8 @@ namespace LastFurrow.Flow
             if (_pauseController != null)
                 _pauseController.Initialize(core.GameStateManager);
 
-            if (_gameOverController != null)
-                _gameOverController.Initialize(core.GameStateManager, core.Events.Time);
+            if (_runEndController != null)
+            _runEndController.Initialize(core.GameStateManager, core.Events.Time);
         }
 
         private void OnEnable()
@@ -47,10 +47,10 @@ namespace LastFurrow.Flow
                 _pauseController.OnQuitRequested += HandleQuitToDesktop;
             }
 
-            // Subscribe to Game Over Flows (via Controller now)
-            if (_gameOverController != null)
+            // Subscribe to Run End Flows (via Controller now)
+            if (_runEndController != null)
             {
-                _gameOverController.OnMainMenuRequested += HandleReturnToMenu;
+                _runEndController.OnMainMenuRequested += HandleReturnToMenu;
             }
         }
 
@@ -64,9 +64,9 @@ namespace LastFurrow.Flow
                 _pauseController.OnQuitRequested -= HandleQuitToDesktop;
             }
 
-            if (_gameOverController != null)
+            if (_runEndController != null)
             {
-                _gameOverController.OnMainMenuRequested -= HandleReturnToMenu;
+                _runEndController.OnMainMenuRequested -= HandleReturnToMenu;
             }
             
             _isBusy = false;
