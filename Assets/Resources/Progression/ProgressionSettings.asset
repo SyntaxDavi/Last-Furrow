@@ -17,5 +17,5 @@ MonoBehaviour:
   BaseWeeklyGoal: 500
   GoalIncreasePerWeek: 200
   MaxLives: 1
-  ManualWeeklyGoals: 2c010000f4010000ee020000b0040000d606000034080000c4090000
+  ManualWeeklyGoals: 2c010000f401000020030000b0040000dc05000008070000d0070000
   UseManualGoals: 1

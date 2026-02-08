@@ -19,6 +19,8 @@ public class RunManager : MonoBehaviour, IRunManager
     private IGameStateProvider _gameStateProvider;
     private IRunCalendar _calendar;
     private ProgressionSettingsSO _progressionSettings;
+    private CardDropLibrarySO _cardDropLibrary;
+    private GameSettingsSO _gameSettings;
 
     // Estado
     private RunPhase _currentPhase;
@@ -39,7 +41,9 @@ public class RunManager : MonoBehaviour, IRunManager
         TimeEvents timeEvents,
         IGameStateProvider gameStateProvider,
         IRunCalendar calendar,
-        ProgressionSettingsSO progressionSettings = null)
+        ProgressionSettingsSO progressionSettings = null,
+        CardDropLibrarySO cardDropLibrary = null,
+        GameSettingsSO gameSettings = null)
     {
         _saveManager = saveManager;
         _gridConfiguration = gridConfiguration;
@@ -47,6 +51,8 @@ public class RunManager : MonoBehaviour, IRunManager
         _gameStateProvider = gameStateProvider;
         _calendar = calendar;
         _progressionSettings = progressionSettings;
+        _cardDropLibrary = cardDropLibrary;
+        _gameSettings = gameSettings;
 
         // Prepara fase interna (sem emitir eventos)
         if (IsRunActive)
@@ -115,17 +121,56 @@ public class RunManager : MonoBehaviour, IRunManager
 
     public void StartNewRun()
     {
-        var newRun = RunData.CreateNewRun(_gridConfiguration);
+        var newRun = RunData.CreateNewRun(_gridConfiguration, _gameSettings);
 
         if (_progressionSettings != null)
         {
             newRun.WeeklyGoalTarget = _progressionSettings.GetGoalForWeek(1);
         }
 
+        // Inicializa o RunDeck determinístico
+        InitializeRunDeck(newRun);
+
         _saveManager.Data.CurrentRun = newRun;
         _saveManager.SaveGame();
 
         ChangePhase(RunPhase.Production, newRun, isNewRun: true);
+    }
+
+    /// <summary>
+    /// Constrói o RunDeck usando a seed da run para garantir determinismo.
+    /// </summary>
+    private void InitializeRunDeck(RunData run)
+    {
+        Debug.LogWarning($"[RunManager] >>> InitializeRunDeck chamado. CardDropLibrary null? {_cardDropLibrary == null}");
+        
+        if (_cardDropLibrary == null)
+        {
+            Debug.LogWarning("[RunManager] CardDropLibrary é NULL! Verifique se foi atribuída no Inspector do AppCore.");
+            return;
+        }
+        
+        Debug.LogWarning($"[RunManager] CardDropLibrary.Count = {_cardDropLibrary.Count}");
+        
+        if (_cardDropLibrary.Count == 0)
+        {
+            Debug.LogWarning("[RunManager] CardDropLibrary está VAZIA! Adicione CardDropData assets nela.");
+            return;
+        }   
+
+        // Usa a MasterSeed da run para garantir determinismo
+        var random = new SeededRandomProvider(run.MasterSeed);
+        var builder = new RunDeckBuilder(random, _cardDropLibrary.AllCardDrops);
+        var deck = builder.Build(run);
+
+        Debug.LogWarning($"[RunManager] Deck construído com {deck.TotalSize} cartas. Salvando no RunData...");
+
+        // Salva o deck no RunData
+        run.SaveRunDeck(deck);
+
+        Debug.LogWarning($"[RunManager] RunData.RunDeckCardIDs.Count = {run.RunDeckCardIDs?.Count ?? -1}");
+        Debug.LogWarning($"[RunManager] RunData.IsRunDeckInitialized = {run.IsRunDeckInitialized}");
+        Debug.LogWarning($"[RunManager] ✓ RunDeck inicializado com {deck.TotalSize} cartas (Seed: {run.MasterSeed})");
     }
 
     public void AdvanceDay()

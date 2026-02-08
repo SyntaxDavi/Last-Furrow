@@ -15,7 +15,7 @@ MonoBehaviour:
   PatternID: FULL_LINE
   DisplayName: Linha Completa
   Description: Linha completa (5 crops) todas iguais.
-  BaseScore: 25
+  BaseScore: 250
   Tier: 2
   DifficultyStars: 2
   Icon: {fileID: 0}

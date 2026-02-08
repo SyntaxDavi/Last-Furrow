@@ -32,7 +32,7 @@ public class PatternDefinitionSO : ScriptableObject
     
     [Header("Pontuação")]
     [Tooltip("Pontos base do padrão (antes de multiplicadores)")]
-    [Range(5, 200)]
+    [Range(5, 10000)]
     public int BaseScore = 10;
     
     [Header("Classificação")]
@@ -72,7 +72,7 @@ public class PatternDefinitionSO : ScriptableObject
         
         // Validar BaseScore baseado no Tier
         int minScore = Tier * 5;
-        int maxScore = Tier * 50;
+        int maxScore = Tier * 5000;
         if (BaseScore < minScore || BaseScore > maxScore)
         {
             Debug.LogWarning($"[PatternDefinition] BaseScore {BaseScore} fora do range esperado para Tier {Tier} ({minScore}-{maxScore})");

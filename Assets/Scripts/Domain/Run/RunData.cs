@@ -38,9 +38,9 @@ public class RunData
 
     public List<CardInstance> Hand = new List<CardInstance>();
 
-
-    public int MaxHandSize = GameSettings.DEFAULT_MAX_HAND_SIZE;
-    public int CardsDrawPerDay = GameSettings.DEFAULT_CARDS_DRAW_PER_DAY;
+    // Valores padrão - serão sobrescritos no CreateNewRun com GameSettingsSO
+    public int MaxHandSize = 10;
+    public int CardsDrawPerDay = 3;
 
     public int Money;
     public int TotalMoneyEarned;
@@ -71,6 +71,18 @@ public class RunData
     
     [Tooltip("Máximo de tradições que podem ser equipadas. Pode ser aumentado por upgrades.")]
     public int MaxTraditionSlots = 5;
+
+    // ===== RUN DECK (ECONOMIA DETERMINÍSTICA) =====
+    
+    [Header("Run Deck")]
+    [Tooltip("IDs das cartas restantes no deck da run.")]
+    public List<string> RunDeckCardIDs = new List<string>();
+    
+    [Tooltip("Índice de quantas cartas já foram sacadas do deck.")]
+    public int RunDeckDrawIndex = 0;
+    
+    [Tooltip("Flag que indica se o deck da run foi inicializado.")]
+    public bool IsRunDeckInitialized = false;
 
     [Header("Daily State Tracking")]
     [Tooltip("CRÍTICO: Garante que o draw diário aconteça apenas uma vez por dia lógico.")]
@@ -104,7 +116,8 @@ public class RunData
         LastDrawnDay = CurrentDay;
         LastDrawnWeek = CurrentWeek;
     }
-    public static RunData CreateNewRun(GridConfiguration config)
+    
+    public static RunData CreateNewRun(GridConfiguration config, GameSettingsSO settings = null)
     {
         if (config == null)
         {
@@ -112,21 +125,28 @@ public class RunData
                 "[RunData] GridConfiguration não pode ser null ao criar nova run!");
         }
 
-        int initialGoal = GameSettings.INITIAL_WEEKLY_GOAL; 
+        // Fallback para valores padrão se settings não fornecido
+        int initialMaxHandSize = settings?.DefaultMaxHandSize ?? 10;
+        int initialCardsDrawPerDay = settings?.DefaultCardsDrawPerDay ?? 3;
+        int initialMaxLives = settings?.InitialMaxLives ?? 3;
+        int initialGoal = settings?.InitialWeeklyGoal ?? 150;
+        int masterSeedOverride = settings?.MasterSeedOverride ?? 0;
+        int unlockPatternSeedOverride = settings?.UnlockPatternSeedOverride ?? 0;
+        
         int slotCount = config.TotalSlots;
 
         var run = new RunData
         {
-            // 🔢 VERSIONAMENTO: Armazena hash da config
+            // VERSIONAMENTO: Armazena hash da config
             GridConfigVersion = config.GetVersionHash(),
 
-            // 🎲 DETERMINISMO: Gera seeds baseados no tempo/random do sistema ou usa override do GameSettings
-            MasterSeed = GameSettings.MASTER_SEED_OVERRIDE != 0 
-                ? GameSettings.MASTER_SEED_OVERRIDE 
+            // DETERMINISMO: Gera seeds baseados no tempo/random do sistema ou usa override
+            MasterSeed = masterSeedOverride != 0 
+                ? masterSeedOverride 
                 : UnityEngine.Random.Range(int.MinValue, int.MaxValue),
 
-            UnlockPatternSeed = GameSettings.UNLOCK_PATTERN_SEED_OVERRIDE != 0 
-                ? GameSettings.UNLOCK_PATTERN_SEED_OVERRIDE 
+            UnlockPatternSeed = unlockPatternSeedOverride != 0 
+                ? unlockPatternSeedOverride 
                 : UnityEngine.Random.Range(int.MinValue, int.MaxValue),
 
             CurrentWeek = 1,
@@ -135,20 +155,31 @@ public class RunData
             SlotStates = new GridSlotState[slotCount],
             Hand = new List<CardInstance>(),
 
-            MaxHandSize = GameSettings.DEFAULT_MAX_HAND_SIZE,
-            CardsDrawPerDay = GameSettings.DEFAULT_CARDS_DRAW_PER_DAY,
+            MaxHandSize = initialMaxHandSize,
+            CardsDrawPerDay = initialCardsDrawPerDay,
 
             CurrentWeeklyScore = 0,
             WeeklyGoalTarget = initialGoal,
-            CurrentLives = GameSettings.INITIAL_MAX_LIVES,
-            MaxLives = GameSettings.INITIAL_MAX_LIVES
+            CurrentLives = initialMaxLives,
+            MaxLives = initialMaxLives
         };
 
         // --- DECK INICIAL CENTRALIZADO ---
-        foreach (var cardID in GameSettings.STARTING_DECK_IDS)
+        var startingDeckIDs = settings?.StartingDeckIDs ?? new List<string> 
+        { 
+            "card_carrot", 
+            "card_corn", 
+            "card_harvest", 
+            "card_shovel", 
+            "card_water" 
+        };
+        
+        foreach (var cardID in startingDeckIDs)
         {
             AddStartingCard(run, cardID);
         }
+
+        Debug.LogWarning($"[RunData] ✓ CreateNewRun - Settings: {(settings != null ? "GameSettingsSO" : "FALLBACK")}, Hand inicial: {run.Hand.Count} cartas ({string.Join(", ", startingDeckIDs)})");
 
         return run;
     }
@@ -216,5 +247,38 @@ public class RunData
         }
 
         return isCompatible;
+    }
+
+    // ===== RUN DECK HELPERS =====
+
+    /// <summary>
+    /// Salva o estado atual do RunDeck para serialização.
+    /// </summary>
+    public void SaveRunDeck(RunDeck deck)
+    {
+        if (deck == null)
+        {
+            Debug.LogWarning("[RunData] Tentativa de salvar RunDeck null.");
+            return;
+        }
+
+        var (cardIDs, drawIndex) = deck.GetSerializationData();
+        RunDeckCardIDs = cardIDs;
+        RunDeckDrawIndex = drawIndex;
+        IsRunDeckInitialized = true;
+    }
+
+    /// <summary>
+    /// Restaura o RunDeck a partir do estado salvo.
+    /// </summary>
+    public RunDeck LoadRunDeck()
+    {
+        if (!IsRunDeckInitialized || RunDeckCardIDs == null)
+        {
+            Debug.LogWarning("[RunData] RunDeck não inicializado ou dados corrompidos.");
+            return null;
+        }
+
+        return new RunDeck(RunDeckCardIDs, RunDeckDrawIndex);
     }
 }

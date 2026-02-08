@@ -26,6 +26,12 @@ public class AppCore : MonoBehaviour
     [SerializeField] private ShopProfileSO _defaultShop;
     [SerializeField] private List<ShopProfileSO> _specialShops;
 
+    [Header("Card Economy")]
+    [SerializeField] private CardDropLibrarySO _cardDropLibrary;
+
+    [Header("Game Settings")]
+    [SerializeField] private GameSettingsSO _gameSettings;
+
     [Header("Global MonoBehaviours (Scene References)")]
     public SaveManager SaveManager;
     public RunManager RunManager;
@@ -76,9 +82,9 @@ public class AppCore : MonoBehaviour
 
     private void InitializeModularArchitecture()
     {
-        Debug.Log("[AppCore] ðŸ—ï¸ Iniciando Arquitetura Modular...");
+        Debug.Log("[AppCore] Iniciando Arquitetura Modular...");
 
-        // 0. Inicializa dependÃªncias infra que nÃ£o sÃ£o MonoBehaviours
+        // 0. Inicializa dependências infra que não são MonoBehaviours
         if (_gameDatabase != null)
         {
             GameLibrary = new GameLibraryService(_gameDatabase);
@@ -88,17 +94,17 @@ public class AppCore : MonoBehaviour
         Services = new ServiceRegistry();
         var events = new GameEvents(); 
 
-        // 2. MÃ³dulo Core (Sistemas Base e Infra)
+        // 2. Módulo Core (Sistemas Base e Infra)
         // Passamos os eventos explicitamente para garantir que o registro ocorra antes de qualquer Initialize()
         var coreModule = new CoreModule(Services, this);
         
-        // REGISTRO PRECOCE para evitar NullRef nos mÃ³dulos
+        // REGISTRO PRECOCE para evitar NullRef nos módulos
         Services.RegisterCore(SaveManager, _gridConfiguration, events, GameLibrary);
         
         coreModule.Initialize();
 
         // 3. Módulo Domínio (Regras de Negócio e Serviços Puros)
-        var domainModule = new DomainModule(Services, this, _progressionSettings);
+        var domainModule = new DomainModule(Services, this, _progressionSettings, _cardDropLibrary, _gameSettings);
         domainModule.Initialize();
 
         // 4. Módulo Gameplay (Sistemas Específicos)
@@ -128,7 +134,7 @@ public class AppCore : MonoBehaviour
         InputManager.OnAnyInputDetected += HandleAnyInput;
         SceneManager.sceneLoaded += OnSceneLoaded;
         
-        Debug.Log("[AppCore] ✅ Arquitetura Modular pronta. Carregando cena inicial...");
+        Debug.Log("[AppCore] Arquitetura Modular pronta. Carregando cena inicial...");
 
         // === EVENT INSPECTOR INTEGRATION ===
         var eventAdapter = FindFirstObjectByType<LastFurrow.EventInspector.GameEventAdapter>();
@@ -263,8 +269,3 @@ public class AppCore : MonoBehaviour
         LoadMainMenu();
     }
 }
-
-
-
-
-

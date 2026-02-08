@@ -15,7 +15,7 @@ MonoBehaviour:
   PatternID: CORNER
   DisplayName: Cantinho
   Description: "Tr\xEAs crops iguais formando um L nos cantos do grid."
-  BaseScore: 8
+  BaseScore: 75
   Tier: 1
   DifficultyStars: 1
   Icon: {fileID: 0}

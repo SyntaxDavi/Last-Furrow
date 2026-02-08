@@ -34,10 +34,19 @@ public class CoreModule : BaseModule
 public class DomainModule : BaseModule
 {
     private readonly ProgressionSettingsSO _progressionSettings;
+    private readonly CardDropLibrarySO _cardDropLibrary;
+    private readonly GameSettingsSO _gameSettings;
 
-    public DomainModule(ServiceRegistry registry, AppCore app, ProgressionSettingsSO settings) : base(registry, app)
+    public DomainModule(
+        ServiceRegistry registry, 
+        AppCore app, 
+        ProgressionSettingsSO settings, 
+        CardDropLibrarySO cardDropLibrary = null,
+        GameSettingsSO gameSettings = null) : base(registry, app)
     {
         _progressionSettings = settings;
+        _cardDropLibrary = cardDropLibrary;
+        _gameSettings = gameSettings;
     }
 
     public override void Initialize()
@@ -47,20 +56,26 @@ public class DomainModule : BaseModule
         int weekendDays = _progressionSettings != null ? _progressionSettings.WeekendDays : 2;
         var calendar = new RunCalendar(productionDays, weekendDays);
 
-        // 2. Inicializa RunManager com calendário injetado
+        // 2. Inicializa RunManager com todas as dependências
         App.RunManager.Initialize(
             Registry.Save,
             Registry.GridConfig,
             Registry.Events.Time,
             Registry.State,
             calendar,
-            _progressionSettings
+            _progressionSettings,
+            _cardDropLibrary,
+            _gameSettings
         );
 
         // 3. Cria Serviços Puros
         var economy = new EconomyService(Registry.Run, Registry.Save);
         var health = new HealthService(Registry.Save);
-        var dailyHand = new DailyHandSystem(Registry.GameLibrary, economy, new SeasonalCardStrategy(), Registry.Events.Player);
+        
+        // FIX: Usa RunDeckStrategy ao invés de SeasonalCardStrategy
+        var cardStrategy = new RunDeckStrategy(Registry.GameLibrary);
+        var dailyHand = new DailyHandSystem(Registry.GameLibrary, economy, cardStrategy, Registry.Events.Player);
+        
         var weeklyGoal = new WeeklyGoalSystem(Registry.GameLibrary, Registry.Events.Progression, _progressionSettings);
 
         // 4. Registra no Registry
@@ -97,5 +112,57 @@ public class PatternModule : BaseModule
         Registry.RegisterGameplay(shop, detector, calculator);
 
         Debug.Log("[PatternModule] ✓ Inicializado com sucesso.");
+    }
+}
+
+// ===== CARD SOURCE STRATEGIES =====
+
+/// <summary>
+/// Estratégia que saca cartas do Run Deck deterministicamente.
+/// </summary>
+public class RunDeckStrategy : ICardSourceStrategy
+{
+    private readonly IGameLibrary _library;
+
+    public RunDeckStrategy(IGameLibrary library)
+    {
+        _library = library;
+    }
+
+    public System.Collections.Generic.List<CardID> GetNextCardIDs(int amount, RunData currentRun)
+    {
+        var result = new System.Collections.Generic.List<CardID>();
+        
+        if (currentRun == null || currentRun.RunDeckCardIDs == null || currentRun.RunDeckCardIDs.Count == 0)
+        {
+            Debug.LogWarning("[RunDeckStrategy] RunDeck vazio ou não inicializado!");
+            return result;
+        }
+
+        int cardsRemaining = currentRun.RunDeckCardIDs.Count - currentRun.RunDeckDrawIndex;
+        int cardsToDraw = UnityEngine.Mathf.Min(amount, cardsRemaining);
+
+        for (int i = 0; i < cardsToDraw; i++)
+        {
+            string cardIDString = currentRun.RunDeckCardIDs[currentRun.RunDeckDrawIndex];
+            CardID id = (CardID)cardIDString;
+            
+            if (id.IsValid)
+            {
+                result.Add(id);
+                currentRun.RunDeckDrawIndex++;
+            }
+            else
+            {
+                Debug.LogError($"[RunDeckStrategy] CardID inválido no deck: '{cardIDString}'");
+            }
+        }
+
+        if (result.Count < amount)
+        {
+            Debug.LogWarning($"[RunDeckStrategy] Deck esgotado! Solicitado {amount}, disponível {result.Count}");
+        }
+
+        return result;
     }
 }

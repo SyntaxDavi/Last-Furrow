@@ -15,7 +15,7 @@ MonoBehaviour:
   PatternID: FRAME
   DisplayName: Moldura
   Description: Todas as 16 bordas do grid com a mesma crop.
-  BaseScore: 50
+  BaseScore: 1000
   Tier: 3
   DifficultyStars: 3
   Icon: {fileID: 0}

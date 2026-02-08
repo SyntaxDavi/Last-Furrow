@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed1016e078e4fae4c819f1801d5d4244, type: 3}
+  m_Name: CardDropLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::CardDropLibrarySO
+  _allCardDrops:
+  - {fileID: 11400000, guid: 9cb5f91b627b46e438ba375aac85a3da, type: 2}
+  - {fileID: 11400000, guid: 211ada568735008489c387d136497ada, type: 2}
+  - {fileID: 11400000, guid: a8632dea39fc2954bb4ffa19f0d102f3, type: 2}
+  - {fileID: 11400000, guid: 78b2803518b7d924cbd830e0e66cd34f, type: 2}
+  - {fileID: 11400000, guid: bd4f9bbdffd2bdf4a9fa311017c90d44, type: 2}
+  - {fileID: 11400000, guid: 4401486d422a2d8429445d1df6da0c22, type: 2}
+  - {fileID: 11400000, guid: d54f922a269bd57448752f88ed7029d1, type: 2}
+  - {fileID: 11400000, guid: bacb1ffe11f108e428c859352c454e4e, type: 2}
+  - {fileID: 11400000, guid: 3e316a6b113c7674e8088868609035f0, type: 2}

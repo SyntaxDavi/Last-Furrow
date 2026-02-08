@@ -15,7 +15,7 @@ MonoBehaviour:
   PatternID: RAINBOW_LINE
   DisplayName: "Arco-\xEDris"
   Description: Linha com 3-5 tipos DIFERENTES de crops.
-  BaseScore: 55
+  BaseScore: 500
   Tier: 3
   DifficultyStars: 4
   Icon: {fileID: 0}

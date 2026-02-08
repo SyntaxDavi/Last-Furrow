@@ -15,7 +15,7 @@ MonoBehaviour:
   PatternID: PERFECT_GRID
   DisplayName: Grid Perfeito
   Description: "Todos os 25 slots plantados com m\xEDnimo 4 tipos diferentes."
-  BaseScore: 150
+  BaseScore: 10000
   Tier: 4
   DifficultyStars: 5
   Icon: {fileID: 0}

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d63dd1929605e424198e360af161cc03, type: 3}
+  m_Name: GameSettings
+  m_EditorClassIdentifier: Assembly-CSharp::GameSettingsSO
+  TargetPPU: 24
+  UsePixelPerfect: 0
+  DefaultMaxHandSize: 10
+  DefaultCardsDrawPerDay: 3
+  InitialMaxLives: 3
+  InitialWeeklyGoal: 300
+  StartingDeckIDs:
+  - card_carrot
+  - card_carrot
+  - card_corn
+  - card_water
+  - card_shovel
+  RunDeckSizeMultiplier: 0.8
+  MasterSeedOverride: 0
+  UnlockPatternSeedOverride: 0
+  ConfigVersion: 1

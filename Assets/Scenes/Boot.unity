@@ -297,6 +297,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: AppCore
       objectReference: {fileID: 0}
+    - target: {fileID: 7086375328797191102, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
+      propertyPath: _gameSettings
+      value: 
+      objectReference: {fileID: 11400000, guid: 73badc1284b2a6047b3675c4dbbb29dd, type: 2}
+    - target: {fileID: 7086375328797191102, guid: cd7d516f305735f4f9ae03b89b36073f, type: 3}
+      propertyPath: _cardDropLibrary
+      value: 
+      objectReference: {fileID: 11400000, guid: e3ce561ddf4c16343811bac2501c446c, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -15,7 +15,7 @@ MonoBehaviour:
   PatternID: CROSS
   DisplayName: Cruz Simples
   Description: 'Cinco crops formando uma cruz (+): centro + 4 adjacentes.'
-  BaseScore: 30
+  BaseScore: 85
   Tier: 2
   DifficultyStars: 2
   Icon: {fileID: 0}

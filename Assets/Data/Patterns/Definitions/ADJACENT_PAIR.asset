@@ -15,7 +15,7 @@ MonoBehaviour:
   PatternID: ADJACENT_PAIR
   DisplayName: Par Adjacente
   Description: Duas crops iguais lado a lado (horizontal ou vertical).
-  BaseScore: 5
+  BaseScore: 25
   Tier: 1
   DifficultyStars: 1
   Icon: {fileID: 0}
