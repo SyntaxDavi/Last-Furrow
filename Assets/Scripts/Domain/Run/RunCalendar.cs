@@ -1,11 +1,11 @@
 using UnityEngine;
 
 /// <summary>
-/// Implementação de calendário baseada em valores primitivos.
-/// Encapsula toda a lógica temporal da Run.
+/// Implementaï¿½ï¿½o de calendï¿½rio baseada em valores primitivos.
+/// Encapsula toda a lï¿½gica temporal da Run.
 /// 
-/// ARQUITETURA: Recebe int ao invés de ScriptableObject para evitar
-/// problemas de assembly e manter independência do domínio.
+/// ARQUITETURA: Recebe int ao invs de ScriptableObject para evitar
+/// problemas de assembly e manter independncia do domnio.
 /// </summary>
 public class RunCalendar : IRunCalendar
 {
@@ -13,7 +13,7 @@ public class RunCalendar : IRunCalendar
     private readonly int _weekendDays;
 
     /// <summary>
-    /// Cria calendário com valores explícitos.
+    /// Cria calendrio com valores explcitos.
     /// </summary>
     /// <param name="productionDays">Dias de trabalho (ex: 5)</param>
     /// <param name="weekendDays">Dias de weekend (ex: 2)</param>

@@ -72,8 +72,8 @@ public class DomainModule : BaseModule
         var economy = new EconomyService(Registry.Run, Registry.Save);
         var health = new HealthService(Registry.Save);
         
-        // FIX: Usa RunDeckStrategy ao invés de SeasonalCardStrategy
-        var cardStrategy = new RunDeckStrategy(Registry.GameLibrary);
+        // FIX: Usa RunDeckStrategy com CardDropLibrary para regras de draw
+        var cardStrategy = new RunDeckStrategy(Registry.GameLibrary, _cardDropLibrary);
         var dailyHand = new DailyHandSystem(Registry.GameLibrary, economy, cardStrategy, Registry.Events.Player);
         
         var weeklyGoal = new WeeklyGoalSystem(Registry.GameLibrary, Registry.Events.Progression, _progressionSettings);
@@ -119,14 +119,25 @@ public class PatternModule : BaseModule
 
 /// <summary>
 /// Estratégia que saca cartas do Run Deck deterministicamente.
+/// Aplica DrawValidationPolicy para regras de draw (max duplicatas, garantias).
 /// </summary>
 public class RunDeckStrategy : ICardSourceStrategy
 {
     private readonly IGameLibrary _library;
+    private readonly CardDropLibrarySO _cardDropLibrary;
+    private readonly DrawValidationPolicy _validationPolicy;
 
-    public RunDeckStrategy(IGameLibrary library)
+    public RunDeckStrategy(IGameLibrary library, CardDropLibrarySO cardDropLibrary = null)
     {
         _library = library;
+        _cardDropLibrary = cardDropLibrary;
+        
+        // Cria policy com regras configuradas nos CardDropData
+        _validationPolicy = cardDropLibrary != null 
+            ? DrawValidationPolicy.CreateFromLibrary(cardDropLibrary)
+            : DrawValidationPolicy.CreateEmpty();
+        
+        Debug.Log($"[RunDeckStrategy] Inicializada com {_validationPolicy.RuleCount} regras de validação.");
     }
 
     public System.Collections.Generic.List<CardID> GetNextCardIDs(int amount, RunData currentRun)
@@ -142,6 +153,7 @@ public class RunDeckStrategy : ICardSourceStrategy
         int cardsRemaining = currentRun.RunDeckCardIDs.Count - currentRun.RunDeckDrawIndex;
         int cardsToDraw = UnityEngine.Mathf.Min(amount, cardsRemaining);
 
+        // 1. Draw bruto do deck
         for (int i = 0; i < cardsToDraw; i++)
         {
             string cardIDString = currentRun.RunDeckCardIDs[currentRun.RunDeckDrawIndex];
@@ -158,11 +170,62 @@ public class RunDeckStrategy : ICardSourceStrategy
             }
         }
 
-        if (result.Count < amount)
+        if (result.Count < amount && cardsRemaining <= amount)
         {
             Debug.LogWarning($"[RunDeckStrategy] Deck esgotado! Solicitado {amount}, disponível {result.Count}");
         }
 
+        // 2. Aplica validação de regras
+        if (_validationPolicy != null && _validationPolicy.RuleCount > 0)
+        {
+            var deckSource = new RunDeckSourceAdapter(currentRun);
+            var context = new DrawRuleContext(deckSource, currentRun, amount);
+            result = _validationPolicy.Validate(result, context);
+        }
+
         return result;
+    }
+
+    /// <summary>
+    /// Adapter para expor RunData como IRunDeckSource para as regras de draw.
+    /// </summary>
+    private class RunDeckSourceAdapter : IRunDeckSource
+    {
+        private readonly RunData _runData;
+
+        public RunDeckSourceAdapter(RunData runData)
+        {
+            _runData = runData;
+        }
+
+        public int RemainingCards => 
+            _runData.RunDeckCardIDs != null 
+                ? _runData.RunDeckCardIDs.Count - _runData.RunDeckDrawIndex 
+                : 0;
+
+        public CardID DrawNext()
+        {
+            if (_runData.RunDeckCardIDs == null || 
+                _runData.RunDeckDrawIndex >= _runData.RunDeckCardIDs.Count)
+            {
+                return default;
+            }
+
+            string cardIDString = _runData.RunDeckCardIDs[_runData.RunDeckDrawIndex];
+            _runData.RunDeckDrawIndex++;
+            return (CardID)cardIDString;
+        }
+
+        public System.Collections.Generic.List<CardID> DrawNext(int amount)
+        {
+            var result = new System.Collections.Generic.List<CardID>();
+            for (int i = 0; i < amount; i++)
+            {
+                var card = DrawNext();
+                if (!card.IsValid) break;
+                result.Add(card);
+            }
+            return result;
+        }
     }
 }

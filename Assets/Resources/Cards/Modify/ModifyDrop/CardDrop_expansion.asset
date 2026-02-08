@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardDropData
   CardID:
     _value: card_expansion
-  Weight: 10
+  Weight: 11
   Rarity: 1
   MaxCopiesInDeck: 20
+  MaxPerDraw: 1
+  GuaranteeAfterDays: 6
+  GuaranteePriority: 100
   Tags: 16

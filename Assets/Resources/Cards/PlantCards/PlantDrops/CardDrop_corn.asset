@@ -16,6 +16,8 @@ MonoBehaviour:
     _value: card_corn
   Weight: 8
   Rarity: 0
-  MinRunDay: 1
   MaxCopiesInDeck: 30
+  MaxPerDraw: 2
+  GuaranteeAfterDays: 6
+  GuaranteePriority: 25
   Tags: 1

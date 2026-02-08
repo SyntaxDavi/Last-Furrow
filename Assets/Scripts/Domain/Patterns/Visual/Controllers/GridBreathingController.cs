@@ -1,11 +1,11 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks; // <--- Importante
-using System.Threading; // Para CancellationToken
+using Cysharp.Threading.Tasks; 
+using System.Threading; 
 
 /// <summary>
-/// Anima respiração do grid e reações a padrões detectados.
-/// Versão: UniTask (Async/Await)
+/// Anima respiracao do grid e reacoes a padroes detectados.
+/// Versao: UniTask (Async/Await)
 /// </summary>
 public class GridBreathingController : MonoBehaviour
 {
@@ -18,7 +18,7 @@ public class GridBreathingController : MonoBehaviour
 
     private Vector3 _originalScale;
 
-    // Controle único para a animação atual (seja Breathing ou Reaction)
+    // Controle nico para a animao atual (seja Breathing ou Reaction)
     private CancellationTokenSource _activeCts;
 
     private void Awake()
@@ -78,7 +78,7 @@ public class GridBreathingController : MonoBehaviour
     {
         if (matches == null || matches.Count == 0) return;
 
-        // Dispara a reação (Fire-and-Forget)
+        // Dispara a reaï¿½ï¿½o (Fire-and-Forget)
         ReactToPatternAsync().Forget();
     }
 
@@ -97,7 +97,7 @@ public class GridBreathingController : MonoBehaviour
         StopCurrentAnimation();
 
         _activeCts = new CancellationTokenSource();
-        // Inicia o loop de respiração
+        // Inicia o loop de respiraï¿½ï¿½o
         BreathingLoopAsync(_activeCts.Token).Forget();
     }
 
@@ -110,7 +110,7 @@ public class GridBreathingController : MonoBehaviour
         // Loop infinito seguro
         while (!token.IsCancellationRequested)
         {
-            // Verifica se o objeto foi destruído (segurança extra)
+            // Verifica se o objeto foi destruï¿½do (seguranï¿½a extra)
             if (this == null) return;
 
             if (_config.freezeAnimations)
@@ -125,7 +125,7 @@ public class GridBreathingController : MonoBehaviour
 
             _gridTransform.localScale = _originalScale * (1f + scaleOffset);
 
-            // Espera o próximo frame (Update)
+            // Espera o prï¿½ximo frame (Update)
             await UniTask.Yield(PlayerLoopTiming.Update, token);
         }
     }
@@ -134,10 +134,10 @@ public class GridBreathingController : MonoBehaviour
     {
         if (_config == null) return;
 
-        // 1. Interrompe a respiração atual
+        // 1. Interrompe a respiraï¿½ï¿½o atual
         StopCurrentAnimation();
 
-        // 2. Cria novo token para a reação
+        // 2. Cria novo token para a reaï¿½ï¿½o
         _activeCts = new CancellationTokenSource();
         var token = _activeCts.Token;
 
@@ -178,7 +178,7 @@ public class GridBreathingController : MonoBehaviour
         }
         catch (System.OperationCanceledException)
         {
-            // Se a reação for cancelada (ex: objeto destruído), apenas sai
+            // Se a reaï¿½ï¿½o for cancelada (ex: objeto destruï¿½do), apenas sai
         }
     }
 }

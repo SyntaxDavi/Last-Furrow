@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardDropData
   CardID:
     _value: card_shovel
-  Weight: 7
+  Weight: 5
   Rarity: 0
   MaxCopiesInDeck: 100
+  MaxPerDraw: 1
+  GuaranteeAfterDays: 5
+  GuaranteePriority: 50
   Tags: 4

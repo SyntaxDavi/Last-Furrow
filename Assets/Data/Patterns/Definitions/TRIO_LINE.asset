@@ -15,7 +15,7 @@ MonoBehaviour:
   PatternID: TRIO_LINE
   DisplayName: Trio em Linha
   Description: "Tr\xEAs crops iguais em linha reta."
-  BaseScore: 50
+  BaseScore: 60
   Tier: 1
   DifficultyStars: 1
   Icon: {fileID: 0}

@@ -16,6 +16,8 @@ MonoBehaviour:
     _value: card_onion
   Weight: 9
   Rarity: 0
-  MinRunDay: 1
   MaxCopiesInDeck: 35
+  MaxPerDraw: 0
+  GuaranteeAfterDays: 0
+  GuaranteePriority: 50
   Tags: 1

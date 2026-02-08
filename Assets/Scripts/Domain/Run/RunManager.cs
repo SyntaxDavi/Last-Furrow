@@ -141,16 +141,12 @@ public class RunManager : MonoBehaviour, IRunManager
     /// Constrói o RunDeck usando a seed da run para garantir determinismo.
     /// </summary>
     private void InitializeRunDeck(RunData run)
-    {
-        Debug.LogWarning($"[RunManager] >>> InitializeRunDeck chamado. CardDropLibrary null? {_cardDropLibrary == null}");
-        
+    {   
         if (_cardDropLibrary == null)
         {
             Debug.LogWarning("[RunManager] CardDropLibrary é NULL! Verifique se foi atribuída no Inspector do AppCore.");
             return;
         }
-        
-        Debug.LogWarning($"[RunManager] CardDropLibrary.Count = {_cardDropLibrary.Count}");
         
         if (_cardDropLibrary.Count == 0)
         {
@@ -168,8 +164,6 @@ public class RunManager : MonoBehaviour, IRunManager
         // Salva o deck no RunData
         run.SaveRunDeck(deck);
 
-        Debug.LogWarning($"[RunManager] RunData.RunDeckCardIDs.Count = {run.RunDeckCardIDs?.Count ?? -1}");
-        Debug.LogWarning($"[RunManager] RunData.IsRunDeckInitialized = {run.IsRunDeckInitialized}");
         Debug.LogWarning($"[RunManager] ✓ RunDeck inicializado com {deck.TotalSize} cartas (Seed: {run.MasterSeed})");
     }
 

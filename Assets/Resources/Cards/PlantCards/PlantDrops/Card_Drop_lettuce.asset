@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardDropData
   CardID:
     _value: card_lettuce
-  Weight: 11
+  Weight: 10
   Rarity: 0
-  MinRunDay: 1
   MaxCopiesInDeck: 50
+  MaxPerDraw: 0
+  GuaranteeAfterDays: 0
+  GuaranteePriority: 50
   Tags: 1

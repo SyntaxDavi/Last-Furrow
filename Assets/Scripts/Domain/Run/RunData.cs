@@ -78,6 +78,15 @@ public class RunData
     [Tooltip("IDs das cartas restantes no deck da run.")]
     public List<string> RunDeckCardIDs = new List<string>();
     
+    // ===== DRAW VALIDATION TRACKING =====
+    
+    [Header("Draw Validation")]
+    [Tooltip("Tracking de última aparição de cartas (dia absoluto). Usado por GuaranteedCardsRule.")]
+    public Dictionary<string, int> CardLastSeenDays = new Dictionary<string, int>();
+    
+    [Tooltip("Cartas do último draw. Usado por NoRepeatDrawRule para evitar draws idênticos.")]
+    public List<string> LastDrawCardIDs = new List<string>();
+    
     [Tooltip("Índice de quantas cartas já foram sacadas do deck.")]
     public int RunDeckDrawIndex = 0;
     
@@ -106,6 +115,9 @@ public class RunData
         PatternCompletionCount = new Dictionary<string, int>();
         ActivePatterns = new Dictionary<string, PatternInstanceData>();
         BrokenPatternIDs = new List<string>();
+        
+        // Draw Validation Tracking
+        CardLastSeenDays = new Dictionary<string, int>();
     }
 
 
@@ -178,9 +190,6 @@ public class RunData
         {
             AddStartingCard(run, cardID);
         }
-
-        Debug.LogWarning($"[RunData] ✓ CreateNewRun - Settings: {(settings != null ? "GameSettingsSO" : "FALLBACK")}, Hand inicial: {run.Hand.Count} cartas ({string.Join(", ", startingDeckIDs)})");
-
         return run;
     }
 

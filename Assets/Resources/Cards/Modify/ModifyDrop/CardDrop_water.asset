@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardDropData
   CardID:
     _value: card_water
-  Weight: 10
+  Weight: 12
   Rarity: 1
   MaxCopiesInDeck: 100
+  MaxPerDraw: 1
+  GuaranteeAfterDays: 5
+  GuaranteePriority: 20
   Tags: 2
