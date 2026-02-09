@@ -47,7 +47,7 @@ public class AppCore : MonoBehaviour
     [SerializeField] private string _gameplaySceneName = "Game";
 
     // --- PROPRIEDADES DE COMPATIBILIDADE ---
-    public IGameLibrary GameLibrary { get; private set; } // Agora inicializado no AppCore
+    public IGameLibrary GameLibrary { get; private set; } 
     public GameEvents Events => Services?.Events;
     public IEconomyService EconomyService => Services?.Economy;
     public IHealthService HealthService => Services?.Health;

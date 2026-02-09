@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 508b3bf3ce62a644897d4100d420940d, type: 3}
+  m_Name: DefaultMenuStyle
+  m_EditorClassIdentifier: Assembly-CSharp::LastFurrow.UI.Components.MenuTextStyle
+  NormalColor: {r: 1, g: 1, b: 1, a: 1}
+  SelectedColor: {r: 0.6745283, g: 1, b: 0.95428765, a: 1}
+  DisabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  NormalScale: 1
+  SelectedScale: 1.15
+  ClickScale: 1.25
+  SelectDuration: 0.15
+  ClickDuration: 0.1
+  SelectEase: 6
+  ClickEase: 27
+  ArrowOffsetX: -40
+  ArrowMoveDuration: 0.15
+  ArrowBobAmount: 3
+  ArrowBobDuration: 1.2
+  NavigateSFX: {fileID: 0}
+  ConfirmSFX: {fileID: 0}
+  SFXVolume: 0.5
