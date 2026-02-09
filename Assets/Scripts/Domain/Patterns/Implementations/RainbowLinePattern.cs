@@ -1,41 +1,41 @@
 using System.Collections.Generic;
 
 /// <summary>
-/// Padrão #9: Arco-íris (Rainbow Line)
+/// Padrï¿½o #9: Arco-ï¿½ris (Rainbow Line)
 /// 
-/// DESCRIÇÃO: Linha completa com crops DIFERENTES (diversidade)
+/// DESCRIï¿½ï¿½O: Linha completa com crops DIFERENTES (diversidade)
 /// PONTOS BASE: 55 pts
 /// TIER: 3 (Dedicado)
 /// DIFICULDADE: ????
 /// 
 /// REGRAS:
 /// - Linha completa (5 slots) com TODAS as crops diferentes
-/// - Mínimo 3 tipos diferentes para contar como arco-íris
-/// - 5 tipos diferentes = bonus máximo (fórmula especial no Calculator)
+/// - Mï¿½nimo 3 tipos diferentes para contar como arco-ï¿½ris
+/// - 5 tipos diferentes = bonus mï¿½ximo (fï¿½rmula especial no Calculator)
 /// - Funciona em linhas horizontais E verticais
 /// - Slots bloqueados INVALIDAM a linha
-/// - Todas as crops devem estar vivas (não withered)
+/// - Todas as crops devem estar vivas (nï¿½o withered)
 /// 
-/// EXEMPLO VÁLIDO (5 tipos):
-/// [??][??][??][??][??] = Arco-íris perfeito!
+/// EXEMPLO Vï¿½LIDO (5 tipos):
+/// [??][??][??][??][??] = Arco-ï¿½ris perfeito!
 /// 
-/// EXEMPLO VÁLIDO (3 tipos):
-/// [??][??][??][??][??] = Arco-íris básico (3 tipos: ??????)
+/// EXEMPLO Vï¿½LIDO (3 tipos):
+/// [??][??][??][??][??] = Arco-ï¿½ris bï¿½sico (3 tipos: ??????)
 /// 
-/// EXEMPLO INVÁLIDO (2 tipos):
-/// [??][??][??][??][??] = NÃO conta (só 2 tipos)
+/// EXEMPLO INVï¿½LIDO (2 tipos):
+/// [??][??][??][??][??] = Nï¿½O conta (sï¿½ 2 tipos)
 /// 
-/// NOTA: O score é calculado com fórmula especial no PatternScoreCalculator
-/// baseado no número de tipos únicos (diversityBonus).
+/// NOTA: O score ï¿½ calculado com fï¿½rmula especial no PatternScoreCalculator
+/// baseado no nï¿½mero de tipos ï¿½nicos (diversityBonus).
 /// </summary>
 public class RainbowLinePattern : BaseGridPattern
 {
     public RainbowLinePattern(PatternDefinitionSO definition) : base(definition) { }
     
     /// <summary>
-    /// Número mínimo de tipos de crops diferentes para contar como arco-íris.
+    /// Nï¿½mero mï¿½nimo de tipos de crops diferentes para contar como arco-ï¿½ris.
     /// </summary>
-    private const int MIN_UNIQUE_CROPS = 3;
+    private const int MIN_UNIQUE_CROPS = 5;
     
     public override List<PatternMatch> DetectAll(IGridService gridService)
     {
@@ -90,11 +90,11 @@ public class RainbowLinePattern : BaseGridPattern
     private void TryCreateRainbowMatch(List<int> indices, IGridService gridService, 
         List<PatternMatch> matches, string debugDesc)
     {
-        // Verificar se todos os slots são válidos
+        // Verificar se todos os slots sï¿½o vï¿½lidos
         if (!PatternHelper.AllSlotsValid(indices, gridService))
             return;
         
-        // Contar tipos únicos de crops
+        // Contar tipos ï¿½nicos de crops
         var uniqueCrops = new HashSet<CropID>();
         var cropIDs = new List<CropID>();
         

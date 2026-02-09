@@ -3,6 +3,7 @@ using UnityEngine;
 /// <summary>
 /// Provedor de Política de Música de Gameplay.
 /// Stateless: Apenas decide SE a música de gameplay deve existir com base no estado do jogo.
+/// Usa métodos nomeados para garantir Unsubscribe correto ao destruir a cena.
 /// </summary>
 public class GameplayMusicController : MonoBehaviour
 {
@@ -15,16 +16,23 @@ public class GameplayMusicController : MonoBehaviour
     // --- CICLO DE VIDA ---
 
     private void Awake() => TrySubscribe();
+
     private void Start()
     {
         if (!_isSubscribed) TrySubscribe();
         EvaluateMusicState("Start");
     }
 
-    private void OnDestroy() => UnsubscribeEvents();
     private void OnEnable()
     {
         if (_isSubscribed) EvaluateMusicState("OnEnable");
+    }
+
+    private void OnDestroy()
+    {
+        // Garante que a música para ao sair da cena de gameplay
+        StopMusicOnExit();
+        UnsubscribeEvents();
     }
 
     private void TrySubscribe()
@@ -33,7 +41,7 @@ public class GameplayMusicController : MonoBehaviour
         SubscribeEvents();
     }
 
-    // --- EVENTOS ---
+    // --- EVENTOS (Métodos Nomeados para Unsubscribe correto) ---
 
     private void SubscribeEvents()
     {
@@ -41,12 +49,12 @@ public class GameplayMusicController : MonoBehaviour
         var events = AppCore.Instance.Events;
         if (events == null) return;
 
-        events.GameState.OnStateChanged += (s) => EvaluateMusicState("StateChanged");
-        events.Time.OnDayChanged += (d) => EvaluateMusicState("DayChanged");
-        events.Time.OnWeekendStarted += () => EvaluateMusicState("WeekendStarted");
-        events.Time.OnRunStarted += () => EvaluateMusicState("RunStarted", forceRestart: true);
-        events.Time.OnRunEnded += (r) => EvaluateMusicState("RunEnded");
-        
+        events.GameState.OnStateChanged += HandleStateChanged;
+        events.Time.OnDayChanged += HandleDayChanged;
+        events.Time.OnWeekendStarted += HandleWeekendStarted;
+        events.Time.OnRunStarted += HandleRunStarted;
+        events.Time.OnRunEnded += HandleRunEnded;
+
         _isSubscribed = true;
     }
 
@@ -56,11 +64,20 @@ public class GameplayMusicController : MonoBehaviour
         var events = AppCore.Instance.Events;
         if (events == null) return;
 
-        // Nota: O uso de lambdas anônimas no Subscribe dificulta o Unsubscribe direto por referência,
-        // mas como este objeto persiste (ou morre com a cena), o Unsubscribe de AppCore limparia tudo.
-        // Se precisar de precisão, usaríamos métodos nomeados.
+        events.GameState.OnStateChanged -= HandleStateChanged;
+        events.Time.OnDayChanged -= HandleDayChanged;
+        events.Time.OnWeekendStarted -= HandleWeekendStarted;
+        events.Time.OnRunStarted -= HandleRunStarted;
+        events.Time.OnRunEnded -= HandleRunEnded;
+
         _isSubscribed = false;
     }
+
+    private void HandleStateChanged(GameState _) => EvaluateMusicState("StateChanged");
+    private void HandleDayChanged(int _) => EvaluateMusicState("DayChanged");
+    private void HandleWeekendStarted() => EvaluateMusicState("WeekendStarted");
+    private void HandleRunStarted() => EvaluateMusicState("RunStarted", forceRestart: true);
+    private void HandleRunEnded(RunEndReason _) => EvaluateMusicState("RunEnded");
 
     // --- CORE LOGIC (POLÍTICA PURA) ---
 
@@ -75,17 +92,16 @@ public class GameplayMusicController : MonoBehaviour
 
         if (_debugLogs) Debug.Log($"[MusicPolicy] ({context}) -> ShouldPlay: {shouldPlay}, Restart: {forceRestart}");
 
-        // Delegação total: O Controller não sabe se está pausado, se já está tocando, etc.
-        // Ele apenas diz "Eu quero essa música tocando (ou não)".
         AppCore.Instance.AudioManager.SetMusicContext(_gameplayMusic, shouldPlay, forceRestart);
     }
 
     private bool CalculateShouldPlayPolicy()
     {
         var state = AppCore.Instance.GameStateManager.CurrentState;
-        
-        // Política 1: Só toca em Gameplay (Playing, Paused ou Analyzing)
-        if (state != GameState.Playing && state != GameState.Paused && state != GameState.Analyzing) return false;
+
+        // Política 1: Só toca em estados de gameplay ativo
+        if (state != GameState.Playing && state != GameState.Paused && state != GameState.Analyzing)
+            return false;
 
         var runData = AppCore.Instance.SaveManager?.Data?.CurrentRun;
         if (runData == null) return false;
@@ -93,5 +109,14 @@ public class GameplayMusicController : MonoBehaviour
         // Política 2: Ciclo Semanal - Dias 1 a 5 (Produção)
         int dayInWeek = (runData.CurrentDay - 1) % 7;
         return dayInWeek < 5;
+    }
+
+    /// <summary>
+    /// Chamado no OnDestroy para garantir fade-out ao sair da cena.
+    /// </summary>
+    private void StopMusicOnExit()
+    {
+        if (AppCore.Instance == null || AppCore.Instance.AudioManager == null) return;
+        AppCore.Instance.AudioManager.SetMusicContext(_gameplayMusic, false);
     }
 }

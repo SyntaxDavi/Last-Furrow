@@ -47,7 +47,8 @@ namespace LastFurrow.UI.MainMenu
             // Resolve dependencies from AppCore (Acting as Service Locator)
             if (AppCore.Instance == null)
             {
-                Debug.LogError("[MainMenuFlowCoordinator] AppCore.Instance missing! Boot sequence incomplete.");
+                Debug.LogWarning("[MainMenuFlowCoordinator] AppCore.Instance missing! Redirecting to Boot scene sequence...");
+                UnityEngine.SceneManagement.SceneManager.LoadScene("Boot");
                 return;
             }
 
