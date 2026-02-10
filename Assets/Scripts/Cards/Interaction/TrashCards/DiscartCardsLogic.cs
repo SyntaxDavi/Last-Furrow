@@ -6,19 +6,17 @@ public enum TrashState
     Hidden,
     Appearing,
     Visible,
+    Disappearing
 }
+
 /// <summary>
-/// Refatoração da lixeira...
-/// Existencia: Só existe quando alguma carta esta sendo arrastada (o "botão" de trash também), se não estiver fazendo drag
-/// a lixeira e a indicação de "TRASH" ficam escondidas
-/// Visual: Se está em hover com carta -> Sprite Aberto, quando a carta vai fora -> sprite fechado
-/// Refino: Quando o drag termina, não some instantâneo.
-/// Inicia um timer curto. Se nenhum novo drag começar → esconde.
+/// Lixeira física que aparece quando o jogador faz hover sobre o TrashIndicator.
+/// Visual: Sprite aberto quando carta está sobre ela, fechado quando não.
 /// </summary>
-public class DiscartCardsLogic : MonoBehaviour, IDropTarget, IDraggable
+public class DiscartCardsLogic : MonoBehaviour, IDropTarget
 {
     [Header("Configuração")]
-    [SerializeField] private ParticleSystem _DiscartEffect;
+    [SerializeField] private ParticleSystem _discartEffect;
 
     [Header("Visual")]
     [SerializeField] private SpriteRenderer _trashSpriteRenderer;
@@ -26,102 +24,100 @@ public class DiscartCardsLogic : MonoBehaviour, IDropTarget, IDraggable
     [SerializeField] private Sprite _trashClosedSprite;
 
     [Header("Animação")]
-    [SerializeField] private RectTransform _trashContainer;
+    [SerializeField] private Transform _trashContainer; // Transform da lixeira (world space)
     [SerializeField] private float _animationDuration = 0.3f;
+    [SerializeField] private float _scaleMultiplier = 1.2f; // Escala quando aparece
 
     [Header("Posição")]
-    [SerializeField] private Vector2 _hiddenPosition = new Vector2(-200f, 0f);
-    [SerializeField] private Vector2 _visiblePosition = new Vector2(0f, 0f);
-
-    [Header("Botão")]
-    [SerializeField] TrashToggleButton _trashButton;
+    [SerializeField] private Vector3 _targetPosition = Vector3.zero; // Posição quando visível
 
     // Eventos
     public event System.Action<CardView> OnCardDiscarded;
-    public event System.Action OnTrashOpened;
-    public event System.Action OnTrashClosed;
 
     private TrashState _currentState = TrashState.Hidden;
     private bool _hasCardOver = false;
+    private Vector3 _originalScale;
 
     public TrashState CurrentState => _currentState;
 
-    private void Start()
+    private void Awake()
     {
-        if (_trashContainer != null)
+        if (_trashContainer == null)
         {
-            _trashContainer.anchoredPosition = _hiddenPosition;
+            _trashContainer = transform;
         }
 
-        if (_trashButton != null)
-        {
-            _trashButton.GetComponent<TrashToggleButton>();
-        }
-
+        _originalScale = _trashContainer.localScale;
+        
+        // Inicia invisível e pequena
+        _trashContainer.localScale = Vector3.zero;
         UpdateSprite();
     }
 
-    private void Update()
+    // --- CONTROLE PÚBLICO ---
+
+    public void ShowTrash()
     {
-        if (_currentState == TrashState.Visible)
+        if (_currentState == TrashState.Hidden || _currentState == TrashState.Disappearing)
         {
-            CheckMouseDistance();
+            ChangeState(TrashState.Appearing);
+        }
+    }
+
+    public void HideTrash()
+    {
+        if (_currentState == TrashState.Visible || _currentState == TrashState.Appearing)
+        {
+            ChangeState(TrashState.Disappearing);
         }
     }
 
     // --- ESTADOS ---
 
-    public void OnDragStart()
-    {
-        ShowTrashButton();
-    }
-    public void OnDragEnd()
-    {
-        InitializeDragTimer();
-    }
-    private void EnterVisible()
-    {
-        Debug.LogWarning("[TrashLogic] Estado: VISIBLE - Monitorando distância do mouse");
-    }
-
     private void EnterAppearing()
     {
-        Debug.LogWarning($"[TrashLogic] Estado: APPEARING - Movendo de {_trashContainer.anchoredPosition} para {_visiblePosition}");
-        
         _trashContainer.DOKill();
-        _trashContainer.DOAnchorPos(_visiblePosition, _animationDuration)
+        
+        // Anima escala e posição
+        _trashContainer.DOScale(_originalScale * _scaleMultiplier, _animationDuration)
+            .SetEase(Ease.OutBack);
+        
+        _trashContainer.DOMove(_targetPosition, _animationDuration)
             .SetEase(Ease.OutBack)
-            .OnComplete(() => 
-            {
-                Debug.LogWarning("[TrashLogic] Animação APPEARING completa");
-                ChangeState(TrashState.Visible);
-            });
+            .OnComplete(() => ChangeState(TrashState.Visible));
+    }
 
-        OnTrashOpened?.Invoke();
+    private void EnterVisible()
+    {
+        // Ajusta para escala normal
+        _trashContainer.DOScale(_originalScale, _animationDuration * 0.5f)
+            .SetEase(Ease.InOutQuad);
+    }
+
+    private void EnterDisappearing()
+    {
+        _trashContainer.DOKill();
+        
+        _trashContainer.DOScale(Vector3.zero, _animationDuration)
+            .SetEase(Ease.InBack)
+            .OnComplete(() => ChangeState(TrashState.Hidden));
+
+        _hasCardOver = false;
+        UpdateSprite();
     }
 
     private void EnterHidden()
     {
-        Debug.LogWarning($"[TrashLogic] Estado: HIDDEN - Movendo para {_hiddenPosition}");
-        
-        _trashContainer.DOKill();
-        _trashContainer.DOAnchorPos(_hiddenPosition, _animationDuration)
-            .SetEase(Ease.InBack);
-
-        _hasCardOver = false;
-        UpdateSprite();
-
-        OnTrashClosed?.Invoke();
+        _trashContainer.localScale = Vector3.zero;
     }
 
     // --- INTERFACE IDROPTARGET ---
 
     public bool CanReceive(IDraggable draggable)
     {
-        // Só aceita se estiver visível 
+        // Só aceita se estiver visível
         if (_currentState != TrashState.Visible)
         {
-            Debug.LogWarning($"[TrashLogic] CanReceive = false - Estado atual: {_currentState}");
             return false;
         }
 
@@ -131,36 +127,39 @@ public class DiscartCardsLogic : MonoBehaviour, IDropTarget, IDraggable
 
         if (!isAllowedState)
         {
-            Debug.LogWarning($"[TrashLogic] CanReceive = false - GameState inválido: {currentState}");
             return false;
         }
 
         // Validação de Tipo
-        bool isCardView = draggable is CardView;
-        Debug.LogWarning($"[TrashLogic] CanReceive = {isCardView}");
-        return isCardView;
+        return draggable is CardView;
     }
 
     public void OnReceive(IDraggable draggable)
     {
         if (draggable is CardView cardView)
         {
-            Debug.LogWarning($"[TrashLogic] Descartando carta: {cardView.name}");
+            Debug.Log($"[TrashLogic] Descartando carta: {cardView.name}");
             
             // Remoção lógica e visual
             AppCore.Instance.Events.Player.TriggerCardRemoved(cardView.Instance);
 
             // Feedback visual
-            if (_DiscartEffect != null)
+            if (_discartEffect != null)
             {
-                _DiscartEffect.Play();
+                _discartEffect.Play();
             }
+
+            // Anima "mastigando" a carta
+            _trashContainer.DOPunchScale(Vector3.one * 0.2f, 0.3f, 5, 0.5f);
 
             // Dispara evento
             OnCardDiscarded?.Invoke(cardView);
 
             _hasCardOver = false;
             UpdateSprite();
+            
+            // Esconde após o descarte
+            HideTrash();
         }
     }
 
@@ -168,11 +167,14 @@ public class DiscartCardsLogic : MonoBehaviour, IDropTarget, IDraggable
 
     public void OnDragEnter(IDraggable draggable)
     {
-        if (draggable is CardView)
+        if (draggable is CardView && _currentState == TrashState.Visible)
         {
-            Debug.LogWarning("[TrashLogic] Drag ENTER - Abrindo lixeira");
             _hasCardOver = true;
             UpdateSprite();
+            
+            // Feedback visual de "olhando pra carta"
+            _trashContainer.DOKill();
+            _trashContainer.DOScale(_originalScale * 1.1f, 0.2f).SetEase(Ease.OutQuad);
         }
     }
 
@@ -180,54 +182,12 @@ public class DiscartCardsLogic : MonoBehaviour, IDropTarget, IDraggable
     {
         if (draggable is CardView)
         {
-            Debug.LogWarning("[TrashLogic] Drag EXIT - Fechando lixeira");
             _hasCardOver = false;
             UpdateSprite();
-        }
-    }
-
-    // --- CONTROLE PÚBLICO ---
-
-    public void ShowTrash()
-    {
-        Debug.LogWarning($"[TrashLogic] ShowTrash() chamado - Estado atual: {_currentState}");
-        
-        if (_currentState == TrashState.Hidden)
-        {
-            ChangeState(TrashState.Appearing);
-        }
-        else
-        {
-            Debug.LogWarning($"[TrashLogic] ShowTrash() ignorado - já está em {_currentState}");
-        }
-    }
-
-    public void HideTrash()
-    {
-        Debug.LogWarning($"[TrashLogic] HideTrash() chamado - Estado atual: {_currentState}");
-        
-        if (_currentState != TrashState.Hidden)
-        {
-            ChangeState(TrashState.Hidden);
-        }
-    }
-
-    public void ToggleTrash()
-    {   
-        // Evita toggle durante animação de aparecer
-        if (_currentState == TrashState.Appearing) 
-        {
-            Debug.LogWarning("[TrashLogic] Toggle ignorado - animação em progresso");
-            return;
-        }
-
-        if (_currentState == TrashState.Hidden)
-        {
-            ShowTrash();
-        }
-        else
-        {
-            HideTrash();
+            
+            // Volta ao normal
+            _trashContainer.DOKill();
+            _trashContainer.DOScale(_originalScale, 0.2f).SetEase(Ease.InOutQuad);
         }
     }
 
@@ -250,8 +210,9 @@ public class DiscartCardsLogic : MonoBehaviour, IDropTarget, IDraggable
         {
             (TrashState.Hidden, TrashState.Appearing) => true,
             (TrashState.Appearing, TrashState.Visible) => true,
-            (TrashState.Visible, TrashState.Hidden) => true,
-            (TrashState.Appearing, TrashState.Hidden) => true, 
+            (TrashState.Visible, TrashState.Disappearing) => true,
+            (TrashState.Disappearing, TrashState.Hidden) => true,
+            (TrashState.Appearing, TrashState.Disappearing) => true, // Cancela animação
             _ => false
         };
     }
@@ -260,11 +221,9 @@ public class DiscartCardsLogic : MonoBehaviour, IDropTarget, IDraggable
     {
         if (!CanTransition(_currentState, newState))
         {
-            Debug.LogWarning($"[TrashLogic] Transição inválida: {_currentState} -> {newState}");
             return;
         }
 
-        Debug.LogWarning($"[TrashLogic] Mudando estado: {_currentState} -> {newState}");
         _currentState = newState;
 
         switch (_currentState)
@@ -277,6 +236,9 @@ public class DiscartCardsLogic : MonoBehaviour, IDropTarget, IDraggable
                 break;
             case TrashState.Visible:
                 EnterVisible();
+                break;
+            case TrashState.Disappearing:
+                EnterDisappearing();
                 break;
         }
     }
