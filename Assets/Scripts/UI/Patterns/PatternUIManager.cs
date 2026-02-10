@@ -31,7 +31,6 @@ public class PatternUIManager : MonoBehaviour
             _config = Resources.Load<PatternVisualConfig>("Patterns/PatternVisualConfig");
         }
         
-        // ONDA 6.1: Remover FindFirstObjectByType - Validar apenas (atribuir no Inspector)
         if (_popupController == null)
         {
             _popupController = GetComponentInChildren<PatternTextPopupController>();

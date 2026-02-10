@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -28,6 +29,9 @@ public class DragDropSystem
     private bool _isDragging;
     private bool _isOverValidDropTarget;
 
+    // -- Eventos Públicos --
+    public event Action<IDraggable> OnDragStarted;
+    public event Action<IDraggable> OnDragEnded;
     public bool IsDragging => _isDragging;
     public IDraggable ActiveDrag => _activeDrag;
     public IDraggable PotentialDrag => _potentialDrag;
@@ -82,6 +86,8 @@ public class DragDropSystem
         _isDragging = true;
         _activeDrag = _potentialDrag;
         _activeDrag.OnDragStart();
+
+        OnDragStarted?.Invoke(_activeDrag);
     }
 
     /// <summary>
@@ -129,6 +135,7 @@ public class DragDropSystem
         }
 
         _activeDrag.OnDragEnd();
+        OnDragEnded?.Invoke(_activeDrag);
 
         // Limpa drop hover e validade
         ClearDropHover();
@@ -151,6 +158,7 @@ public class DragDropSystem
         if (_isDragging && _activeDrag != null)
         {
             _activeDrag.OnDragEnd();
+            OnDragEnded?.Invoke(_activeDrag);
         }
 
         ClearDropHover();
@@ -198,7 +206,7 @@ public class DragDropSystem
 
     private bool IsObjectAlive(object obj)
     {
-        return obj != null && !((obj is Object unityObj) && unityObj == null);
+        return obj != null && !((obj is UnityEngine.Object unityObj) && unityObj == null);
     }
 }
 

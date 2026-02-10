@@ -275,7 +275,6 @@ namespace LastFurrow.UI.Components
                 return;
             }
             
-            Debug.LogWarning($"[MenuGroup] SelectIndex: selecting '{newItem.name}' at index {newIndex}");
             
             // Deselect previous
             if (_currentIndex >= 0 && _currentIndex < _menuItems.Count)
@@ -345,12 +344,10 @@ namespace LastFurrow.UI.Components
                 if (IsPrefabAsset(_arrowPrefab))
                 {
                     _arrowInstance = Instantiate(_arrowPrefab, target);
-                    Debug.LogWarning($"[MenuGroup] Arrow Prefab instantiated at {target.name}");
                 }
                 else
                 {
                     _arrowInstance = _arrowPrefab;
-                    Debug.LogWarning($"[MenuGroup] Arrow Scene Object used from field");
                 }
             }
             
@@ -368,8 +365,6 @@ namespace LastFurrow.UI.Components
             // Apply X offset from style
             float offsetX = _style != null ? _style.ArrowOffsetX : -40f;
             Vector3 finalPos = new Vector3(offsetX, 0, 0);
-            
-            Debug.LogWarning($"[MenuGroup] Arrow reparented to '{target.name}'. Final LocalPos={finalPos}");
             
             KillArrowTweens();
             
