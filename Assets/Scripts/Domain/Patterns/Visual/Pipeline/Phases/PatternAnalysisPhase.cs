@@ -48,7 +48,7 @@ namespace LastFurrow.Domain.Patterns.Visual.Pipeline.Phases
                 context.RunningScore += match.BaseScore;
 
                 // 2. Dispara evento HUD
-                context.Events.Pattern.TriggerScoreIncremented(
+                context.Events.Pattern.TriggerScoreIncremented( 
                     match.BaseScore,
                     context.RunningScore,
                     context.RunData.WeeklyGoalTarget
@@ -63,10 +63,10 @@ namespace LastFurrow.Domain.Patterns.Visual.Pipeline.Phases
                     _uiManager.ShowPatternPopupDirect(match);
                 }
                 
-                // --- Lógica de Aceleração Dinâmica (Decolagem 🛫 - Tuned) ---
-                // Começa mais lento (0.6s) para dar tempo de leitura, acelera quadraticamente.
-                float configDelay = _config != null ? _config.analyzingSlotDelay : 0.6f;
-                float startDelay = Mathf.Max(configDelay, 0.6f); // Force slow start
+                // --- Lógica de Aceleração Dinâmica (Decolagem - Tuned) ---
+                // Começa mais lento, para dar tempo de leitura, acelera quadraticamente.
+                float configDelay = _config != null ? _config.analyzingSlotDelay : 0.7f;
+                float startDelay = Mathf.Max(configDelay, 0.7f); // Force slow start
                 float minDelay = 0.15f; // Hard limit de 150ms (Humanamente legível mas rápido)
 
                 float t = (float)i / total;

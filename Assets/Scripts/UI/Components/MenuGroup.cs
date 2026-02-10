@@ -32,7 +32,7 @@ namespace LastFurrow.UI.Components
         [Header("Selection Arrow (will be reparented to each item's arrowAnchor)")]
         [SerializeField] private GameObject _arrowPrefab;
         
-        [Header("Input (Optional - uses fallback if null)")]
+        [Header("Input")]
         [SerializeField] private bool _useKeyboardFallback = true;
         
         private IMenuInputProvider _inputProvider;

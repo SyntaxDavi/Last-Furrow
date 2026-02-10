@@ -16,7 +16,7 @@ public class PatternHighlightController : MonoBehaviour
     [SerializeField] private GridManager _gridManager;
     
     // Rastreia efeitos ativos por slot para evitar conflito (Jitter Fix)
-    private Dictionary<int, CancellationTokenSource> _activeEffects = new Dictionary<int, CancellationTokenSource>();
+    private Dictionary<int, (CancellationTokenSource cts, int effectId)> _activeEffects = new Dictionary<int, (CancellationTokenSource, int)>();
     private Dictionary<int, GridSlotView> _slotCache = new Dictionary<int, GridSlotView>();
 
     private void Awake()
@@ -44,10 +44,10 @@ public class PatternHighlightController : MonoBehaviour
     
     private void CancelAllEffects()
     {
-        foreach (var cts in _activeEffects.Values)
+        foreach (var effect in _activeEffects.Values)
         {
-            cts.Cancel();
-            cts.Dispose();
+            effect.cts.Cancel();
+            effect.cts.Dispose();
         }
         _activeEffects.Clear();
     }
@@ -100,30 +100,37 @@ public class PatternHighlightController : MonoBehaviour
             if (_slotCache.TryGetValue(slotIndex, out GridSlotView slot))
             {
                 // 1. Cancela efeito anterior no mesmo slot (Jitter Fix)
-                if (_activeEffects.TryGetValue(slotIndex, out var existingCts))
+                if (_activeEffects.TryGetValue(slotIndex, out var existing))
                 {
-                    existingCts.Cancel();
-                    existingCts.Dispose();
+                    existing.cts.Cancel();
+                    existing.cts.Dispose();
                     _activeEffects.Remove(slotIndex);
                 }
 
-                // 2. Cria novo token controlado por nós
-                var cts = new CancellationTokenSource();
-                _activeEffects[slotIndex] = cts;
+                // 2. Gera ID único para este efeito
+                int effectId = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
 
-                // 3. Linka com destruição do objeto para segurança
+                // 3. Cria novo token controlado por nós
+                var cts = new CancellationTokenSource();
+                _activeEffects[slotIndex] = (cts, effectId);
+
+                Debug.LogWarning($"START slot {slotIndex} | EffectID {effectId}");
+
+                // 4. Linka com destruição do objeto para segurança
                 var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
                     cts.Token, this.GetCancellationTokenOnDestroy());
 
-                // 4. Inicia animação
-                HighlightSlotAsync(slot, finalColor, slotIndex, linkedCts.Token).Forget();
+                // 5. Inicia animação
+                HighlightSlotAsync(slot, finalColor, slotIndex, effectId, linkedCts.Token).Forget();
             }
         }
     }
 
-    private async UniTaskVoid HighlightSlotAsync(GridSlotView slot, Color color, int slotIndex, CancellationToken token)
+    private async UniTaskVoid HighlightSlotAsync(GridSlotView slot, Color color, int slotIndex, int effectId, CancellationToken token)
     {
         if (slot == null) return;
+
+        bool shouldCleanup = true;
 
         try
         {
@@ -173,16 +180,28 @@ public class PatternHighlightController : MonoBehaviour
         }
         finally
         {
-            // GARANTIA: Sempre reseta o slot, independente de cancelamento
-            if (slot != null)
+            Debug.LogWarning($"FINALLY slot {slotIndex} | EffectID {effectId}");
+
+            // CONTROLE DE AUTORIDADE: Verifica se este efeito ainda é o ativo
+            if (_activeEffects.TryGetValue(slotIndex, out var current) && current.effectId != effectId)
             {
-                slot.ClearPatternHighlight(); // Isso já chama SetElevationFactor(0f)
+                Debug.LogWarning($"SKIPPED cleanup slot {slotIndex} | EffectID {effectId} (current is {current.effectId})");
+                shouldCleanup = false;
             }
-            
-            // Remove do dicionário
-            if (_activeEffects.ContainsKey(slotIndex))
+
+            // GARANTIA: Apenas limpa se este efeito ainda for o dono do slot
+            if (shouldCleanup)
             {
-                _activeEffects.Remove(slotIndex);
+                if (slot != null)
+                {
+                    slot.ClearPatternHighlight(); // Isso já chama SetElevationFactor(0f)
+                }
+                
+                // Remove do dicionário apenas se ainda for o efeito atual
+                if (_activeEffects.TryGetValue(slotIndex, out var final) && final.effectId == effectId)
+                {
+                    _activeEffects.Remove(slotIndex);
+                }
             }
         }
     }
