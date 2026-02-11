@@ -1,5 +1,6 @@
 ﻿using DG.Tweening;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum TrashState
 {
@@ -22,7 +23,7 @@ public class DiscartCardsLogic : MonoBehaviour, IDropTarget
     [SerializeField] private bool _debugLogs = false;
 
     [Header("Visual")]
-    [SerializeField] private SpriteRenderer _trashSpriteRenderer;
+    [SerializeField] private Image _trashSpriteImage;
     [SerializeField] private Sprite _trashOpenSprite;
     [SerializeField] private Sprite _trashClosedSprite;
 
@@ -199,9 +200,9 @@ public class DiscartCardsLogic : MonoBehaviour, IDropTarget
 
     private void UpdateSprite()
     {
-        if (_trashSpriteRenderer == null) return;
+        if (_trashSpriteImage == null) return;
 
-        _trashSpriteRenderer.sprite = _hasCardOver ? _trashOpenSprite : _trashClosedSprite;
+        _trashSpriteImage.sprite = _hasCardOver ? _trashOpenSprite : _trashClosedSprite;
     }
 
     // --- STATE MACHINE ---
