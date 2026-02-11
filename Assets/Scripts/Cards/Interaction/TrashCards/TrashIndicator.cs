@@ -14,11 +14,14 @@ public class TrashIndicator : MonoBehaviour, IInteractable
     [Header("Configuração")]
     [SerializeField] private float _fadeDuration = 0.3f;
     [SerializeField] private float _hideDelay = 2f;
+    [SerializeField] private bool _debugLogs = true;
 
     [Header("Referências")]
     [SerializeField] private DiscartCardsLogic _trashLogic;
+    [SerializeField] private PlayerInteraction _playerInteraction;
 
     private Coroutine _hideCoroutine;
+    private Coroutine _fadeCoroutine;
     private bool _isVisible = false;
     private DragDropSystem _dragDropSystem;
 
@@ -36,32 +39,42 @@ public class TrashIndicator : MonoBehaviour, IInteractable
             _canvasGroup.alpha = 0f;
             _canvasGroup.blocksRaycasts = false;
         }
+        Debug.LogWarning($"Awake - CanvasGroup: {(_canvasGroup != null ? "OK" : "MISSING")}");
     }
 
     private void Start()
     {
-        // Acessa o DragDropSystem através do PlayerInteraction
-        var playerInteraction = FindFirstObjectByType<PlayerInteraction>();
-        
-        if (playerInteraction != null)
+        Debug.LogWarning("Start - Iniciando retry");
+        StartCoroutine(InitializeWithRetry());
+    }
+
+    private IEnumerator InitializeWithRetry()
+    {
+        int attempts = 0;
+        // Aguarda até PlayerInteraction estar pronto
+        while (_playerInteraction == null || _playerInteraction.DragSystem == null)
         {
-            _dragDropSystem = playerInteraction.DragSystem;
-            
-            if (_dragDropSystem != null)
-            {
-                _dragDropSystem.OnDragStarted += HandleDragStarted;
-                _dragDropSystem.OnDragEnded += HandleDragEnded;
-                Debug.Log("[TrashIndicator] Inscrito nos eventos de drag");
-            }
-            else
-            {
-                Debug.LogError("[TrashIndicator] DragSystem não encontrado no PlayerInteraction!");
-            }
+            attempts++;
+            yield return null;
         }
-        else
+
+        if (_playerInteraction == null)
         {
-            Debug.LogError("[TrashIndicator] PlayerInteraction não encontrado na cena!");
+            Debug.LogError("[TrashIndicator] PlayerInteraction não encontrado após retry!");
+            yield break;
         }
+
+        if (_playerInteraction.DragSystem == null)
+        {
+            Debug.LogError("[TrashIndicator] DragSystem não encontrado após retry!");
+            yield break;
+        }
+
+        _dragDropSystem = _playerInteraction.DragSystem;
+        _dragDropSystem.OnDragStarted += HandleDragStarted;
+        _dragDropSystem.OnDragEnded += HandleDragEnded;
+
+        Debug.LogWarning($"Inicializado com sucesso após {attempts} frames");
     }
 
     private void OnDestroy()
@@ -79,7 +92,7 @@ public class TrashIndicator : MonoBehaviour, IInteractable
     {
         if (draggable is CardView)
         {
-            Debug.Log("[TrashIndicator] Drag iniciado - Mostrando indicador");
+            Debug.LogWarning("[TrashIndicator] Drag iniciado - Mostrando indicador");
             Show();
         }
     }
@@ -88,7 +101,7 @@ public class TrashIndicator : MonoBehaviour, IInteractable
     {
         if (draggable is CardView)
         {
-            Debug.Log("[TrashIndicator] Drag finalizado - Iniciando timer");
+            Debug.LogWarning("[TrashIndicator] Drag finalizado - Iniciando timer");
             StartHideTimer();
         }
     }
@@ -97,6 +110,7 @@ public class TrashIndicator : MonoBehaviour, IInteractable
 
     public void Show()
     {
+        Debug.LogWarning($"[TrashIndicator] Show() chamado - Visível: {_isVisible}");
         if (_hideCoroutine != null)
         {
             StopCoroutine(_hideCoroutine);
@@ -136,12 +150,20 @@ public class TrashIndicator : MonoBehaviour, IInteractable
 
     private void Hide()
     {
+        Debug.LogWarning($"Hide() chamado - _isVisible: {_isVisible}");
+
         if (_isVisible)
         {
             _isVisible = false;
-            StopAllCoroutines();
-            StartCoroutine(FadeRoutine(0f));
-            
+
+            // Cancela fade anterior se existir
+            if (_fadeCoroutine != null)
+            {
+                StopCoroutine(_fadeCoroutine);
+            }
+
+            _fadeCoroutine = StartCoroutine(FadeRoutine(0f));
+
             if (_canvasGroup != null)
             {
                 _canvasGroup.blocksRaycasts = false;
@@ -151,6 +173,8 @@ public class TrashIndicator : MonoBehaviour, IInteractable
             {
                 _trashLogic.HideTrash();
             }
+
+            Debug.LogWarning("Fade para alpha 0.0 iniciado");
         }
     }
 

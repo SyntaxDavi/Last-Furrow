@@ -17,6 +17,9 @@ public class DiscartCardsLogic : MonoBehaviour, IDropTarget
 {
     [Header("Configuração")]
     [SerializeField] private ParticleSystem _discartEffect;
+    [SerializeField] private AudioClip OnDescartSound;
+    [SerializeField] private AudioSource _audioSource;
+    [SerializeField] private bool _debugLogs = false;
 
     [Header("Visual")]
     [SerializeField] private SpriteRenderer _trashSpriteRenderer;
@@ -147,6 +150,7 @@ public class DiscartCardsLogic : MonoBehaviour, IDropTarget
             if (_discartEffect != null)
             {
                 _discartEffect.Play();
+                _audioSource.PlayOneShot(OnDescartSound);
             }
 
             // Anima "mastigando" a carta
@@ -212,7 +216,7 @@ public class DiscartCardsLogic : MonoBehaviour, IDropTarget
             (TrashState.Appearing, TrashState.Visible) => true,
             (TrashState.Visible, TrashState.Disappearing) => true,
             (TrashState.Disappearing, TrashState.Hidden) => true,
-            (TrashState.Appearing, TrashState.Disappearing) => true, // Cancela animação
+            (TrashState.Appearing, TrashState.Disappearing) => true, 
             _ => false
         };
     }
